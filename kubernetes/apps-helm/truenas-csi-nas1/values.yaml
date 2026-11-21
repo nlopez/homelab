@@ -6,6 +6,9 @@
 # The nas1-* StorageClass and VolumeSnapshotClass names belong to democratic-csi,
 # so these use a tn- prefix. Drop the prefix once democratic-csi is retired.
 driverName: org.truenas-csi.nas1
+# The chart does not prefix resource names with the release name, so a second
+# install would reuse the nas2 install's ClusterRoles and ClusterRoleBindings.
+fullnameOverride: truenas-csi-nas1
 truenas:
   url: wss://nas1.lga1.radoncanyon.com
   defaultPool: mtank
