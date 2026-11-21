@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/postgresql.cnpg.io/cluster_v1.json
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: atuin-database-tn
+spec:
+  instances: 1
+  storage:
+    size: 5Gi
+    pvcTemplate:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: tn-nas1-mtank-iscsi
+      resources:
+        requests:
+          storage: 5Gi
+  bootstrap:
+    initdb:
+      database: atuin
+      owner: atuin
+      secret:
+        name: onepassword-atuin-database
+      import:
+        type: microservice
+        databases:
+        - atuin
+        source:
+          externalCluster: atuin-database
+  externalClusters:
+  - name: atuin-database
+    connectionParameters:
+      host: atuin-database-rw.atuin.svc.cluster.local
+      user: atuin
+      dbname: atuin
+    password:
+      name: onepassword-atuin-database
+      key: password

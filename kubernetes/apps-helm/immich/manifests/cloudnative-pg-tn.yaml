@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/postgresql.cnpg.io/cluster_v1.json
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: immich-database-tn
+spec:
+  instances: 1
+  inheritedMetadata:
+    annotations:
+      backup.velero.io/backup-volumes: pgdata
+  postgresql:
+    shared_preload_libraries:
+    - 'vchord.so'
+  storage:
+    size: 20Gi
+    pvcTemplate:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: tn-nas1-mtank-iscsi
+      resources:
+        requests:
+          storage: 20Gi
+  imageName: ghcr.io/tensorchord/cloudnative-vectorchord:16.15-1.1.1
+  bootstrap:
+    initdb:
+      database: immich
+      owner: immich
+      secret:
+        name: onepassword-immich-database
+      import:
+        type: microservice
+        databases:
+        - immich
+        source:
+          externalCluster: immich-database
+  externalClusters:
+  - name: immich-database
+    connectionParameters:
+      host: immich-database-rw.immich.svc.cluster.local
+      user: immich
+      dbname: immich
+    password:
+      name: onepassword-immich-database
+      key: password

@@ -4,6 +4,7 @@ kind: Deployment
 metadata:
   name: engram
 spec:
+  replicas: 0
   selector:
     matchLabels:
       app: engram

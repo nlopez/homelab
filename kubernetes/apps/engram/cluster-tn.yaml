@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/postgresql.cnpg.io/cluster_v1.json
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: engram-database-tn
+spec:
+  instances: 1
+  storage:
+    size: 5Gi
+    pvcTemplate:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: tn-nas1-mtank-iscsi
+      resources:
+        requests:
+          storage: 5Gi
+  bootstrap:
+    initdb:
+      database: engram
+      owner: engram
+      secret:
+        name: onepassword-engram
+      import:
+        type: microservice
+        databases:
+        - engram
+        source:
+          externalCluster: engram-database
+  externalClusters:
+  - name: engram-database
+    connectionParameters:
+      host: engram-database-rw.engram.svc.cluster.local
+      user: engram
+      dbname: engram
+    password:
+      name: onepassword-engram
+      key: password
