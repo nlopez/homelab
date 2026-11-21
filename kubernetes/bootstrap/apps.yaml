@@ -11,11 +11,11 @@ spec:
   goTemplateOptions: ["missingkey=error"]
   generators:
   - git:
-      repoURL: https://github.com/nlopez/k8s_home.git
+      repoURL: https://github.com/nlopez/homelab.git
       revision: main
       directories:
-      - path: apps/*
-      - path: apps/*/overlays/*
+      - path: kubernetes/apps/*
+      - path: kubernetes/apps/*/overlays/*
   template:
     metadata:
       name: "{{ .path.basename }}"
@@ -30,7 +30,7 @@ spec:
         - CreateNamespace=true
         - ServerSideApply=true
       sources:
-      - repoURL: "https://github.com/nlopez/k8s_home.git"
+      - repoURL: "https://github.com/nlopez/homelab.git"
         targetRevision: main
         path: "{{.path.path}}"
         directory:

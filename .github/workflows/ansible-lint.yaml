@@ -2,7 +2,9 @@ name: ansible-lint
 on:
   push:
     branches: [main]
+    paths: ['ansible/**', '.github/workflows/ansible-lint.yaml']
   pull_request:
+    paths: ['ansible/**', '.github/workflows/ansible-lint.yaml']
 
 permissions:
   contents: read
@@ -11,6 +13,9 @@ jobs:
   build:
     name: Ansible Lint # Naming the build is important to use it as a status check
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ansible
 
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4

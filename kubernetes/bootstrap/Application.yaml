@@ -18,6 +18,6 @@ spec:
     namespace: argocd
     server: https://kubernetes.default.svc
   sources:
-  - repoURL: https://github.com/nlopez/k8s_home.git
-    path: bootstrap
+  - repoURL: https://github.com/nlopez/homelab.git
+    path: kubernetes/bootstrap
     targetRevision: main
