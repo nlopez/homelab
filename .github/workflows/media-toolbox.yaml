@@ -2,7 +2,6 @@ name: media-toolbox
 
 on:
   push:
-    branches: [main]
     paths: ['media-toolbox/**', '.github/workflows/media-toolbox.yaml']
   schedule:
     - cron: '0 6 * * *'  # daily at 06:00 UTC - check for new yt-dlp / bgutil releases
@@ -80,8 +79,6 @@ jobs:
   docker:
     needs: check
     if: needs.check.outputs.build == 'true'
-    # Registry credentials live in the production environment, which only main can deploy to.
-    environment: production
     runs-on: ubuntu-latest
     env:
       YT_DLP: ${{ needs.check.outputs.yt_dlp }}
@@ -107,12 +104,6 @@ jobs:
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5
       -
-        name: Login to Docker Hub
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      -
         name: Login to GHCR
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee
         with:
@@ -129,10 +120,6 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' }}
           platforms: linux/amd64
           tags: |
-            nlopez/media-toolbox:${{ env.YT_DLP }}
-            nlopez/media-toolbox:${{ env.YT_DLP }}-${{ github.run_number }}
-            nlopez/media-toolbox:${{ env.YT_DLP }}-${{ github.sha }}
-            nlopez/media-toolbox:${{ github.sha }}
             ghcr.io/nlopez/media-toolbox:${{ env.YT_DLP }}
             ghcr.io/nlopez/media-toolbox:${{ env.YT_DLP }}-${{ github.run_number }}
             ghcr.io/nlopez/media-toolbox:${{ env.YT_DLP }}-${{ github.sha }}
@@ -146,10 +133,10 @@ jobs:
             BGUTIL_YTDLP_POT_PROVIDER_VERSION=${{ env.BGUTIL }}
           cache-from: |
             type=gha
-            type=registry,ref=nlopez/media-toolbox:build-cache
+            type=registry,ref=ghcr.io/nlopez/media-toolbox:build-cache
           cache-to: |
             type=gha,mode=max
-            type=registry,ref=nlopez/media-toolbox:build-cache,mode=max
+            type=registry,ref=ghcr.io/nlopez/media-toolbox:build-cache,mode=max
       -
         name: Commit version bump
         if: steps.bump.outputs.changed == 'true' && github.ref == 'refs/heads/main'
