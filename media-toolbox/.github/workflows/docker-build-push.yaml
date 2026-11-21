@@ -1,0 +1,157 @@
+name: ci
+
+on:
+  push:
+  schedule:
+    - cron: '0 6 * * *'  # daily at 06:00 UTC - check for new yt-dlp / bgutil releases
+  workflow_dispatch:
+    inputs:
+      yt_dlp_version:
+        description: 'yt-dlp release tag to build (e.g. 2026.08.19). Blank = use the version pinned in the Makefile.'
+        required: false
+        default: ''
+      bgutil_version:
+        description: 'bgutil-ytdlp-pot-provider release tag to build (e.g. 2.0.2). Blank = use the version pinned in the Makefile.'
+        required: false
+        default: ''
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false  # never interrupt a push to the registry
+
+permissions:
+  contents: write   # push the version-bump commit back to the branch
+  packages: write   # push images to GHCR
+
+jobs:
+  # Decide what to build. Scheduled runs only build when yt-dlp or the bgutil plugin has a new
+  # release; pushes and manual runs always build.
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      yt_dlp: ${{ steps.resolve.outputs.yt_dlp }}
+      bgutil: ${{ steps.resolve.outputs.bgutil }}
+      build: ${{ steps.resolve.outputs.build }}
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      -
+        name: Resolve versions
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT: ${{ github.event_name }}
+          MANUAL_YT_DLP: ${{ github.event.inputs.yt_dlp_version }}
+          MANUAL_BGUTIL: ${{ github.event.inputs.bgutil_version }}
+        run: |
+          set -euo pipefail
+          PINNED_YT_DLP=$(sed -n 's/^YT_DLP_VERSION *:= *//p' Makefile)
+          PINNED_BGUTIL=$(sed -n 's/^BGUTIL_YTDLP_POT_PROVIDER_VERSION *:= *//p' Makefile)
+
+          latest() {
+            local tag
+            tag=$(gh api "repos/$1/releases/latest" --jq .tag_name)
+            [ -n "$tag" ] || { echo "::error::could not resolve latest $1 release"; exit 1; }
+            echo "$tag"
+          }
+
+          YT_DLP="${MANUAL_YT_DLP:-$PINNED_YT_DLP}"
+          BGUTIL="${MANUAL_BGUTIL:-$PINNED_BGUTIL}"
+          if [ "$EVENT" = "schedule" ]; then
+            YT_DLP=$(latest yt-dlp/yt-dlp)
+            BGUTIL=$(latest Brainicism/bgutil-ytdlp-pot-provider)
+          fi
+
+          BUILD=true
+          if [ "$EVENT" = "schedule" ] && [ "$YT_DLP" = "$PINNED_YT_DLP" ] && [ "$BGUTIL" = "$PINNED_BGUTIL" ]; then
+            BUILD=false
+          fi
+
+          {
+            echo "yt_dlp=$YT_DLP"
+            echo "bgutil=$BGUTIL"
+            echo "build=$BUILD"
+          } >> "$GITHUB_OUTPUT"
+          echo "yt-dlp: $PINNED_YT_DLP -> $YT_DLP | bgutil: $PINNED_BGUTIL -> $BGUTIL | build: $BUILD"
+
+  docker:
+    needs: check
+    if: needs.check.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    env:
+      YT_DLP: ${{ needs.check.outputs.yt_dlp }}
+      BGUTIL: ${{ needs.check.outputs.bgutil }}
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      -
+        name: Bump pinned versions in Makefile
+        id: bump
+        run: |
+          set -euo pipefail
+          sed -i "s|^YT_DLP_VERSION :=.*|YT_DLP_VERSION := $YT_DLP|" Makefile
+          sed -i "s|^# https://github.com/yt-dlp/yt-dlp/releases/tag/.*|# https://github.com/yt-dlp/yt-dlp/releases/tag/$YT_DLP|" Makefile
+          sed -i "s|^BGUTIL_YTDLP_POT_PROVIDER_VERSION :=.*|BGUTIL_YTDLP_POT_PROVIDER_VERSION := $BGUTIL|" Makefile
+          if git diff --quiet -- Makefile; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+          git diff -- Makefile
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        name: Login to GHCR
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      -
+        # <yt-dlp>-<run number> sorts monotonically, so Renovate can order rebuilds of the same
+        # yt-dlp version (bgutil bumps, Dockerfile changes). Commit-SHA tags cannot be ordered.
+        name: Build and push
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf
+        with:
+          push: ${{ github.ref == 'refs/heads/main' }}
+          platforms: linux/amd64
+          tags: |
+            nlopez/media-toolbox:${{ env.YT_DLP }}
+            nlopez/media-toolbox:${{ env.YT_DLP }}-${{ github.run_number }}
+            nlopez/media-toolbox:${{ env.YT_DLP }}-${{ github.sha }}
+            nlopez/media-toolbox:${{ github.sha }}
+            ghcr.io/nlopez/media-toolbox:${{ env.YT_DLP }}
+            ghcr.io/nlopez/media-toolbox:${{ env.YT_DLP }}-${{ github.run_number }}
+            ghcr.io/nlopez/media-toolbox:${{ env.YT_DLP }}-${{ github.sha }}
+            ghcr.io/nlopez/media-toolbox:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.description=Media Toolbox: A Docker-based development environment with audio/video/CLI tools for media processing.
+          build-args: |
+            UID=1001
+            GID=1001
+            YT_DLP_VERSION=${{ env.YT_DLP }}
+            BGUTIL_YTDLP_POT_PROVIDER_VERSION=${{ env.BGUTIL }}
+          cache-from: |
+            type=gha
+            type=registry,ref=nlopez/media-toolbox:build-cache
+          cache-to: |
+            type=gha,mode=max
+            type=registry,ref=nlopez/media-toolbox:build-cache,mode=max
+      -
+        name: Commit version bump
+        if: steps.bump.outputs.changed == 'true' && github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Makefile
+          git commit -m "chore: bump yt-dlp to $YT_DLP, bgutil to $BGUTIL [skip ci]"
+          git push origin HEAD:main
