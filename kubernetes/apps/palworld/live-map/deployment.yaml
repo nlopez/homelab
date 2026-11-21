@@ -10,7 +10,7 @@ metadata:
     tags.datadoghq.com/service: palworld-live-map
     tags.datadoghq.com/version: v1
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: palworld-live-map

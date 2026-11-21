@@ -11,7 +11,7 @@ metadata:
     tags.datadoghq.com/service: palworld
     tags.datadoghq.com/version: v1
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
