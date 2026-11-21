@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/configmap-v1.json
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage
+data:
+  kubernetes.yaml: |-
+    mode: cluster
+    ingress: false
+    gateway: true
+  settings.yaml: |-
+    title: Homelab
+    headerStyle: clean
+    layout: {}
+  services.yaml: |-
+    []
+  widgets.yaml: |-
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: cluster
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+  bookmarks.yaml: |-
+    []
+  docker.yaml: |-
+    {}

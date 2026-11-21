@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homepage
+  annotations:
+    configmap.reloader.stakater.com/reload: "homepage"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: homepage
+  template:
+    metadata:
+      labels:
+        app: homepage
+        tags.datadoghq.com/env: homelab
+        tags.datadoghq.com/service: homepage
+        tags.datadoghq.com/version: v1
+    spec:
+      serviceAccountName: homepage
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+      - name: config
+        configMap:
+          name: homepage
+      - name: logs
+        emptyDir: {}
+      containers:
+      - name: homepage
+        image: ghcr.io/gethomepage/homepage:v2.8.0
+        env:
+        - name: HOMEPAGE_ALLOWED_HOSTS
+          value: home.desertbluffs.com
+        resources:
+          requests:
+            cpu: 10m
+            memory: 128Mi
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+        - name: logs
+          mountPath: /app/config/logs
+        ports:
+        - name: http
+          containerPort: 3000
+        readinessProbe:
+          httpGet:
+            path: /api/healthcheck
+            port: http
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/healthcheck
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 15
