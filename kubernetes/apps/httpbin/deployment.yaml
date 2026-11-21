@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpbin
+  labels:
+    app: httpbin
+    version: v1
+    tags.datadoghq.com/env: homelab
+    tags.datadoghq.com/service: httpbin
+    tags.datadoghq.com/version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: httpbin
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: httpbin
+        version: v1
+        tags.datadoghq.com/env: homelab
+        tags.datadoghq.com/service: httpbin
+        tags.datadoghq.com/version: v1
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: httpbin
+        image: ghcr.io/mccutchen/go-httpbin:2.26.0
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+        ports:
+        - name: http
+          containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /status/200
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /status/200
+            port: http
+          initialDelaySeconds: 2
+          periodSeconds: 5

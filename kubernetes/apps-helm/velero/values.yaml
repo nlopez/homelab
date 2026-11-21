@@ -1,0 +1,277 @@
+# Velero — k8s_home backups
+# S3 backend: DigitalOcean Spaces (sfo3)
+# Target namespace: palworld; volumes use CSI/ZFS snapshots, not FSB
+# ---- Image ----
+image:
+  repository: docker.io/velero/velero
+  tag: v1.18.4
+podLabels:
+  tags.datadoghq.com/env: homelab
+  tags.datadoghq.com/service: velero
+  tags.datadoghq.com/version: v1
+# ---- Backup Storage Location (S3 / DigitalOcean Spaces) ----
+configuration:
+  backupStorageLocation:
+  - name: do-spaces-sfo3
+    provider: aws
+    bucket: k8s-velero-backups-cowardly-tiger
+    config:
+      region: sfo3
+      s3ForcePathStyle: true
+      s3Url: https://sfo3.digitaloceanspaces.com
+    accessMode: ReadWrite
+    # Only BSL; mark it default to silence "no BackupStorageLocation set as
+    # default" in the velero server logs (schedules already pin
+    # storageLocation explicitly, so this only affects ad-hoc/CLI backups).
+    default: true
+  # Volume snapshot location (required by Velero for CSI snapshot tracking)
+  # Only region/profile/credentialsFile/enableSharedConfig are valid keys for
+  # the AWS volume snapshotter. s3ForcePathStyle and s3Url are for the backup
+  # storage plugin only — do not put them here.
+  volumeSnapshotLocation:
+  - name: default
+    provider: aws
+    config:
+      region: sfo3
+  # Do not default to FSB; volumes use CSI snapshots where a labeled
+  # VolumeSnapshotClass exists. FSB can still be opted in per-pod via
+  # backup.velero.io/backup-volumes annotation if ever needed.
+  defaultVolumesToFsBackup: false
+  # Enable CSI snapshot support (required for PVC CSI snapshots)
+  features: EnableCSI
+  # Garbage collection frequency
+  garbageCollectionFrequency: 1h
+# ---- Credentials ----
+credentials:
+  useSecret: true
+  name: credentials-velero
+# ---- Node Agent (required for FSB if ever re-enabled per-pod) ----
+deployNodeAgent: true
+nodeAgent:
+  resources: {}
+  podLabels:
+    tags.datadoghq.com/env: homelab
+    tags.datadoghq.com/service: velero-node-agent
+    tags.datadoghq.com/version: v1
+# ---- Init container for AWS plugin ----
+initContainers:
+- name: velero-plugin-for-aws
+  image: velero/velero-plugin-for-aws:v1.14.4
+  volumeMounts:
+  - mountPath: /target
+    name: plugins
+# ---- Metrics ----
+# Enabled for the Datadog integration (https://docs.datadoghq.com/integrations/velero/),
+# which scrapes the OpenMetrics endpoint on both the velero and node-agent
+# pods directly (see podAnnotations below) rather than via this Service.
+metrics:
+  enabled: true
+# ---- Datadog Autodiscovery ----
+# https://docs.datadoghq.com/integrations/velero/
+# Applied to both the velero Deployment and node-agent DaemonSet pod specs
+# (the chart reuses this same top-level podAnnotations for both); each pod
+# only has one of these two containers, so the Agent picks the matching key
+# and ignores the other.
+podAnnotations:
+  ad.datadoghq.com/velero.checks: |
+    {
+      "velero": {
+        "init_config": {},
+        "instances": [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8085/metrics"
+          }
+        ]
+      }
+    }
+  ad.datadoghq.com/node-agent.checks: |
+    {
+      "velero": {
+        "init_config": {},
+        "instances": [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8085/metrics"
+          }
+        ]
+      }
+    }
+# ---- Backup Schedules ----
+schedules:
+  # Every 10-minute backup of the palworld namespace
+  # Retains the last 6 backups (1h)
+  palworld-10min:
+    schedule: "*/10 * * * *"
+    paused: false
+    template:
+      includedNamespaces:
+      - palworld
+      storageLocation: do-spaces-sfo3
+      ttl: 1h
+      includeClusterResources: false
+      snapshotVolumes: true
+      snapshotMoveData: false
+  # Hourly backup of the palworld namespace
+  # Retains the last 24 hourly backups
+  palworld-hourly:
+    schedule: "0 * * * *"
+    paused: false
+    template:
+      includedNamespaces:
+      - palworld
+      storageLocation: do-spaces-sfo3
+      ttl: 24h
+      includeClusterResources: false
+      snapshotVolumes: true
+      snapshotMoveData: false
+  # Daily backup of the palworld namespace
+  # Retains the last 30 daily backups (720h TTL)
+  # Fires at 6:15 AM EST (11:15 UTC). Velero Schedule has no timeZone field,
+  # so this drifts to 7:15 AM EDT during summer.
+  # Hook: pre — rest-cli save inside the palworld container
+  palworld-daily:
+    schedule: "15 11 * * *"
+    paused: false
+    template:
+      includedNamespaces:
+      - palworld
+      storageLocation: do-spaces-sfo3
+      ttl: 720h
+      includeClusterResources: false
+      snapshotVolumes: true
+      snapshotMoveData: true
+      hooks:
+        resources:
+        - name: palworld-save-and-restart
+          includedNamespaces:
+          - palworld
+          labelSelector:
+            matchLabels:
+              app: palworld
+          pre:
+          - exec:
+              container: palworld
+              command:
+              - rest-cli
+              - save
+              onError: Fail
+              timeout: 60s
+  # FSB hourly backup of the palworld namespace
+  # Retains the last 48 hourly FSB backups (2 days)
+  # Uses file-system backup (node agent) instead of CSI snapshots
+  palworld-fsb-hourly:
+    schedule: "0 * * * *"
+    paused: false
+    template:
+      includedNamespaces:
+      - palworld
+      storageLocation: do-spaces-sfo3
+      ttl: 48h
+      includeClusterResources: false
+      snapshotVolumes: false
+      snapshotMoveData: false
+      hooks:
+        resources:
+        - name: palworld-fsb-save
+          includedNamespaces:
+          - palworld
+          labelSelector:
+            matchLabels:
+              app: palworld
+          pre:
+          - exec:
+              container: palworld
+              command:
+              - rest-cli
+              - save
+              onError: Fail
+              timeout: 60s
+  # FSB daily backup of the palworld namespace
+  # Retains the last 30 daily FSB backups (30 days)
+  palworld-fsb-daily:
+    schedule: "15 11 * * *"
+    paused: false
+    template:
+      includedNamespaces:
+      - palworld
+      storageLocation: do-spaces-sfo3
+      ttl: 720h
+      includeClusterResources: false
+      snapshotVolumes: false
+      snapshotMoveData: false
+      hooks:
+        resources:
+        - name: palworld-fsb-save
+          includedNamespaces:
+          - palworld
+          labelSelector:
+            matchLabels:
+              app: palworld
+          pre:
+          - exec:
+              container: palworld
+              command:
+              - rest-cli
+              - save
+              onError: Fail
+              timeout: 60s
+  # Daily backup of the obsidian-livesync namespace
+  # Retains the last 30 daily backups (720h TTL)
+  obsidian-livesync-daily:
+    schedule: "15 11 * * *"
+    paused: false
+    template:
+      includedNamespaces:
+      - obsidian-livesync
+      storageLocation: do-spaces-sfo3
+      ttl: 720h
+      includeClusterResources: false
+      snapshotVolumes: true
+      snapshotMoveData: true
+  # Daily CSI-snapshot backup of the remaining stateful namespaces.
+  # snapshotMoveData is false: these only need to survive a k8s-only
+  # re-init (etcd wipe), not a loss of the TrueNAS backend itself, so a
+  # pointer to the ZFS snapshot is enough — no need to copy volume data
+  # into object storage.
+  # Note: atuin is CloudNativePG-managed (operator-owned PVCs); a plain
+  # scheduled snapshot captures a crash-consistent copy,
+  # not the transactionally-consistent one a hibernate-first restore
+  # gives you (see commit 4bd437f7). Good enough as a safety net, but
+  # prefer an on-demand backup right after a manual CNPG hibernate for
+  # a guaranteed-consistent restore point.
+  # Retains the last 14 daily backups (336h TTL).
+  stateful-apps-daily:
+    schedule: "30 11 * * *"
+    paused: false
+    template:
+      includedNamespaces:
+      - atuin
+      - jellyfin
+      - pms
+      - radarr
+      - seadexarr
+      - sonarr
+      - warp
+      storageLocation: do-spaces-sfo3
+      ttl: 336h
+      includeClusterResources: false
+      snapshotVolumes: true
+      snapshotMoveData: false
+  # Daily file-system backup of the immich database volume.
+  # The CNPG data volume is a static iSCSI PV (not CSI), so it can't be
+  # CSI-snapshotted. Only the pgdata volume is backed up: the immich-database
+  # pod opts in via the backup.velero.io/backup-volumes annotation (see
+  # apps-helm/immich/manifests/cloudnative-pg.yaml), so the 1Pi NFS photo
+  # library is NOT copied. snapshotVolumes is false so the CSI valkey PVC is
+  # skipped too. The copy is crash-consistent, which Postgres recovers from.
+  # Retains the last 14 daily backups (336h TTL).
+  immich-daily:
+    schedule: "45 11 * * *"
+    paused: false
+    template:
+      includedNamespaces:
+      - immich
+      storageLocation: do-spaces-sfo3
+      ttl: 336h
+      includeClusterResources: false
+      snapshotVolumes: false
+      snapshotMoveData: false

@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shaarli
+  annotations:
+    configmap.reloader.stakater.com/reload: "shaarli-php-fpm"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: shaarli
+  template:
+    metadata:
+      labels:
+        app: shaarli
+        tags.datadoghq.com/env: homelab
+        tags.datadoghq.com/service: shaarli
+        tags.datadoghq.com/version: v1
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+      - name: php-fpm-conf
+        configMap:
+          name: shaarli-php-fpm
+      - name: shaarli
+        iscsi:
+          iqn: iqn.2014-09.com.radoncanyon:nas1:shaarli
+          targetPortal: 192.168.222.149
+          lun: 1
+          fsType: ext4
+      containers:
+      - name: shaarli
+        # IMAGE=ghcr.io/shaarli/shaarli; skopeo --override-os linux list-tags "docker://${IMAGE}" | jq -r '.Tags[]' | sort -V | tail -n1
+        image: ghcr.io/shaarli/shaarli:v0.16.10
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        volumeMounts:
+        - mountPath: /etc/php84/php-fpm.conf
+          name: php-fpm-conf
+          subPath: php-fpm.conf
+          readOnly: true
+        - mountPath: /var/www/shaarli/data
+          name: shaarli
+          subPath: data
+        - mountPath: /var/www/shaarli/cache
+          name: shaarli
+          subPath: cache
+        ports:
+        - containerPort: 80
+          name: shaarli
+        # Shaarli serves its install page when data/ is unreadable, so HTTP
+        # probes would pass. Check the iSCSI-backed config file directly.
+        readinessProbe:
+          exec:
+            command: ["test", "-s", "/var/www/shaarli/data/config.json.php"]
+          periodSeconds: 10
+          failureThreshold: 2
+        livenessProbe:
+          exec:
+            command: ["test", "-s", "/var/www/shaarli/data/config.json.php"]
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          failureThreshold: 3

@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.envoyproxy.io/envoyproxy_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: internet
+  namespace: envoy-gateway-system
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        type: LoadBalancer
+        allocateLoadBalancerNodePorts: false
+        # Without this, Cilium SNATs cross-node LoadBalancer-IP traffic to
+        # the receiving node's IP, hiding the real Cloudflare edge peer.
+        externalTrafficPolicy: Local
+        annotations:
+          # Pin the Cilium LB-IPAM address explicitly. Gateway.spec.addresses
+          # alone doesn't reliably propagate to the generated Service's
+          # actual assigned IP in this Envoy Gateway version, so request it
+          # directly the same way technitium does.
+          lbipam.cilium.io/ips: "10.43.64.20"
+      envoyDeployment:
+        container:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+        pod:
+          labels:
+            tags.datadoghq.com/env: homelab
+            tags.datadoghq.com/service: envoy-proxy-internet
+            tags.datadoghq.com/version: v1
+          # Datadog Envoy integration: scrape the proxy's Prometheus stats
+          # via Autodiscovery. https://docs.datadoghq.com/integrations/envoy/
+          annotations:
+            ad.datadoghq.com/envoy.checks: |-
+              {
+                "envoy": {
+                  "init_config": {},
+                  "instances": [
+                    {
+                      "openmetrics_endpoint": "http://%%host%%:19001/stats/prometheus"
+                    }
+                  ]
+                }
+              }

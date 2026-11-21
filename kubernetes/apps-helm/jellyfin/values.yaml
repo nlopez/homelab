@@ -1,0 +1,23 @@
+replicaCount: 1
+service:
+  type: ClusterIP
+  port: 80
+  portName: http
+ingress:
+  enabled: false
+persistence:
+  config:
+    enabled: true
+    existingClaim: config-nas1-mtank
+  media:
+    enabled: true
+    existingClaim: media
+resources:
+  limits:
+    gpu.intel.com/i915: 1
+deploymentStrategy:
+  type: Recreate
+podLabels:
+  tags.datadoghq.com/env: homelab
+  tags.datadoghq.com/service: jellyfin
+  tags.datadoghq.com/version: v1

@@ -1,0 +1,221 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "abandonments:recommended"
+  ],
+  "major": {
+    "dependencyDashboardApproval": true
+  },
+  "timezone": "America/New_York",
+  "schedule": [
+    "* 8 * * *"
+  ],
+  "minimumReleaseAge": "7 days",
+  "enabledManagers": [
+    "custom.regex",
+    "helm-values",
+    "github-actions",
+    "pre-commit"
+  ],
+  "pre-commit": {
+    "enabled": true
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update Helm chart versions in bootstrap ApplicationSet list entries (HTTPS)",
+      "managerFilePatterns": [
+        "/^bootstrap/apps-helm\\.yaml$/"
+      ],
+      "matchStrings": [
+        "- name:\\s*(?<appName>[^\\n]+)\\n(?:\\s*tier:[^\\n]+\\n)?\\s*repoURL:\\s*['\"]?(?<registryUrl>https?://[^\\s'\"]+)['\"]?\\s*\\n\\s*chart:\\s*['\"]?(?<depName>[^\\s'\"]+)['\"]?\\s*\\n\\s*targetRevision:\\s*['\"]?(?<currentValue>[^\\s'\"]+)['\"]?"
+      ],
+      "datasourceTemplate": "helm",
+      "registryUrlTemplate": "{{{registryUrl}}}",
+      "versioningTemplate": "semver-coerced"
+    },
+    {
+      "customType": "regex",
+      "description": "Update OCI-hosted Helm chart versions in bootstrap ApplicationSet list entries",
+      "managerFilePatterns": [
+        "/^bootstrap/apps-helm\\.yaml$/"
+      ],
+      "matchStrings": [
+        "- name:\\s*(?<appName>[^\\n]+)\\n(?:\\s*tier:[^\\n]+\\n)?\\s*repoURL:\\s*['\"]?oci://(?<depName>[^\\s'\"]+)['\"]?\\s*\\n\\s*targetRevision:\\s*['\"]?(?<currentValue>[^\\s'\"]+)['\"]?"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver-coerced"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Docker Hub OCI Helm chart versions (repoURL registry-1.docker.io + chart) in bootstrap ApplicationSet list entries",
+      "managerFilePatterns": [
+        "/^bootstrap/apps-helm\\.yaml$/"
+      ],
+      "matchStrings": [
+        "- name:\\s*(?<appName>[^\\n]+)\\n(?:\\s*tier:[^\\n]+\\n)?\\s*repoURL:\\s*['\"]?registry-1\\.docker\\.io['\"]?\\s*\\n\\s*chart:\\s*['\"]?(?<depName>[^\\s'\"]+)['\"]?\\s*\\n\\s*targetRevision:\\s*['\"]?(?<currentValue>[^\\s'\"]+)['\"]?"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver-coerced"
+    },
+    {
+      "customType": "regex",
+      "description": "Update container images (image: / CNPG imageName:) in raw Kubernetes manifests",
+      "managerFilePatterns": [
+        "/^apps/.+\\.ya?ml$/",
+        "/^apps-helm/[^/]+/manifests/.+\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "(?:^|\\n)[ \\t]*(?:-[ \\t]+)?(?:image|imageName):[ \\t]*['\"]?(?<depName>[^:@\\s'\"]+)(?::(?<currentValue>[^@\\s'\"]+))?(?:@(?<currentDigest>sha256:[a-f0-9]+))?['\"]?"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "regex:^v?(?<major>\\d+)(?:\\.(?<minor>\\d+))?(?:\\.(?<patch>\\d+))?(?:\\.(?<build>\\d+))?(?<prerelease>[-.].*)?$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Go tools installed via `go install` in GitHub workflows (pre-commit hooks are handled by the pre-commit manager)",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/.+\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "(?<depName>github\\.com/[^/\\s'\"@]+/[^/\\s'\"@]+)(?:/[^\\s'\"@]+)?@(?<currentValue>v[0-9][^\\s'\"\\]]*)"
+      ],
+      "datasourceTemplate": "go"
+    },
+    {
+      "customType": "regex",
+      "description": "Update the argocd-diff-preview image used by the manifest diff workflow",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/argocd-diff\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "(?<depName>dagandersen/argocd-diff-preview):(?<currentValue>v[^\\s'\"]+)"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "semver-coerced"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Group container image updates",
+      "matchManagers": [
+        "helm-values",
+        "custom.regex"
+      ],
+      "groupName": "container image updates"
+    },
+    {
+      "description": "Group Helm chart updates from bootstrap/apps-helm.yaml",
+      "matchFileNames": [
+        "bootstrap/apps-helm.yaml"
+      ],
+      "groupName": "helm chart updates"
+    },
+    {
+      "description": "Use regex versioning for linuxserver images which use version-X.Y.Z or version-vX.Y.Z tag format",
+      "matchPackageNames": [
+        "ghcr.io/linuxserver/**"
+      ],
+      "versioning": "regex:^version-v?(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(\\.(?<build>\\d+))?(-.*)?$"
+    },
+    {
+      "description": "Use loose versioning for app images with non-semver tags",
+      "matchPackageNames": [
+        "caomingjun/warp",
+        "docker.io/brainicism/bgutil-ytdlp-pot-provider",
+        "ghcr.io/shaarli/shaarli",
+        "registry.k8s.io/sig-storage/snapshot-controller"
+      ],
+      "versioning": "loose"
+    },
+    {
+      "description": "media-toolbox CI publishes <yt-dlp version>-<CI run number> tags (e.g. 2026.10.26-42); the run number orders rebuilds of the same yt-dlp version (bgutil plugin bumps, flake changes). Other tags (bare version, commit SHAs) are ignored.",
+      "matchPackageNames": [
+        "docker.io/nlopez/media-toolbox",
+        "ghcr.io/nlopez/media-toolbox"
+      ],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-(?<build>\\d+)$"
+    },
+    {
+      "description": "We build media-toolbox ourselves, so there is no supply-chain reason to wait before picking up new tags",
+      "matchPackageNames": [
+        "docker.io/nlopez/media-toolbox",
+        "ghcr.io/nlopez/media-toolbox"
+      ],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "The Timekeeper server image is published by KamoTimestamps/timekeeper CI as <yyyy.mm.dd>-<CI run number> tags (e.g. 2026.11.20-2); the run number orders builds from the same day.",
+      "matchPackageNames": [
+        "ghcr.io/kamotimestamps/timekeeper-server"
+      ],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-(?<build>\\d+)$"
+    },
+    {
+      "description": "We build the Timekeeper server image ourselves, so there is no supply-chain reason to wait before picking up new tags",
+      "matchPackageNames": [
+        "ghcr.io/kamotimestamps/timekeeper-server"
+      ],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "Timekeeper oak (production) is promoted by hand after the same build has run on ash, so Renovate only bumps ash.",
+      "matchFileNames": [
+        "apps/timekeeper-oak/**"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "icloudpd tags look like 1.0.1380_06-09-2026 (build number + date suffix)",
+      "matchPackageNames": [
+        "boredazfcuk/icloudpd",
+        "docker.io/boredazfcuk/icloudpd"
+      ],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)_\\d{2}-\\d{2}-\\d{4}$"
+    },
+    {
+      "description": "cloudnative-vectorchord tags look like <pg-major>.<pg-minor>-<vchord x.y.z>; never cross a Postgres major version automatically",
+      "matchPackageNames": [
+        "ghcr.io/tensorchord/cloudnative-vectorchord"
+      ],
+      "versioning": "regex:^(?<compatibility>\\d+)\\.(?<major>\\d+)-(?<minor>\\d+)\\.(?<patch>\\d+)\\.(?<build>\\d+)$"
+    },
+    {
+      "description": "Ignore untagged or latest-pinned images that cannot meaningfully be updated",
+      "matchPackageNames": [
+        "bitnami/kubectl"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Group dev tooling updates (pre-commit hooks, go install tools)",
+      "matchManagers": [
+        "pre-commit"
+      ],
+      "groupName": "dev tooling updates"
+    },
+    {
+      "description": "Group the argocd-diff-preview CI image with dev tooling",
+      "matchPackageNames": [
+        "dagandersen/argocd-diff-preview"
+      ],
+      "groupName": "dev tooling updates"
+    },
+    {
+      "description": "Keep the yamlfmt pre-commit hook and CI go install in lockstep",
+      "matchPackageNames": [
+        "github.com/google/yamlfmt",
+        "google/yamlfmt"
+      ],
+      "groupName": "yamlfmt"
+    },
+    {
+      "description": "Group GitHub Actions updates",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github actions updates"
+    }
+  ]
+}

@@ -1,0 +1,128 @@
+# immich Helm chart values
+# Official chart: https://github.com/immich-app/immich-charts
+# This chart uses the bjw-s common library
+global:
+  propagateGlobalMetadataToPods: true
+  labels:
+    tags.datadoghq.com/env: homelab
+    tags.datadoghq.com/service: immich
+    tags.datadoghq.com/version: v1
+# Shared configuration for all controllers
+controllers:
+  main:
+    containers:
+      main:
+        image:
+          repository: ghcr.io/immich-app/immich-server
+          tag: v3.4.1
+          pullPolicy: IfNotPresent
+        env:
+          # PostgreSQL configuration - uses external cloudnative-pg instance
+          DB_HOSTNAME: immich-database-rw.immich.svc.cluster.local
+          DB_PORT: "5432"
+          DB_USERNAME: immich
+          DB_PASSWORD:
+            secretKeyRef:
+              name: onepassword-immich-database
+              key: password
+          DB_DATABASE_NAME: immich
+          REDIS_HOSTNAME: immich-valkey.immich.svc.cluster.local
+          REDIS_PORT: "6379"
+immich:
+  configuration: {}
+  persistence:
+    # Main data store for all photos shared between different components.
+    library:
+      existingClaim: immich-library-nfs
+# Dependencies
+valkey:
+  enabled: true
+  controllers:
+    main:
+      containers:
+        main:
+          image:
+            repository: docker.io/valkey/valkey
+            tag: 9.2-alpine
+  persistence:
+    data:
+      enabled: true
+      type: persistentVolumeClaim
+      size: 1Gi
+      accessMode: ReadWriteOnce
+      storageClass: nas1-mtank-iscsi
+# Immich components
+server:
+  enabled: true
+  controllers:
+    main:
+      replicas: 2
+      containers:
+        main:
+          image:
+            repository: ghcr.io/immich-app/immich-server
+            tag: v3.4.1
+            pullPolicy: IfNotPresent
+          resources:
+            requests:
+              gpu.intel.com/i915: 1
+            limits:
+              gpu.intel.com/i915: 1
+          env:
+            # GPU settings for thumbnail generation
+            IMMICH_FFMPEG_HWACCEL: qsv
+  persistence:
+    icloud:
+      enabled: true
+      existingClaim: immich-icloud-nfs
+      advancedMounts:
+        main:
+          main:
+          - path: /icloud
+            readOnly: true
+# Machine learning component
+machine-learning:
+  enabled: true
+  controllers:
+    main:
+      # immich-ml-cache is a ReadWriteOnce (iSCSI) PVC and this controller
+      # only ever runs a single replica, so RollingUpdate deadlocks: the new
+      # pod can't attach the volume until the old one releases it, but the
+      # old one isn't torn down until the new one is ready. Recreate avoids
+      # the deadlock by terminating the old pod first. (The chart itself sets
+      # no rollingUpdate default -- any value seen live was just the API
+      # server's own RollingUpdate default, cleared out-of-band once.)
+      strategy: Recreate
+      containers:
+        main:
+          image:
+            repository: ghcr.io/immich-app/immich-machine-learning
+            tag: v3.4.1-openvino
+            pullPolicy: IfNotPresent
+          resources:
+            requests:
+              gpu.intel.com/i915: 1
+            limits:
+              gpu.intel.com/i915: 1
+          env:
+            TRANSFORMERS_CACHE: /cache
+            HF_XET_CACHE: /cache/huggingface-xet
+            MPLCONFIGDIR: /cache/matplotlib-config
+  persistence:
+    cache:
+      enabled: true
+      type: persistentVolumeClaim
+      existingClaim: immich-ml-cache
+      advancedMounts:
+        main:
+          main:
+          - path: /cache
+            readOnly: false
+            # icloud:
+            #   enabled: true
+            #   existingClaim: immich-icloud-nfs
+            #   advancedMounts:
+            #     main:
+            #       main:
+            #       - path: /icloud
+            #         readOnly: true

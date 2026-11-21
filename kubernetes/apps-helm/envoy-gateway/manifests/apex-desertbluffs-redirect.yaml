@@ -1,0 +1,62 @@
+# The bare apex (desertbluffs.com) and www subdomain aren't a real app -
+# redirect anyone who hits them directly to Welcome to Night Vale.
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.networking.k8s.io/httproute_v1.json
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: apex-desertbluffs-com
+  annotations:
+    # Served through Cloudflare's proxy. external-dns reads this from the route, not the Gateway.
+    external-dns.kubernetes.io/cloudflare-proxied: "true"
+spec:
+  parentRefs:
+  - name: internet
+    namespace: envoy-gateway-system
+    group: gateway.networking.k8s.io
+    kind: Gateway
+  hostnames:
+  - desertbluffs.com
+  - www.desertbluffs.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        hostname: en.wikipedia.org
+        path:
+          type: ReplaceFullPath
+          replaceFullPath: /wiki/Welcome_to_Night_Vale
+        statusCode: 302
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.networking.k8s.io/httproute_v1.json
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: apex-desertbluffs-com-private
+spec:
+  parentRefs:
+  - name: private
+    namespace: envoy-gateway-system
+    group: gateway.networking.k8s.io
+    kind: Gateway
+  hostnames:
+  - desertbluffs.com
+  - www.desertbluffs.com
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        hostname: en.wikipedia.org
+        path:
+          type: ReplaceFullPath
+          replaceFullPath: /wiki/Welcome_to_Night_Vale
+        statusCode: 302

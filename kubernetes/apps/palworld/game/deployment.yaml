@@ -1,0 +1,169 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: palworld
+  namespace: palworld
+  labels:
+    app: palworld
+    version: v1
+    tags.datadoghq.com/env: homelab
+    tags.datadoghq.com/service: palworld
+    tags.datadoghq.com/version: v1
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: palworld
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: palworld
+        version: v1
+        tags.datadoghq.com/env: homelab
+        tags.datadoghq.com/service: palworld
+        tags.datadoghq.com/version: v1
+      annotations:
+        configmap.reloader.stakater.com/auto: "true"
+        secret.reloader.stakater.com/reload: "palworld-secrets"
+        backup.velero.io/backup-volumes: saved
+        # Datadog Autodiscovery: feeds the custom `palworld` check (shipped
+        # via apps-helm/datadog/values.yaml datadog.checksd) an instance per
+        # pod. %%host%% resolves to this pod's IP. %%env_%% template vars
+        # resolve from the Agent's OWN env, not this pod's, so the REST API
+        # password is mirrored into the datadog namespace as
+        # PALWORLD_ADMIN_PASSWORD (see apps-helm/datadog/values.yaml
+        # datadog.env and manifests/palworld-secrets.yaml) rather than read
+        # off the container below. https://docs.palworldgame.com/api/rest-api/metrics
+        ad.datadoghq.com/palworld.checks: |
+          {
+            "palworld": {
+              "init_config": {},
+              "instances": [
+                {
+                  "url": "http://%%host%%:8212",
+                  "username": "admin",
+                  "password": "%%env_PALWORLD_ADMIN_PASSWORD%%",
+                  "tags": ["service:palworld"]
+                }
+              ]
+            }
+          }
+        # UE4SS (the mod loader) logs to a file, not stdout, so the Agent
+        # can't pick it up via normal container log collection. The
+        # ue4ss-log sidecar below tails that file onto its own stdout; this
+        # annotation just tags that stream with a proper source/service
+        # instead of the default (derived from the sidecar's image name).
+        # https://docs.datadoghq.com/containers/kubernetes/log/
+        ad.datadoghq.com/ue4ss-log.logs: |
+          [
+            {
+              "source": "ue4ss",
+              "service": "palworld",
+              "tags": ["service:palworld"]
+            }
+          ]
+    spec:
+      containers:
+      - name: palworld
+        # Get the SHA256 digest for a given tag:
+        #   skopeo inspect --override-arch amd64 --override-os linux --format '{{.Digest}}' docker://ghcr.io/nlopez/palworld-server-docker:<tag>
+        # Built from nlopez/palworld-server-docker branch mods-wine-support (PR thijsvanloef/palworld-server-docker#914,
+        # Windows/Wine target) so Steam Workshop mods (MOD_IDS) can load. Windows/Wine path is amd64-only.
+        image: ghcr.io/nlopez/palworld-server-docker@sha256:c9b9a139d4d83b623a8684083843cc812770cea185e69f311d05acfb6cbdeac0
+        envFrom:
+        - configMapRef:
+            name: palworld-config
+        env:
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: palworld-secrets
+              key: adminPassword
+        - name: SERVER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: palworld-secrets
+              key: serverPassword
+        ports:
+        - name: game
+          containerPort: 8211
+          protocol: UDP
+        - name: rest-api
+          containerPort: 8212
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "4"
+            memory: "16Gi"
+          limits:
+            cpu: "4"
+            memory: "16Gi"
+        volumeMounts:
+        - name: data
+          mountPath: /palworld
+        - name: saved
+          mountPath: /palworld/Pal/Saved
+        - name: workshop-mods
+          mountPath: /palworld/Mods/workshop-mods.txt
+          subPath: workshop-mods.txt
+          readOnly: true
+        startupProbe:
+          exec:
+            # Windows/Wine image: process name differs from the Linux build, so use the
+            # image's own platform-aware helper (same check the Dockerfile HEALTHCHECK uses).
+            command: ["bash", "-c", "cd /home/steam/server && . ./helper_functions.sh && PalworldServerPid >/dev/null"]
+          failureThreshold: 120
+          periodSeconds: 5
+        readinessProbe:
+          exec:
+            # Windows/Wine image: process name differs from the Linux build, so use the
+            # image's own platform-aware helper (same check the Dockerfile HEALTHCHECK uses).
+            command: ["bash", "-c", "cd /home/steam/server && . ./helper_functions.sh && PalworldServerPid >/dev/null"]
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            # Windows/Wine image: process name differs from the Linux build, so use the
+            # image's own platform-aware helper (same check the Dockerfile HEALTHCHECK uses).
+            command: ["bash", "-c", "cd /home/steam/server && . ./helper_functions.sh && PalworldServerPid >/dev/null"]
+          initialDelaySeconds: 120
+          periodSeconds: 20
+      - name: ue4ss-log
+        # UE4SS writes its own log to a file inside the data volume rather
+        # than stdout, so it's invisible to normal container log collection.
+        # This tails that file onto stdout so the Datadog Agent picks it up
+        # (see the ad.datadoghq.com/ue4ss-log.logs annotation above).
+        image: alpine:3.24.3
+        command:
+        - sh
+        - -c
+        - |
+          log=/palworld/Pal/Binaries/Win64/ue4ss/UE4SS.log
+          while [ ! -f "$log" ]; do sleep 5; done
+          exec tail -n +1 -f "$log"
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 50m
+            memory: 32Mi
+        volumeMounts:
+        - name: data
+          mountPath: /palworld
+          readOnly: true
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: data-nfs
+      - name: saved
+        persistentVolumeClaim:
+          claimName: saved
+      - name: workshop-mods
+        configMap:
+          name: palworld-workshop-mods

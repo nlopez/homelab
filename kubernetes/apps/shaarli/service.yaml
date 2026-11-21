@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/service-v1.json
+apiVersion: v1
+kind: Service
+metadata:
+  name: shaarli
+spec:
+  selector:
+    app: shaarli
+  ports:
+  - name: shaarli
+    port: 80

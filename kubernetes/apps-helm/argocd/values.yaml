@@ -1,0 +1,177 @@
+global:
+  domain: flopie.desertbluffs.com
+  podLabels:
+    tags.datadoghq.com/env: homelab
+    tags.datadoghq.com/service: argocd
+    tags.datadoghq.com/version: v1
+configs:
+  secret:
+    # GitHub webhook secret, read from the argocd-webhook-github Secret
+    # (1Password operator, apps-helm/argocd/manifests/webhook-secret.yaml).
+    githubSecret: $argocd-webhook-github:password
+  cm:
+    # ---- resource.exclusions ----
+    # Resources ArgoCD should completely ignore (not discovered at all)
+    resource.exclusions: |
+      - apiGroups:
+          - velero.io
+        kinds:
+          - Backup
+          - Restore
+        clusters:
+          - "*"
+      - apiGroups:
+          - postgresql.cnpg.io
+        kinds:
+          - ClusterRestore
+          - ClusterBackup
+        clusters:
+          - "*"
+      - apiGroups:
+          - batch
+        kinds:
+          - Job
+        clusters:
+          - "kube-system.*"
+    # ---- resource.customizations ----
+    # Ignore cert-manager Certificate status (conditions, notusThrough, etc.)
+    resource.customizations.ignoreDifferences.cert-manager.io_Certificate: |
+      jsonPointers:
+      - /status
+    # Ignore Reloader's pod-template annotation on Deployments/StatefulSets/DaemonSets
+    resource.customizations.ignoreDifferences.apps_Deployment: |
+      jsonPointers:
+      - /spec/template/metadata/annotations/reloader.stakater.com~1last-reloaded-from
+    resource.customizations.ignoreDifferences.apps_StatefulSet: |
+      jsonPointers:
+      - /spec/template/metadata/annotations/reloader.stakater.com~1last-reloaded-from
+    resource.customizations.ignoreDifferences.apps_DaemonSet: |
+      jsonPointers:
+      - /spec/template/metadata/annotations/reloader.stakater.com~1last-reloaded-from
+    # Statically pre-provisioned VolumeSnapshotContents (used to restore PVCs
+    # from a snapshot, e.g. apps/*/volumesnapshotcontent-*-restore.yaml) get
+    # spec.volumeSnapshotRef.uid populated by the snapshot-controller once
+    # bound. Git can't declare a UID it doesn't know ahead of time, so this
+    # otherwise causes perpetual OutOfSync drift.
+    resource.customizations.ignoreDifferences.snapshot.storage.k8s.io_VolumeSnapshotContent: |
+      jsonPointers:
+      - /spec/volumeSnapshotRef/uid
+    # ArgoCD ships no built-in health check for nested Application/
+    # ApplicationSet resources (only top-level Applications get one), so
+    # app-of-apps roots like bootstrap sit at health "Progressing" forever.
+    # Mirror the nested Application's own status.health, and treat
+    # ApplicationSet as always Healthy -- the Applications it generates
+    # already carry their own health independently.
+    resource.customizations.health.argoproj.io_Application: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil and obj.status.health ~= nil then
+        hs.status = obj.status.health.status
+        if obj.status.health.message ~= nil then
+          hs.message = obj.status.health.message
+        end
+      end
+      return hs
+    resource.customizations.health.argoproj.io_ApplicationSet: |
+      hs = {}
+      hs.status = "Healthy"
+      hs.message = ""
+      return hs
+  params:
+    server.insecure: true
+# Datadog ArgoCD integration: scrape each component's Prometheus metrics via
+# Autodiscovery. https://docs.datadoghq.com/integrations/argocd/
+server:
+  ingress:
+    enabled: false
+  httproute:
+    enabled: false
+  service:
+    # h2c on the https-named service port lets Envoy Gateway proxy native
+    # gRPC (used by the argocd CLI) upstream over HTTP/2 cleartext, since
+    # server.insecure disables TLS on argocd-server itself. The web UI's
+    # grpc-web traffic stays on the plain http port/HTTPRoute.
+    # Ref: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/
+    servicePortHttpsAppProtocol: kubernetes.io/h2c
+  # argocd-server resolves the $argocd-webhook-github:password reference in
+  # argocd-secret only when it reads argocd-secret. Restart it when the
+  # referenced Secret changes (rotation, or first creation after argocd-secret).
+  deploymentAnnotations:
+    secret.reloader.stakater.com/reload: argocd-webhook-github
+  podAnnotations:
+    ad.datadoghq.com/server.checks: |
+      {
+        "argocd": {
+          "init_config": {},
+          "instances": [
+            {
+              "api_server_endpoint": "http://%%host%%:8083/metrics"
+            }
+          ]
+        }
+      }
+# Increase liveness/readiness probe timeouts to prevent CLBO under load.
+# The default 1s timeout is too short when the repo server processes many
+# concurrent manifest generation calls (e.g. ~20 apps syncing).
+repoServer:
+  livenessProbe:
+    timeoutSeconds: 5
+  readinessProbe:
+    timeoutSeconds: 5
+  podAnnotations:
+    ad.datadoghq.com/repo-server.checks: |
+      {
+        "argocd": {
+          "init_config": {},
+          "instances": [
+            {
+              "repo_server_endpoint": "http://%%host%%:8084/metrics"
+            }
+          ]
+        }
+      }
+controller:
+  podAnnotations:
+    ad.datadoghq.com/application-controller.checks: |
+      {
+        "argocd": {
+          "init_config": {},
+          "instances": [
+            {
+              "app_controller_endpoint": "http://%%host%%:8082/metrics"
+            }
+          ]
+        }
+      }
+notifications:
+  podAnnotations:
+    ad.datadoghq.com/notifications-controller.checks: |
+      {
+        "argocd": {
+          "init_config": {},
+          "instances": [
+            {
+              "notifications_controller_endpoint": "http://%%host%%:9001/metrics"
+            }
+          ]
+        }
+      }
+# Enable ApplicationSet Progressive Syncs (RollingSync), used by
+# bootstrap/apps-helm.yaml to order the infra tiers (network/secrets ->
+# storage -> platform) instead of syncing all 21 apps at once.
+applicationSet:
+  extraArgs:
+  - --enable-progressive-syncs
+  podAnnotations:
+    ad.datadoghq.com/applicationset-controller.checks: |-
+      {
+        "argocd": {
+          "init_config": {},
+          "instances": [
+            {
+              "appset_controller_endpoint": "http://%%host%%:8080/metrics"
+            }
+          ]
+        }
+      }

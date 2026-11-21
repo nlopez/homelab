@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/service-v1.json
+apiVersion: v1
+kind: Service
+metadata:
+  name: palworld-modded
+  namespace: palworld-modded
+spec:
+  selector:
+    app: palworld-modded
+  # Service port is +100 vs. the container's real bind port (see deployment.yaml)
+  # so Gateway UDP listeners never collide with apps/palworld's 8211.
+  ports:
+  - name: game
+    port: 8311
+    protocol: UDP
+    targetPort: game
+  - name: rest-api
+    port: 8212
+    protocol: TCP
+    targetPort: rest-api

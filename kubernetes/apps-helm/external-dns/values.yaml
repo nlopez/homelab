@@ -1,0 +1,47 @@
+image:
+  repository: registry.k8s.io/external-dns/external-dns
+  tag: v0.24.0
+# sync deletes records (and their TXT ownership records) whose source is gone,
+# so removing a route or annotation removes its DNS record. Only records with
+# a matching TXT ownership record (same owner ID) are ever deleted.
+policy: sync
+provider:
+  name: cloudflare
+env:
+- name: CF_API_TOKEN
+  valueFrom:
+    secretKeyRef:
+      name: cloudflare-api-token
+      key: api-token
+- name: EXTERNAL_DNS_TXT_ENCRYPT_AES_KEY
+  valueFrom:
+    secretKeyRef:
+      name: txt-encrypt-aes-key
+      key: aes_key
+- name: EXTERNAL_DNS_TXT_ENCRYPT_ENABLED
+  value: "true"
+sources:
+- service
+- ingress
+- crd
+- gateway-httproute
+- gateway-grpcroute
+- gateway-tlsroute
+- gateway-tcproute
+- gateway-udproute
+extraArgs:
+# Only the internet gateway should drive desertbluffs.com DNS records.
+- --gateway-name=internet
+# The public radoncanyon.com zone is not managed from Kubernetes; its records
+# are only what certificate renewal needs. Keep this instance scoped to
+# desertbluffs.com.
+- --domain-filter=desertbluffs.com
+# Timekeeper sync servers (ash/oak). The Cloudflare token must also cover this zone.
+- --domain-filter=kamotimestamps.com
+# Causes extraneous record updates
+# - --cloudflare-record-comment=managed by external-dns
+logLevel: debug
+podLabels:
+  tags.datadoghq.com/env: homelab
+  tags.datadoghq.com/service: external-dns
+  tags.datadoghq.com/version: v1

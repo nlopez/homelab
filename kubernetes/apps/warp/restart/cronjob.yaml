@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/cronjob-batch-v1.json
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: warp-restart
+spec:
+  concurrencyPolicy: Forbid
+  timeZone: America/New_York
+  schedule: '33 5 * * *' # Restart warp every day at 5:33am NY time
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            tags.datadoghq.com/env: homelab
+            tags.datadoghq.com/service: warp-restart
+            tags.datadoghq.com/version: v1
+        spec:
+          serviceAccountName: warp-restart
+          restartPolicy: Never
+          containers:
+          - name: kubectl
+            image: bitnami/kubectl
+            command:
+            - bash
+            - -c
+            - >-
+              kubectl rollout restart deployment/warp && kubectl rollout status deployment/warp

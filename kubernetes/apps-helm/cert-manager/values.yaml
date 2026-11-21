@@ -1,0 +1,34 @@
+crds:
+  enabled: true
+  keep: true
+config:
+  apiVersion: controller.config.cert-manager.io/v1alpha1
+  kind: ControllerConfiguration
+  enableGatewayAPI: true
+  featureGates:
+    ACMEUseARI: true
+# Since switching cluster DNS to Technitium (k8s dns to technitium), it
+# authoritatively hosts private split-horizon zones for our public domains
+# (desertbluffs.com, etc. -- see private-gateway-desertbluffs-dns). ACME
+# DNS-01 self-checks otherwise resolve authoritative nameservers through
+# the cluster's own DNS, so they get shadowed by Technitium's private zone
+# (returning its own non-public NS record) instead of reaching the real
+# public nameservers. Pin the self-check to public recursive resolvers to
+# bypass that entirely, without touching Technitium's zone data.
+extraArgs:
+- --dns01-recursive-nameservers=1.1.1.1:53,8.8.8.8:53
+- --dns01-recursive-nameservers-only=true
+podLabels:
+  tags.datadoghq.com/env: homelab
+  tags.datadoghq.com/service: cert-manager
+  tags.datadoghq.com/version: v1
+webhook:
+  podLabels:
+    tags.datadoghq.com/env: homelab
+    tags.datadoghq.com/service: cert-manager-webhook
+    tags.datadoghq.com/version: v1
+cainjector:
+  podLabels:
+    tags.datadoghq.com/env: homelab
+    tags.datadoghq.com/service: cert-manager-cainjector
+    tags.datadoghq.com/version: v1

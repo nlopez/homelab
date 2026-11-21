@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: warp
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: warp
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: warp
+        version: v1
+        tags.datadoghq.com/env: homelab
+        tags.datadoghq.com/service: warp
+        tags.datadoghq.com/version: v1
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: warp
+        image: caomingjun/warp:2026.8.2115.0-2.12.0-bf774bae06b31fe50e7b8542558dc0ea20db679f
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests: {}
+          limits: {}
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+            - NET_ADMIN
+            - MKNOD
+            - AUDIT_WRITE
+        env:
+        - name: WARP_SLEEP
+          value: "2"
+        ports:
+        - containerPort: 1080
+          protocol: TCP
+        volumeMounts:
+        - name: warp
+          mountPath: /var/lib/cloudflare-warp
+        livenessProbe:
+          exec:
+            command:
+            - bash
+            - -c
+            - 'curl --max-time 5 --fail --socks5-hostname 127.0.0.1:1080 https://cloudflare.com/cdn-cgi/trace | grep -qE "warp=(plus|on)" || exit 1'
+          initialDelaySeconds: 10
+          periodSeconds: 60
+      volumes:
+      - name: warp
+        persistentVolumeClaim:
+          claimName: warp-nas1-mtank

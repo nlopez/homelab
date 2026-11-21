@@ -1,0 +1,90 @@
+name: 'Manifest Diff'
+on:
+  pull_request:
+    paths:
+    - 'apps/**'
+    - 'apps-helm/**'
+    - 'bootstrap/**'
+    - '.github/workflows/argocd-diff.yaml'
+permissions:
+  contents: read
+  pull-requests: write
+concurrency:
+  group: manifest-diff-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  diff:
+    name: 'Manifest Diff'
+    runs-on: home-runners
+    # Fork PRs get a read-only token and can't comment.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+    - name: 'Checkout base branch'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        ref: ${{ github.event.pull_request.base.sha }}
+        path: base-branch
+    - name: 'Checkout PR branch'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        path: target-branch
+        fetch-depth: 0
+    - name: 'Point the Helm ApplicationSet at the PR'
+      # argocd-diff-preview only redirects targetRevision in template.spec.sources.
+      # bootstrap/apps-helm.yaml keeps its repo sources inside a templatePatch
+      # string, so without this the apps-helm values/manifests are always read
+      # from main and changes to them never show up in the diff.
+      run: |-
+        sed -i 's|^\( *targetRevision:\) main$|\1 ${{ github.sha }}|' target-branch/bootstrap/apps-helm.yaml
+        grep -c '${{ github.sha }}' target-branch/bootstrap/apps-helm.yaml
+    - name: 'Install kubectl and argocd-diff-preview'
+      # shortcut: pinned by hand, bump with the cluster / a new release.
+      run: |-
+        mkdir -p "$RUNNER_TEMP/bin"
+        curl -fsSL -o "$RUNNER_TEMP/bin/kubectl" https://dl.k8s.io/release/v1.36.3/bin/linux/amd64/kubectl
+        echo "ebbd080e7c2e275093b55915722043257eb24004363e20acb3c4d71919f88336  $RUNNER_TEMP/bin/kubectl" | sha256sum -c -
+        curl -fsSL -o "$RUNNER_TEMP/diff.tgz" https://github.com/dag-andersen/argocd-diff-preview/releases/download/v0.2.17/argocd-diff-preview-Linux-x86_64.tar.gz
+        echo "3913c5ded0c4bb748ab8cabc47d9ea1060462fb797b4b61e1a12a805fc35a319  $RUNNER_TEMP/diff.tgz" | sha256sum -c -
+        tar -xzf "$RUNNER_TEMP/diff.tgz" -C "$RUNNER_TEMP/bin"
+        chmod +x "$RUNNER_TEMP/bin/kubectl"
+        echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+    - name: 'Render manifests and diff'
+      # Renders every Application/ApplicationSet (including Helm charts) on
+      # both commits through the long-lived Argo CD in the argocd-diff-preview
+      # namespace (apps-helm/argocd-diff-preview).
+      #
+      # DIFF_IGNORE hides the datadog chart's kpi-telemetry ConfigMap
+      # (datadog/datadog-kpi-telemetry-configmap), whose install_id and
+      # install_time are regenerated on every render. It matches whole lines
+      # and can't be scoped to a resource, so it's anchored to the exact
+      # two-space indent of those keys under `data:`. install_type is left
+      # visible.
+      run: |-
+        argocd-diff-preview \
+          --repo "$GITHUB_REPOSITORY" \
+          --base-branch '${{ github.event.pull_request.base.sha }}' \
+          --target-branch '${{ github.sha }}' \
+          --argocd-namespace argocd-diff-preview \
+          --create-cluster=false \
+          --diff-ignore '^  install_(id|time): '
+    - name: 'Add diff to job summary'
+      if: always()
+      run: |-
+        if [ -f output/diff.md ]; then
+          cat output/diff.md >> "$GITHUB_STEP_SUMMARY"
+        fi
+    - name: 'Comment on PR'
+      # The home runner image has no gh CLI.
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      with:
+        script: |-
+          const body = '<!-- manifest-diff -->\n' + require('fs').readFileSync('output/diff.md', 'utf8');
+          const { owner, repo } = context.repo;
+          const issue_number = context.issue.number;
+          const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+          const prev = comments.filter(c => c.body.startsWith('<!-- manifest-diff -->')).pop();
+          if (prev) {
+            await github.rest.issues.updateComment({ owner, repo, comment_id: prev.id, body });
+          } else {
+            await github.rest.issues.createComment({ owner, repo, issue_number, body });
+          }

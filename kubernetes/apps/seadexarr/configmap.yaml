@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/configmap-v1.json
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: seadexarr-config
+data:
+  config.yml: |-
+    # Parameters for Sonarr
+    sonarr_url: http://sonarr.sonarr.svc.cluster.local
+    sonarr_api_key: __SONARR_API_KEY__
+    sonarr_ignore_unmonitored: false
+    ignore_movies_in_radarr: false
+
+    # Parameters for Radarr (not in use)
+    radarr_url:
+    radarr_api_key:
+
+    # qBittorrent parameters (not in use)
+    qbit_info:
+      host: __QBIT_HOST__
+      username: __QBIT_USERNAME__
+      password: __QBIT_PASSWORD__
+
+    # Categories for added torrents
+    sonarr_torrent_category: sonarr-anime
+    radarr_torrent_category:
+    torrent_tags: seadexarr
+
+    # Ignore SeaDex update times?
+    ignore_seadex_update_times: false
+
+    # Do you want to filter purely by torrent hash?
+    use_torrent_hash_to_filter: true
+
+    # Maximum number of torrents to add in one run
+    max_torrents_to_add: 10
+
+    # Discord webhook URL
+    discord_url: __DISCORD_URL__
+
+    # SeaDex filters
+    public_only: true
+    prefer_dual_audio: true
+    want_best: true
+    ignore_tags:
+    trackers:
+
+    # Advanced settings
+    sleep_time: 2
+    cache_time: 1
+    interactive: false
+    anime_mappings:
+    anidb_mappings:
+    anibridge_mappings:
+    log_level: "INFO"
+  unmonitor-anime.py: |-
+    # Seadexarr owns upgrades for anime files. Unmonitor every anime episode that already has a file so
+    # Sonarr (TRaSH profile scoring) never replaces a SeaDex release. Series stay monitored, so new
+    # episodes are still grabbed by Sonarr and get unmonitored on the next run once they have a file.
+    import json
+    import os
+    import urllib.request
+
+    BASE = os.environ["SONARR_URL"].rstrip("/") + "/api/v3"
+    HEADERS = {"X-Api-Key": os.environ["SONARR_API_KEY"], "Content-Type": "application/json"}
+
+
+    def call(method, path, body=None):
+        data = json.dumps(body).encode() if body is not None else None
+        req = urllib.request.Request(BASE + path, data=data, headers=HEADERS, method=method)
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            return json.load(resp)
+
+
+    total = 0
+    for series in call("GET", "/series"):
+        if series["seriesType"] != "anime" or not series["statistics"]["episodeFileCount"]:
+            continue
+        ids = [
+            ep["id"]
+            for ep in call("GET", f"/episode?seriesId={series['id']}")
+            if ep["hasFile"] and ep["monitored"]
+        ]
+        if ids:
+            call("PUT", "/episode/monitor", {"episodeIds": ids, "monitored": False})
+            print(f"unmonitored {len(ids)} episodes: {series['title']}", flush=True)
+            total += len(ids)
+    print(f"done, unmonitored {total} episodes", flush=True)

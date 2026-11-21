@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atuin
+spec:
+  selector:
+    matchLabels:
+      app: atuin
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: atuin
+        tags.datadoghq.com/env: homelab
+        tags.datadoghq.com/service: atuin
+        tags.datadoghq.com/version: v1
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: atuin
+        image: ghcr.io/atuinsh/atuin:18.24.4
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+        args: ["start"]
+        env:
+        - name: ATUIN_HOST
+          value: "0.0.0.0"
+        - name: ATUIN_PORT
+          value: "8888"
+        - name: ATUIN_OPEN_REGISTRATION
+          value: "false"
+        - name: RUST_LOG
+          value: info
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-atuin-database
+              key: password
+        - name: ATUIN_DB_URI
+          value: "postgresql://atuin:$(DB_PASSWORD)@atuin-database-rw.atuin.svc.cluster.local/atuin"
+        ports:
+        - name: http
+          containerPort: 8888
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 3
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: data

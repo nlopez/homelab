@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.envoyproxy.io/clienttrafficpolicy_v1alpha1.json
+# One ClientTrafficPolicy per Gateway (two policies can't target the same
+# Gateway). Both share session resumption, post-quantum TLS curves, pinned
+# ALPN and HSTS; they differ in HTTP/3 vs. Cloudflare Authenticated Origin Pull.
+#
+# private: HTTP/3 enabled. Pinning tls.alpnProtocols matters here: enabling
+# `http3` without it collapses the TCP listener's ALPN to ["http/1.1"] only,
+# silently dropping h2 and breaking native gRPC (e.g. `argocd login` without
+# --grpc-web). See https://github.com/envoyproxy/gateway/issues/2875.
+#
+# internet: Cloudflare Authenticated Origin Pull with custom per-zone and
+# per-hostname certificates (client cert validation), required: connections
+# must present a client cert chaining to one of our own CAs, so only our
+# Cloudflare zones can reach this gateway. Cloudflare's shared origin-pull
+# CA is deliberately not trusted: any Cloudflare account can present it. HTTP/3 is
+# deliberately absent: Envoy rejects
+# any listener with both `tls.clientValidation` and `http3`
+# ("TLS Client Authentication is not supported over QUIC", see
+# https://github.com/envoyproxy/gateway/issues/8581). Cloudflare terminates
+# HTTP/3 for visitors at its edge and pulls from the origin over TCP, so
+# nothing is lost.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: tls-settings-private
+  namespace: envoy-gateway-system
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: private
+  tls:
+    # TLS session resumption (stateless + stateful)
+    session:
+      resumption:
+        stateless: {}
+        stateful: {}
+    # Hybrid post-quantum ECDH: traditional + X25519MLKEM768
+    ecdhCurves:
+    - X25519MLKEM768
+    - X25519
+    - P-256
+    # Explicit ALPN: the Gateway API default, restated because enabling
+    # `http3` overrides that default down to ["http/1.1"] otherwise.
+    alpnProtocols:
+    - h2
+    - http/1.1
+  # HTTP/3 (UDP QUIC)
+  http3: {}
+  headers:
+    # lateResponseHeaders run after per-route filters and the backend
+    # response, immediately before bytes leave Envoy, so this also lands on
+    # Envoy-generated 503/504/400 responses, not just successful backend ones.
+    lateResponseHeaders:
+      set:
+      - name: strict-transport-security
+        value: max-age=63072000; includeSubDomains; preload
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.envoyproxy.io/clienttrafficpolicy_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: tls-settings-internet
+  namespace: envoy-gateway-system
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: internet
+  tls:
+    # TLS session resumption (stateless + stateful)
+    session:
+      resumption:
+        stateless: {}
+        stateful: {}
+    # Hybrid post-quantum ECDH: traditional + X25519MLKEM768
+    ecdhCurves:
+    - X25519MLKEM768
+    - X25519
+    - P-256
+    # Explicit ALPN: the Gateway API default, restated because enabling
+    # `http3` overrides that default down to ["http/1.1"] otherwise.
+    alpnProtocols:
+    - h2
+    - http/1.1
+    clientValidation:
+      caCertificateRefs:
+      # Cloudflare presents these per-hostname client certificates for the Timekeeper
+      # hostnames (Authenticated Origin Pulls with a custom certificate).
+      - kind: ConfigMap
+        name: timekeeper-aop-ca
+        group: ""
+      # Custom zone-level Authenticated Origin Pull certificate for desertbluffs.com.
+      - kind: ConfigMap
+        name: desertbluffs-aop-ca
+        group: ""
+  # Authenticated Origin Pull guarantees the peer is Cloudflare, so its
+  # CF-Connecting-IP header is trustworthy. failClosed rejects requests
+  # lacking it rather than falling back to the Cloudflare edge address.
+  clientIPDetection:
+    customHeader:
+      name: CF-Connecting-IP
+      failClosed: true
+  headers:
+    # lateResponseHeaders run after per-route filters and the backend
+    # response, immediately before bytes leave Envoy, so this also lands on
+    # Envoy-generated 503/504/400 responses, not just successful backend ones.
+    lateResponseHeaders:
+      set:
+      - name: strict-transport-security
+        value: max-age=63072000; includeSubDomains; preload

@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radarr
+  labels:
+    app: radarr
+    version: v1
+    tags.datadoghq.com/env: homelab
+    tags.datadoghq.com/service: radarr
+    tags.datadoghq.com/version: v1
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: radarr
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: radarr
+        version: v1
+        tags.datadoghq.com/env: homelab
+        tags.datadoghq.com/service: radarr
+        tags.datadoghq.com/version: v1
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: radarr
+        # IMAGE=ghcr.io/linuxserver/radarr; skopeo --override-os linux list-tags "docker://${IMAGE}" | jq -r '.Tags[]' | grep -F 'version-6' | sort -V  | tail -n1 | tee >&2 | pbcopy
+        image: ghcr.io/linuxserver/radarr:version-6.4.4.10685
+        resources:
+          requests:
+            cpu: 50m
+            memory: 320Mi
+        env:
+        - name: PUID
+          value: "1001"
+        - name: PGID
+          value: "1001"
+        - name: TZ
+          value: "America/New_York"
+        - name: DOTNET_SYSTEM_NET_DISABLEIPV6
+          value: "1"
+        ports:
+        - name: http
+          containerPort: 7878
+        livenessProbe:
+          httpGet:
+            port: http
+            path: /ping
+          initialDelaySeconds: 60
+          periodSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: media
+          mountPath: /media
+        - name: scratch
+          mountPath: /downloads
+          subPath: downloads
+        # s6-overlay needs a writable /run; the image's own is root-owned
+        - name: run
+          mountPath: /run
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: config-nas1-mtank
+      - name: scratch
+        persistentVolumeClaim:
+          claimName: scratch
+      - name: media
+        persistentVolumeClaim:
+          claimName: media
+      - name: run
+        emptyDir:
+          medium: Memory
+          sizeLimit: 64Mi

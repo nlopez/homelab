@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/configmap-v1.json
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: desertbluffs-aop-ca
+data:
+  # Private CA that signed the Authenticated Origin Pull client certificate uploaded to the
+  # desertbluffs.com zone (Cloudflare rejects self-signed zone-level certs). The CA key was discarded;
+  # the leaf key is in 1Password ("desertbluffs.com AOP client cert"). Rotate by issuing a new CA and
+  # leaf, uploading the leaf, and replacing this certificate. Valid until 2036-11-18.
+  ca.crt: |-
+    -----BEGIN CERTIFICATE-----
+    MIIBuDCCAV2gAwIBAgIUEzRTe68XC67z9tqCBd7clwdDeIswCgYIKoZIzj0EAwIw
+    ODE2MDQGA1UEAwwtZGVzZXJ0Ymx1ZmZzLmNvbSBhdXRoZW50aWNhdGVkIG9yaWdp
+    biBwdWxsIENBMB4XDTI2MTEyMTA1MjAxOFoXDTM2MTExODA1MjAxOFowODE2MDQG
+    A1UEAwwtZGVzZXJ0Ymx1ZmZzLmNvbSBhdXRoZW50aWNhdGVkIG9yaWdpbiBwdWxs
+    IENBMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEpycDEV+QgJEp9mldcReQ33W2
+    dU1vs9FVg5iSkv2rGG9mfkr9l8fsJv2EMZGiywiliE9pXoqczUvb9AD5Ac2fSaNF
+    MEMwHQYDVR0OBBYEFA5F6gDgB8LLPAeEhQDD+K5KDoFoMBIGA1UdEwEB/wQIMAYB
+    Af8CAQAwDgYDVR0PAQH/BAQDAgEGMAoGCCqGSM49BAMCA0kAMEYCIQDtWdw0jNSZ
+    vMJcNr6BuFiQ8x5vYSGj0waeT4kxD4nWOAIhAIQ2b3a/RcXdRhsrhbL04WJyZF+x
+    SPNSCAaX7s/xAlvw
+    -----END CERTIFICATE-----

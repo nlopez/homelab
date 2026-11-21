@@ -1,0 +1,138 @@
+# https://github.com/cilium/cilium/blob/main/install/kubernetes/cilium/values.yaml.tmpl
+k8sServiceHost: "192.168.222.245"
+k8sServicePort: "8443"
+kubeProxyReplacement: true
+installNoConntrackIptablesRules: true
+bpfClockProbe: true
+bgpControlPlane:
+  enabled: true
+ipam:
+  mode: "cluster-pool"
+  operator:
+    clusterPoolIPv4PodCIDRList: ["10.43.16.0/20"]
+    clusterPoolIPv4MaskSize: 24
+routingMode: "native"
+autoDirectNodeRoutes: true
+directRoutingSkipUnreachable: true
+ipv4:
+  enabled: true
+ipv6:
+  enabled: false
+ipv4NativeRoutingCIDR: "10.43.0.0/16"
+localRedirectPolicies:
+  # Kept on for future CiliumLocalRedirectPolicy use. Previously required by
+  # node-local-dns, which was dropped 2026-08-31 so pods reach CoreDNS
+  # directly and their source pod IP is preserved. No
+  # CiliumLocalRedirectPolicy objects currently exist.
+  enabled: true
+bpf:
+  datapathMode: netkit
+  masquerade: true
+  lbExternalClusterIP: true
+  hostLegacyRouting: false
+  tproxy: false
+  distributedLRU:
+    enabled: true
+  mapDynamicSizeRatio: 0.08
+  events:
+    monitorInterval: "10s"
+    default:
+      rateLimit: 10000
+      burstLimit: 50000
+  disableExternalIPMitigation: true
+loadBalancer:
+  mode: hybrid
+socketLB:
+  enabled: true
+bandwidthManager:
+  enabled: true
+  bbr: true
+vlanBypass: 0
+hubble:
+  enabled: true
+  tls:
+    enabled: true
+    auto:
+      enabled: true
+      method: cronJob
+  ui:
+    enabled: true
+  relay:
+    enabled: true
+  eventQueueSize: 32768
+  # The in-memory ring buffer only holds ~100s of flows. Persist pod egress
+  # new-connection flows (TCP SYN and non-reply UDP) to a rotated file on each
+  # node so egress policies can be derived from days of history:
+  #   kubectl -n kube-system exec ds/cilium -c cilium-agent -- cat /var/run/cilium/hubble/events.log
+  export:
+    static:
+      enabled: true
+      filePath: /var/run/cilium/hubble/events.log
+      fileMaxSizeMb: 200
+      fileMaxBackups: 10
+      fileCompress: true
+      fieldMask:
+      - time
+      - verdict
+      - traffic_direction
+      - source.namespace
+      - source.pod_name
+      - source.labels
+      - destination.namespace
+      - destination.pod_name
+      - destination.labels
+      - destination_names
+      - IP
+      - l4
+      allowList:
+      - '{"reply":[false],"traffic_direction":["EGRESS"],"protocol":["TCP"],"tcp_flags":[{"SYN":true}]}'
+      - '{"reply":[false],"traffic_direction":["EGRESS"],"protocol":["UDP"]}'
+      denyList:
+      - '{"source_label":["reserved:host","reserved:world","reserved:remote-node"]}'
+# Network policies are evaluated and logged (verdict AUDIT) but never enforced
+# anywhere. Remove to start enforcing.
+policyAuditMode: true
+MTU: 1500
+endpointRoutes:
+  enabled: true
+# Datadog Cilium integration: expose Prometheus metrics and annotate pods
+# for Autodiscovery. https://docs.datadoghq.com/integrations/cilium/
+prometheus:
+  enabled: true
+operator:
+  prometheus:
+    enabled: true
+  podLabels:
+    tags.datadoghq.com/env: homelab
+    tags.datadoghq.com/service: cilium-operator
+    tags.datadoghq.com/version: v1
+  podAnnotations:
+    ad.datadoghq.com/cilium-operator.checks: |
+      {
+        "cilium": {
+          "init_config": {},
+          "instances": [
+            {
+              "operator_endpoint": "http://%%host%%:9963/metrics",
+              "use_openmetrics": "true"
+            }
+          ]
+        }
+      }
+podLabels:
+  tags.datadoghq.com/env: homelab
+  tags.datadoghq.com/service: cilium
+  tags.datadoghq.com/version: v1
+podAnnotations:
+  ad.datadoghq.com/cilium-agent.checks: |-
+    {
+      "cilium": {
+        "init_config": {},
+        "instances": [
+          {
+            "agent_endpoint": "http://%%host%%:9962/metrics",
+            "use_openmetrics": "true"
+          }
+        ]
+      }
+    }
