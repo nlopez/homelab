@@ -16,6 +16,9 @@ spec:
         {"postgres":{"init_config":{},"instances":[{"host":"%%host%%","port":5432,"dbname":"immich","username":"datadog","password":"%%env_DD_POSTGRES_PASSWORD%%","ssl":"require","dbm":true}]}}
       backup.velero.io/backup-volumes: pgdata
   postgresql:
+    parameters:
+      pg_stat_statements.track: all
+      track_activity_query_size: "4096"
     shared_preload_libraries:
     - 'vchord.so'
   managed:
