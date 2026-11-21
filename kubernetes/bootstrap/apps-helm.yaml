@@ -201,6 +201,10 @@ spec:
         tier: "{{.tier}}"
     spec:
       project: default
+      ignoreDifferences:
+      - kind: PersistentVolumeClaim
+        jsonPointers:
+        - /spec/volumeName
       syncPolicy:
         automated:
           enabled: true
@@ -209,6 +213,7 @@ spec:
         syncOptions:
         - CreateNamespace=true
         - ServerSideApply=true
+        - RespectIgnoreDifferences=true
       destination:
         namespace: "{{.namespace}}"
         server: https://kubernetes.default.svc
