@@ -6,31 +6,14 @@ metadata:
 data:
   kubernetes.yaml: |-
     mode: cluster
-    ingress: false
+    ingress: true
     gateway: true
   settings.yaml: |-
     title: Homelab
     headerStyle: clean
     layout: {}
   services.yaml: |-
-    - Storage:
-        - nas1:
-            href: https://nas1.lga1.radoncanyon.com/ui/
-            icon: truenas.png
-            description: TrueNAS
-        - nas2:
-            href: https://nas2.lga1.radoncanyon.com/ui/
-            icon: truenas.png
-            description: TrueNAS
-    - Network:
-        - gw.lga1:
-            href: https://gw.lga1.radoncanyon.com/
-            icon: mdi-router-network
-            description: Gateway
-        - gw.lga2:
-            href: https://gw.lga2.radoncanyon.com/
-            icon: mdi-router-network
-            description: Gateway
+    []
   widgets.yaml: |-
     - kubernetes:
         cluster:
