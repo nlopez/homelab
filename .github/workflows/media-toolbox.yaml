@@ -2,6 +2,7 @@ name: media-toolbox
 
 on:
   push:
+    branches: [main]
     paths: ['media-toolbox/**', '.github/workflows/media-toolbox.yaml']
   schedule:
     - cron: '0 6 * * *'  # daily at 06:00 UTC - check for new yt-dlp / bgutil releases
@@ -79,6 +80,8 @@ jobs:
   docker:
     needs: check
     if: needs.check.outputs.build == 'true'
+    # Registry credentials live in the production environment, which only main can deploy to.
+    environment: production
     runs-on: ubuntu-latest
     env:
       YT_DLP: ${{ needs.check.outputs.yt_dlp }}
