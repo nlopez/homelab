@@ -219,6 +219,18 @@ spec:
       annotations:
         argocd.argoproj.io/compare-options: {{ "ServerSideDiff=false" | quote }}
     {{- end }}
+    {{- if eq .name "immich" }}
+      ignoreDifferences:
+      - kind: PersistentVolumeClaim
+        name: immich-valkey
+        jsonPointers:
+        - /spec/volumeName
+      syncPolicy:
+        syncOptions:
+        - CreateNamespace=true
+        - ServerSideApply=true
+        - RespectIgnoreDifferences=true
+    {{- end }}
     {{- if eq .name "velero" }}
       ignoreDifferences:
       - kind: ConfigMap
