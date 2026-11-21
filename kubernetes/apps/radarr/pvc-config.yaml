@@ -2,15 +2,11 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: config-nas1-mtank
+  name: config
 spec:
-  storageClassName: nas1-mtank-iscsi
+  storageClassName: tn-nas1-mtank-iscsi
   accessModes:
   - ReadWriteOnce
   resources:
     requests:
       storage: 10Gi
-  dataSource:
-    name: sonarr-config-restore
-    kind: VolumeSnapshot
-    apiGroup: snapshot.storage.k8s.io
