@@ -1,23 +1,30 @@
-files: ^kubernetes/
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v6.0.0
   hooks:
   - id: trailing-whitespace
+    files: ^kubernetes/
   - id: end-of-file-fixer
+    files: ^kubernetes/
+    # yamlfmt keeps a trailing blank line after the final `---` here and would undo this hook.
+    exclude: ^kubernetes/apps/external-snapshotter/crds\.yaml$
   - id: check-yaml
+    files: ^kubernetes/
     args: ["--allow-multiple-documents"]
     exclude: ^kubernetes/bootstrap/apps\.yaml$|^kubernetes/bootstrap/apps-helm\.yaml$
   - id: check-added-large-files
+    files: ^kubernetes/
 - repo: https://github.com/google/yamlfmt
   rev: v0.21.0
   hooks:
   - id: yamlfmt
+    files: ^kubernetes/
     args: [-conf, kubernetes/.yamlfmt]
 - repo: https://github.com/nlopez/check-yamlschema
   rev: v0.0.7-fix
   hooks:
   - id: check-yamlschema
+    files: ^kubernetes/
     exclude: ^kubernetes/bootstrap/apps\.yaml$|^kubernetes/bootstrap/apps-helm\.yaml$
 - repo: local
   hooks:
@@ -29,3 +36,15 @@ repos:
     additional_dependencies: ['github.com/yannh/kubeconform/cmd/kubeconform@v0.8.0']
     files: ^kubernetes/(apps|apps-helm)/.*\.ya?ml$
     exclude: /values\.yaml$|/\.gitkeep$|^kubernetes/apps/pms/deployment\.yaml$
+  - id: ansible-lint
+    name: ansible-lint
+    entry: bash -c 'cd ansible && uv sync --locked && uv run ansible-galaxy collection install -r requirements.yaml && uv run ansible-lint'
+    language: system
+    files: ^ansible/
+    pass_filenames: false
+  - id: dnscontrol-check
+    name: dnscontrol check
+    entry: bash -c 'cd dns && dnscontrol check'
+    language: system
+    files: ^dns/(dnsconfig\.js|creds\.json)$
+    pass_filenames: false
