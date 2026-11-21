@@ -30,6 +30,8 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: scratch
+  labels:
+    velero.io/exclude-from-backup: "true"
 spec:
   volumeName: scratch-radarr
   accessModes:

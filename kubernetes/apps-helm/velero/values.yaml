@@ -186,17 +186,23 @@ schedules:
     template:
       includedNamespaces:
       - atuin
+      - engram
       - jellyfin
+      - palworld-modded
       - pms
       - radarr
+      - recyclarr
       - seadexarr
       - sonarr
+      - technitium
+      - timekeeper-ash
+      - timekeeper-oak
       - warp
       storageLocation: do-spaces-sfo3
       ttl: 336h
       includeClusterResources: false
       snapshotVolumes: true
-      snapshotMoveData: false
+      snapshotMoveData: true
   immich-daily:
     schedule: "45 11 * * *"
     paused: false

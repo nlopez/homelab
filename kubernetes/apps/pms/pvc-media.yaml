@@ -3,6 +3,8 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: media
+  labels:
+    velero.io/exclude-from-backup: "true"
 spec:
   volumeName: media-pms
   accessModes:
