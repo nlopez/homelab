@@ -1,0 +1,9 @@
+- name: Install iSCSI tools
+  ansible.builtin.package:
+    name: open-iscsi
+
+- name: Start ISCSI
+  ansible.builtin.service:
+    name: iscsid
+    state: started
+    enabled: true

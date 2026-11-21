@@ -1,0 +1,114 @@
+---
+- name: Remove legacy Tailscale apt repo
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/tailscale.list
+    state: absent
+
+- name: Install Tailscale apt repo
+  ansible.builtin.deb822_repository:
+    name: tailscale
+    types: deb
+    uris: "https://pkgs.tailscale.com/stable/{{ ansible_facts['distribution'] | lower }}"
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: main
+    signed_by: "https://pkgs.tailscale.com/stable/{{ ansible_facts['distribution'] | lower }}/{{ ansible_facts['distribution_release'] }}.noarmor.gpg"
+    install_python_debian: true
+    state: present
+
+- name: Install tailscale
+  ansible.builtin.package:
+    name: tailscale
+    state: present
+
+- name: Enable and start tailscaled
+  ansible.builtin.service:
+    name: tailscaled
+    enabled: true
+    state: started
+
+- name: Get Tailscale prefs
+  ansible.builtin.command: tailscale debug prefs
+  register: tailscale_prefs
+  changed_when: false
+  check_mode: false
+
+- name: Allow Tailscale operator to manage tailscale without root
+  ansible.builtin.command: "tailscale set --operator={{ tailscale_operator }}"
+  changed_when: true
+  when: (tailscale_prefs.stdout | from_json).OperatorUser | default('') != tailscale_operator
+
+- name: Set whether Tailscale manages DNS
+  ansible.builtin.command: "tailscale set --accept-dns={{ tailscale_accept_dns | lower }}"
+  changed_when: true
+  when: (tailscale_prefs.stdout | from_json).CorpDNS | default(true) != tailscale_accept_dns
+
+- name: Write resolv.conf when Tailscale does not manage DNS
+  ansible.builtin.copy:
+    dest: /etc/resolv.conf
+    content: |
+      {% for server in tailscale_nameservers %}
+      nameserver {{ server }}
+      {% endfor %}
+      {% if tailscale_search_domains | length > 0 %}
+      search {{ tailscale_search_domains | join(' ') }}
+      {% endif %}
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - not tailscale_accept_dns
+    - tailscale_nameservers | length > 0
+
+- name: Enable IP forwarding for subnet routing
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: "1"
+    sysctl_file: /etc/sysctl.d/99-tailscale-subnet-router.conf
+    reload: true
+  loop:
+    - net.ipv4.ip_forward
+    - net.ipv6.conf.all.forwarding
+  when: tailscale_advertise_routes | length > 0
+
+- name: Configure Tailscale subnet routing
+  ansible.builtin.command: >-
+    tailscale set
+    --advertise-routes={{ tailscale_advertise_routes | join(',') }}
+    --advertise-exit-node={{ tailscale_advertise_exit_node | lower }}
+    --snat-subnet-routes={{ tailscale_snat_subnet_routes | lower }}
+    --accept-routes={{ tailscale_accept_routes | lower }}
+  changed_when: true
+  vars:
+    tailscale_exit_routes: "{{ ['0.0.0.0/0', '::/0'] if tailscale_advertise_exit_node else [] }}"
+  when: >-
+    ((tailscale_prefs.stdout | from_json).AdvertiseRoutes | default([], true) | sort)
+    != ((tailscale_advertise_routes + tailscale_exit_routes) | sort)
+    or (not (tailscale_prefs.stdout | from_json).NoSNAT | default(false))
+    != tailscale_snat_subnet_routes
+    or (tailscale_prefs.stdout | from_json).RouteAll | default(false)
+    != tailscale_accept_routes
+
+- name: Install iptables for MSS clamping
+  ansible.builtin.package:
+    name: iptables
+    state: present
+  when: tailscale_advertise_routes | length > 0
+
+- name: Install MSS clamp unit for forwarded tailnet traffic
+  ansible.builtin.template:
+    src: tailscale-mss-clamp.service.j2
+    dest: /etc/systemd/system/tailscale-mss-clamp.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: tailscale_advertise_routes | length > 0
+
+- name: Enable and start MSS clamp unit
+  ansible.builtin.systemd_service:
+    name: tailscale-mss-clamp.service
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: tailscale_advertise_routes | length > 0
+  # The unit file doesn't exist yet when this runs in check mode on a new host
+  ignore_errors: "{{ ansible_check_mode }}"

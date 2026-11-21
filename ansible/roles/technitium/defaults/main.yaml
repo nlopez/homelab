@@ -1,0 +1,35 @@
+---
+technitium_version: "15.6.2"
+# The release archive ships no published checksum; this is the sha256 of the
+# archive for technitium_version.
+technitium_checksum: sha256:51f2d4ebaf156a85035e820afde5e1d428f1920a37d7f0c65203fb1766917e08
+
+technitium_user: dns-server
+technitium_install_dir: /opt/technitium/dns
+technitium_config_dir: /etc/dns
+technitium_log_dir: /var/log/technitium/dns
+# /var/log is a small zram disk on Armbian. A busy day of logs runs about 17M,
+# so keep only a few days.
+technitium_log_max_days: 3
+
+# The web console is served on a unix socket under systemd's RuntimeDirectory
+# and made reachable to the reverse proxy's group.
+technitium_runtime_directory: technitium
+technitium_web_socket: "/run/{{ technitium_runtime_directory }}/web.sock"
+technitium_web_socket_group: www-data
+# Technitium always listens on TCP too; keep it on loopback.
+technitium_web_local_addresses:
+  - 127.0.0.1
+  - "::1"
+technitium_api_url: http://127.0.0.1:5380
+
+# API token with settings access, read from 1Password on the controller.
+# technitium_api_token_item_id is the per-host 1Password item UUID.
+technitium_api_token: >-
+  {{ lookup('ansible.builtin.pipe',
+  'op read op://evjh25ux2mnoufaut6qhvm2pdi/' ~ technitium_api_token_item_id ~ '/credential --account my.1password.com') }}
+
+# Zones answered by forwarding to another DNS server, for example reverse zones
+# served from a gateway's DHCP lease names. Each item has a zone and a
+# forwarder (address[:port]).
+technitium_forwarders: []

@@ -1,0 +1,115 @@
+---
+tailscale_accept_dns: false
+# The site gateway's Unbound resolves the internal zones; Cloudflare covers
+# public names if the gateway is unreachable.
+tailscale_nameservers:
+  - "{{ datadog_gateway_address }}"
+  - 1.1.1.1
+  - 2606:4700:4700::1111
+technitium_proxy_acme_email: letsencrypt@aethertrail.com
+technitium_proxy_upstream: "http://unix:{{ technitium_web_socket }}:"
+
+# Datadog Agent (datadog.dd.agent). The odroids collect for their site,
+# including the gateway's syslog and NetFlow.
+# API key read from 1Password on the controller so it never lands in the repo.
+datadog_api_key: >-
+  {{ lookup('ansible.builtin.pipe',
+  'op read op://evjh25ux2mnoufaut6qhvm2pdi/mpxer65frsgr6ugf7o7ebgas24/credential --account my.1password.com') }}
+datadog_site: datadoghq.com
+# Read access to the journal for the journald log check.
+datadog_additional_groups: systemd-journal
+# The listener ports below (syslog 5514, NetFlow 2055) are above 1024, so the
+# agent needs no extra capabilities to bind them.
+datadog_config:
+  # The odroids share the short hostname "odroid", so the agent's default
+  # hostname would merge them into a single Datadog host.
+  hostname: "{{ inventory_hostname }}"
+  # Same site name as the NetFlow namespace below.
+  tags:
+    - "site:{{ inventory_hostname.split('.')[1] }}"
+  logs_enabled: true
+  logs_config:
+    use_sourcehost_tag: true
+  # Keep the footprint small on a 2G board.
+  apm_config:
+    enabled: false
+  process_config:
+    process_collection:
+      enabled: true
+  # Cloud Security misconfigurations (CIS host benchmarks). The security agent
+  # reads the same block from security-agent.yaml (compliance_config below).
+  compliance_config:
+    enabled: true
+    host_benchmarks:
+      enabled: true
+  network_devices:
+    # Site name (lga1, lga2) from the FQDN, so flows from sites that reuse
+    # private ranges are not merged.
+    namespace: "{{ inventory_hostname.split('.')[1] }}"
+    netflow:
+      enabled: true
+      # Resolve private IPs to names through the local Technitium server.
+      reverse_dns_enrichment_enabled: true
+      listeners:
+        - flow_type: netflow9
+          port: 2057
+# The role only writes security-agent.yaml (which starts the security agent)
+# when runtime_security_config is non-empty, so set it explicitly. Runtime
+# threat detection stays off: it needs system-probe.
+runtime_security_config:
+  enabled: false
+compliance_config:
+  enabled: true
+  host_benchmarks:
+    enabled: true
+datadog_checks:
+  journald:
+    logs:
+      - type: journald
+  syslog:
+    logs:
+      - type: udp
+        port: 5514
+        source: syslog
+        service: gateway
+  snmp:
+    init_config:
+      use_remote_config_profiles: true
+    instances:
+      - ip_address: "{{ datadog_gateway_address }}"
+        snmp_version: 3
+        user: datadog
+        authProtocol: SHA
+        authKey: >-
+          {{ lookup('ansible.builtin.pipe',
+          'op read op://evjh25ux2mnoufaut6qhvm2pdi/' ~ snmp_v3_item_id ~ '/password --account my.1password.com') }}
+        privProtocol: AES
+        privKey: >-
+          {{ lookup('ansible.builtin.pipe',
+          'op read op://evjh25ux2mnoufaut6qhvm2pdi/' ~ snmp_v3_item_id ~ '/privkey --account my.1password.com') }}
+        tags:
+          - "target:gateway"
+          - "geolocation:{{ inventory_hostname.split('.')[1] }}"
+  tcp_check:
+    init_config:
+    instances:
+      - name: gateway ssh
+        host: "{{ datadog_gateway_address }}"
+        port: 22
+        collect_response_time: true
+        tags:
+          - "target:gateway"
+      - name: internet https
+        host: 1.1.1.1
+        port: 443
+        collect_response_time: true
+        tags:
+          - "target:internet"
+  dns_check:
+    init_config:
+    instances:
+      - name: technitium
+        hostname: example.com
+        nameserver: 127.0.0.1
+        tags:
+          - "target:technitium"

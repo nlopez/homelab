@@ -1,0 +1,96 @@
+---
+- name: Install common packages
+  ansible.builtin.package:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Set locale to en_us.UTF-8 (Debian)
+  ansible.builtin.copy:
+    src: etc_default_locale
+    dest: /etc/default/locale
+    owner: root
+    group: root
+    mode: "0644"
+  when: ansible_facts["os_family"] == "Debian"
+
+- name: Generate locales
+  ansible.builtin.command: "{{ generate_locales }}"
+  changed_when: false
+
+- name: Add Nick's group
+  ansible.builtin.group:
+    name: nlopez
+    state: present
+    gid: 1000
+
+- name: Add Nick's superuser
+  ansible.builtin.user:
+    name: nlopez
+    shell: /usr/bin/zsh
+    group: nlopez
+    groups: "{{ common_sudo_group }}"
+    append: true
+    createhome: true
+    uid: 1000
+
+- name: Get group database
+  ansible.builtin.getent:
+    database: group
+  changed_when: false
+
+- name: Add Nick to docker group
+  ansible.builtin.user:
+    name: nlopez
+    groups: docker
+    append: true
+  when: "'docker' in ansible_facts['getent_group']"
+
+- name: Setup Nick's keys
+  ansible.posix.authorized_key:
+    user: nlopez
+    key: https://github.com/nlopez.keys
+    exclusive: true
+    validate_certs: true
+
+# - name: Bare clone Nick's dotfiles
+#   ansible.builtin.git:
+#     repo: https://github.com/nlopez/dotfiles
+#     bare: true
+#     dest: /home/nlopez/dotfiles
+#     version: unstable
+#     update: true
+#   become: true
+#   become_user: nlopez
+
+# - name: Don't show untracked files in dotfiles repo
+#   community.general.git_config:
+#     name: status.showUntrackedFiles
+#     value: "no"
+#     repo: /home/nlopez/dotfiles
+#     scope: local
+
+# - name: Checkout dotfiles
+#   ansible.builtin.command:
+#     cmd: /usr/bin/git --git-dir=/home/nlopez/dotfiles --work-tree=/home/nlopez checkout --force
+#   become: true
+#   become_user: nlopez
+
+- name: Allow members of sudoers group to run all commands without a password
+  ansible.builtin.template:
+    src: sudoers.j2
+    dest: "{{ sudoers }}"
+    validate: "visudo -cf %s"
+    mode: "0600"
+
+- name: Load and persist tcp_bbr module
+  community.general.modprobe:
+    name: tcp_bbr
+    state: present
+    persistent: present
+
+- name: Sysctls
+  ansible.builtin.template:
+    src: 60-net.conf.j2
+    dest: /etc/sysctl.d/60-net.conf
+    mode: "0644"
+  notify: Reload sysctl

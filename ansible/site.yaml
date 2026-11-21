@@ -1,0 +1,42 @@
+---
+- name: Apply common role to all hosts
+  hosts: all
+  pre_tasks:
+    - name: Group by operating system
+      ansible.builtin.group_by:
+        key: "os_{{ ansible_facts['os_family'] }}"
+      changed_when: false
+  roles:
+    - common
+    - networkd
+
+- name: Configure Kubernetes hosts
+  hosts: kubernetes
+  roles:
+    - resolved
+    - iscsi
+    - nfs
+    - containerd
+    - kubernetes
+    - role: tailscale_absent
+      tags: tailscale_absent
+    - sshd
+    - nic_offload
+    - role: unattended_upgrades
+      tags: unattended_upgrades
+
+- name: Configure infra hosts
+  hosts: infra
+  roles:
+    - armbian_ramlog
+    - tailscale
+    - static_ula
+    - pihole
+    - technitium
+    - technitium_proxy
+    - role: unattended_upgrades
+      tags: unattended_upgrades
+    - role: netflow9_fixup
+      tags: datadog
+    - role: datadog.dd.agent
+      tags: datadog
