@@ -3,15 +3,15 @@ name: dns
 on:
   pull_request:
     paths:
-      - dnsconfig.js
-      - creds.json
-      - .github/workflows/dns.yml
+      - dns/dnsconfig.js
+      - dns/creds.json
+      - .github/workflows/dns.yaml
   push:
     branches: [main]
     paths:
-      - dnsconfig.js
-      - creds.json
-      - .github/workflows/dns.yml
+      - dns/dnsconfig.js
+      - dns/creds.json
+      - .github/workflows/dns.yaml
 
 env:
   DNSCONTROL_VERSION: 5.7.1
@@ -19,6 +19,10 @@ env:
 
 permissions:
   contents: read
+
+defaults:
+  run:
+    working-directory: dns
 
 jobs:
   plan:
@@ -51,7 +55,7 @@ jobs:
         run: dnscontrol preview 2>&1 | tee preview.txt
 
       - name: Comment plan on PR
-        if: always() && hashFiles('preview.txt') != ''
+        if: always() && hashFiles('dns/preview.txt') != ''
         env:
           PR: ${{ github.event.pull_request.number }}
           OUTCOME: ${{ job.status }}

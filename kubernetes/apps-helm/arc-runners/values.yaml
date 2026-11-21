@@ -1,4 +1,4 @@
-githubConfigUrl: https://github.com/nlopez/k8s_home
+githubConfigUrl: https://github.com/nlopez/homelab
 githubConfigSecret: arc-github-app
 runnerScaleSetName: home-runners
 # One warm runner per node (see topologySpreadConstraints) so jobs skip pod startup.

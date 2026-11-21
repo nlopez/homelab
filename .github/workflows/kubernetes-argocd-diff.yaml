@@ -1,16 +1,16 @@
-name: 'Manifest Diff'
+name: 'Kubernetes Manifest Diff'
 on:
   pull_request:
     paths:
-    - 'apps/**'
-    - 'apps-helm/**'
-    - 'bootstrap/**'
-    - '.github/workflows/argocd-diff.yaml'
+    - 'kubernetes/apps/**'
+    - 'kubernetes/apps-helm/**'
+    - 'kubernetes/bootstrap/**'
+    - '.github/workflows/kubernetes-argocd-diff.yaml'
 permissions:
   contents: read
   pull-requests: write
 concurrency:
-  group: manifest-diff-${{ github.event.pull_request.number }}
+  group: kubernetes-manifest-diff-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 jobs:
   diff:
@@ -35,8 +35,8 @@ jobs:
       # string, so without this the apps-helm values/manifests are always read
       # from main and changes to them never show up in the diff.
       run: |-
-        sed -i 's|^\( *targetRevision:\) main$|\1 ${{ github.sha }}|' target-branch/bootstrap/apps-helm.yaml
-        grep -c '${{ github.sha }}' target-branch/bootstrap/apps-helm.yaml
+        sed -i 's|^\( *targetRevision:\) main$|\1 ${{ github.sha }}|' target-branch/kubernetes/bootstrap/apps-helm.yaml
+        grep -c '${{ github.sha }}' target-branch/kubernetes/bootstrap/apps-helm.yaml
     - name: 'Install kubectl and argocd-diff-preview'
       # shortcut: pinned by hand, bump with the cluster / a new release.
       run: |-

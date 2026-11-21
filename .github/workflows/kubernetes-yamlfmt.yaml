@@ -1,6 +1,9 @@
 name: 'YAML Format Check'
 on:
-- pull_request
+  pull_request:
+    paths:
+    - 'kubernetes/**'
+    - '.github/workflows/kubernetes-yamlfmt.yaml'
 jobs:
   yamlfmt:
     name: 'YAML Format Check'
@@ -18,4 +21,4 @@ jobs:
     - name: 'Check YAML formatting'
       run: |-
         export PATH="$(go env GOPATH)/bin:$PATH"
-        yamlfmt -lint -exclude 'bootstrap/apps.yaml' -exclude 'bootstrap/apps-helm.yaml' .
+        yamlfmt -conf kubernetes/.yamlfmt -lint -exclude 'kubernetes/bootstrap/apps.yaml' -exclude 'kubernetes/bootstrap/apps-helm.yaml' kubernetes

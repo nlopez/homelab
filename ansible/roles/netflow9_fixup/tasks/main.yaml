@@ -4,7 +4,7 @@
     src: netflow9_fixup.py
     dest: /usr/local/bin/netflow9_fixup.py
     mode: "0755"
-  notify: restart netflow9-fixup
+  notify: Restart netflow9-fixup
 
 - name: Install the NetFlow v9 relay unit
   ansible.builtin.template:
@@ -12,8 +12,8 @@
     dest: /etc/systemd/system/netflow9-fixup.service
     mode: "0644"
   notify:
-    - reload systemd
-    - restart netflow9-fixup
+    - Reload systemd
+    - Restart netflow9-fixup
 
 # The relay forwards with the exporter's source address, which strict reverse
 # path filtering would drop on its way back in through loopback.
@@ -26,7 +26,7 @@
       net.ipv4.conf.lo.rp_filter = 0
       net.ipv4.conf.{{ ansible_facts['default_ipv4']['interface'] }}.rp_filter = 0
     mode: "0644"
-  notify: reload sysctl
+  notify: Reload sysctl
 
 - name: Flush handlers so the relay is up before the agent
   ansible.builtin.meta: flush_handlers

@@ -3,8 +3,10 @@ name: Sync Tailscale ACLs
 on:
   push:
     branches: [ "main" ]
+    paths: ['tailnet/**', '.github/workflows/tailnet.yaml']
   pull_request:
     branches: [ "main" ]
+    paths: ['tailnet/**', '.github/workflows/tailnet.yaml']
 
 permissions:
   contents: read
@@ -12,6 +14,9 @@ permissions:
 
 jobs:
   acls:
+    # Secrets live in the production environment, which only main can deploy to.
+    if: github.event_name == 'push'
+    environment: production
     runs-on: ubuntu-24.04
 
     steps:
@@ -34,7 +39,7 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tailnet: ${{ secrets.TS_TAILNET }}
-          policy-file: policy.hujson
+          policy-file: tailnet/policy.hujson
           action: test
 
       - name: Deploy ACL
@@ -45,5 +50,5 @@ jobs:
           oauth-client-id: ${{ secrets.TS_OAUTH_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tailnet: ${{ secrets.TS_TAILNET }}
-          policy-file: policy.hujson
+          policy-file: tailnet/policy.hujson
           action: apply

@@ -131,7 +131,7 @@ RENOVATE_TOKEN=<github-pat> docker run --rm \
   -e RENOVATE_TOKEN \
   -e LOG_LEVEL=debug \
   ghcr.io/renovatebot/renovate \
-  nlopez/k8s_home
+  nlopez/homelab/kubernetes
 ```
 
 ## Thanks

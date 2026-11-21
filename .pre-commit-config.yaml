@@ -1,3 +1,4 @@
+files: ^kubernetes/
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v6.0.0
@@ -6,17 +7,18 @@ repos:
   - id: end-of-file-fixer
   - id: check-yaml
     args: ["--allow-multiple-documents"]
-    exclude: ^bootstrap/apps\.yaml$|^bootstrap/apps-helm\.yaml$
+    exclude: ^kubernetes/bootstrap/apps\.yaml$|^kubernetes/bootstrap/apps-helm\.yaml$
   - id: check-added-large-files
 - repo: https://github.com/google/yamlfmt
   rev: v0.21.0
   hooks:
   - id: yamlfmt
+    args: [-conf, kubernetes/.yamlfmt]
 - repo: https://github.com/nlopez/check-yamlschema
   rev: v0.0.7-fix
   hooks:
   - id: check-yamlschema
-    exclude: ^bootstrap/apps\.yaml$|^bootstrap/apps-helm\.yaml$
+    exclude: ^kubernetes/bootstrap/apps\.yaml$|^kubernetes/bootstrap/apps-helm\.yaml$
 - repo: local
   hooks:
   - id: kubeconform
@@ -25,5 +27,5 @@ repos:
       kubeconform -strict -summary -schema-location default -schema-location https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json -ignore-missing-schemas
     language: golang
     additional_dependencies: ['github.com/yannh/kubeconform/cmd/kubeconform@v0.8.0']
-    files: ^(apps|apps-helm)/.*\.ya?ml$
-    exclude: /values\.yaml$|/\.gitkeep$|^apps/pms/deployment\.yaml$
+    files: ^kubernetes/(apps|apps-helm)/.*\.ya?ml$
+    exclude: /values\.yaml$|/\.gitkeep$|^kubernetes/apps/pms/deployment\.yaml$

@@ -1,7 +1,9 @@
-name: ci
+name: media-toolbox
 
 on:
   push:
+    branches: [main]
+    paths: ['media-toolbox/**', '.github/workflows/media-toolbox.yaml']
   schedule:
     - cron: '0 6 * * *'  # daily at 06:00 UTC - check for new yt-dlp / bgutil releases
   workflow_dispatch:
@@ -16,7 +18,7 @@ on:
         default: ''
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: media-toolbox-${{ github.ref }}
   cancel-in-progress: false  # never interrupt a push to the registry
 
 permissions:
@@ -46,8 +48,8 @@ jobs:
           MANUAL_BGUTIL: ${{ github.event.inputs.bgutil_version }}
         run: |
           set -euo pipefail
-          PINNED_YT_DLP=$(sed -n 's/^YT_DLP_VERSION *:= *//p' Makefile)
-          PINNED_BGUTIL=$(sed -n 's/^BGUTIL_YTDLP_POT_PROVIDER_VERSION *:= *//p' Makefile)
+          PINNED_YT_DLP=$(sed -n 's/^YT_DLP_VERSION *:= *//p' media-toolbox/Makefile)
+          PINNED_BGUTIL=$(sed -n 's/^BGUTIL_YTDLP_POT_PROVIDER_VERSION *:= *//p' media-toolbox/Makefile)
 
           latest() {
             local tag
@@ -78,6 +80,8 @@ jobs:
   docker:
     needs: check
     if: needs.check.outputs.build == 'true'
+    # Registry credentials live in the production environment, which only main can deploy to.
+    environment: production
     runs-on: ubuntu-latest
     env:
       YT_DLP: ${{ needs.check.outputs.yt_dlp }}
@@ -91,11 +95,11 @@ jobs:
         id: bump
         run: |
           set -euo pipefail
-          sed -i "s|^YT_DLP_VERSION :=.*|YT_DLP_VERSION := $YT_DLP|" Makefile
-          sed -i "s|^# https://github.com/yt-dlp/yt-dlp/releases/tag/.*|# https://github.com/yt-dlp/yt-dlp/releases/tag/$YT_DLP|" Makefile
-          sed -i "s|^BGUTIL_YTDLP_POT_PROVIDER_VERSION :=.*|BGUTIL_YTDLP_POT_PROVIDER_VERSION := $BGUTIL|" Makefile
-          if git diff --quiet -- Makefile; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
-          git diff -- Makefile
+          sed -i "s|^YT_DLP_VERSION :=.*|YT_DLP_VERSION := $YT_DLP|" media-toolbox/Makefile
+          sed -i "s|^# https://github.com/yt-dlp/yt-dlp/releases/tag/.*|# https://github.com/yt-dlp/yt-dlp/releases/tag/$YT_DLP|" media-toolbox/Makefile
+          sed -i "s|^BGUTIL_YTDLP_POT_PROVIDER_VERSION :=.*|BGUTIL_YTDLP_POT_PROVIDER_VERSION := $BGUTIL|" media-toolbox/Makefile
+          if git diff --quiet -- media-toolbox/Makefile; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+          git diff -- media-toolbox/Makefile
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a
@@ -121,6 +125,7 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf
         with:
+          context: media-toolbox
           push: ${{ github.ref == 'refs/heads/main' }}
           platforms: linux/amd64
           tags: |
@@ -152,6 +157,6 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add Makefile
+          git add media-toolbox/Makefile
           git commit -m "chore: bump yt-dlp to $YT_DLP, bgutil to $BGUTIL [skip ci]"
           git push origin HEAD:main

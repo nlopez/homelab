@@ -246,11 +246,11 @@ spec:
         targetRevision: '{{.targetRevision}}'
         helm:
           valueFiles:
-          - $values/apps-helm/{{.name}}/values.yaml
+          - $values/kubernetes/apps-helm/{{.name}}/values.yaml
           ignoreMissingValueFiles: true
-      - repoURL: 'https://github.com/nlopez/k8s_home.git'
+      - repoURL: 'https://github.com/nlopez/homelab.git'
         targetRevision: main
         ref: values
-      - repoURL: 'https://github.com/nlopez/k8s_home.git'
+      - repoURL: 'https://github.com/nlopez/homelab.git'
         targetRevision: main
-        path: apps-helm/{{.name}}/manifests
+        path: kubernetes/apps-helm/{{.name}}/manifests

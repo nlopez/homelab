@@ -7,5 +7,5 @@ formatter:
   trim_trailing_whitespace: true
   eof_newline: true
 exclude:
-- bootstrap/apps.yaml
-- bootstrap/apps-helm.yaml
+- kubernetes/bootstrap/apps.yaml
+- kubernetes/bootstrap/apps-helm.yaml
