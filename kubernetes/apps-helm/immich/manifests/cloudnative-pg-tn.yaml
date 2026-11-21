@@ -16,6 +16,15 @@ spec:
   postgresql:
     shared_preload_libraries:
     - 'vchord.so'
+  managed:
+    roles:
+    - name: datadog
+      ensure: present
+      login: true
+      inRoles:
+      - pg_monitor
+      passwordSecret:
+        name: datadog-postgres
   storage:
     size: 20Gi
     pvcTemplate:

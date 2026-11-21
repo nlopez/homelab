@@ -10,6 +10,15 @@ spec:
     isWALArchiver: true
     parameters:
       barmanObjectName: engram-backups
+  managed:
+    roles:
+    - name: datadog
+      ensure: present
+      login: true
+      inRoles:
+      - pg_monitor
+      passwordSecret:
+        name: datadog-postgres
   storage:
     size: 5Gi
     pvcTemplate:
