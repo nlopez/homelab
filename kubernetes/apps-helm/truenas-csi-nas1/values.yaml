@@ -1,0 +1,77 @@
+# Official TrueNAS CSI driver (iXsystems) for nas1, running alongside the
+# democratic-csi installs. It talks to the TrueNAS WebSocket API, which exists on
+# 25.10 and replaces the REST API removed in TrueNAS 27. One install serves NFS
+# and iSCSI on both pools; the driver name is per NAS.
+#
+# The nas1-* StorageClass and VolumeSnapshotClass names belong to democratic-csi,
+# so these use a tn- prefix. Drop the prefix once democratic-csi is retired.
+driverName: org.truenas-csi.nas1
+truenas:
+  url: wss://nas1.lga1.radoncanyon.com
+  defaultPool: mtank
+  # Secret created by the OnePasswordItem in manifests/api-key.yaml; the API key
+  # is that item's "credential" field.
+  existingSecret: truenas-csi-nas1-api-key
+  existingSecretKey: credential
+controller:
+  podLabels:
+    tags.datadoghq.com/env: homelab
+    tags.datadoghq.com/service: truenas-csi-nas1
+    tags.datadoghq.com/version: v1
+node:
+  podLabels:
+    tags.datadoghq.com/env: homelab
+    tags.datadoghq.com/service: truenas-csi-nas1
+    tags.datadoghq.com/version: v1
+# The VolumeSnapshotClass is a standalone manifest (manifests/) so it can carry the
+# Velero label, which the chart's volumeSnapshotClass does not support.
+storageClasses:
+# Default classes keep the volume (and its snapshots) on nas1 when the claim is
+# deleted; remove the leftover PV and dataset by hand.
+- name: tn-nas1-mtank-nfs
+  reclaimPolicy: Retain
+  parameters:
+    protocol: nfs
+    pool: mtank
+    datasetPath: k8s/nfs
+- name: tn-nas1-mtank-iscsi
+  reclaimPolicy: Retain
+  parameters:
+    protocol: iscsi
+    pool: mtank
+    datasetPath: k8s/iscsi
+    # 16K matches the driver default; ext4 on the zvol.
+    volblocksize: 16K
+    # Only the cluster nodes may log in to the targets (the driver's default is
+    # any initiator). Add a node's IQN here when the cluster grows.
+    iscsi.initiators: iqn.2014-09.com.radoncanyon:knode1,iqn.2014-09.com.radoncanyon:knode2
+- name: tn-nas1-etank-nfs
+  reclaimPolicy: Retain
+  parameters:
+    protocol: nfs
+    pool: etank
+    datasetPath: k8s/nfs
+- name: tn-nas1-etank-iscsi
+  reclaimPolicy: Retain
+  parameters:
+    protocol: iscsi
+    pool: etank
+    datasetPath: k8s/iscsi
+    volblocksize: 16K
+    iscsi.initiators: iqn.2014-09.com.radoncanyon:knode1,iqn.2014-09.com.radoncanyon:knode2
+# Scratch classes delete the volume with its claim, so use them only for data
+# that can be lost. They sit on etank, under their own dataset paths.
+- name: tn-nas1-etank-nfs-scratch
+  reclaimPolicy: Delete
+  parameters:
+    protocol: nfs
+    pool: etank
+    datasetPath: k8s/nfs-scratch
+- name: tn-nas1-etank-iscsi-scratch
+  reclaimPolicy: Delete
+  parameters:
+    protocol: iscsi
+    pool: etank
+    datasetPath: k8s/iscsi-scratch
+    volblocksize: 16K
+    iscsi.initiators: iqn.2014-09.com.radoncanyon:knode1,iqn.2014-09.com.radoncanyon:knode2
