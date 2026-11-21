@@ -1,0 +1,4 @@
+podLabels:
+  tags.datadoghq.com/env: homelab
+  tags.datadoghq.com/service: plugin-barman-cloud
+  tags.datadoghq.com/version: v1
