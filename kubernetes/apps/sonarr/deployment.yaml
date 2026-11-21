@@ -81,7 +81,7 @@ spec:
       volumes:
       - name: config
         persistentVolumeClaim:
-          claimName: config-nas1-mtank
+          claimName: config
       - name: scratch
         persistentVolumeClaim:
           claimName: scratch
