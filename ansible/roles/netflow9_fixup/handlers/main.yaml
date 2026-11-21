@@ -1,13 +1,13 @@
 ---
-- name: reload systemd
+- name: Reload systemd
   ansible.builtin.systemd:
     daemon_reload: true
 
-- name: reload sysctl
+- name: Reload sysctl
   ansible.builtin.command: sysctl --system
   changed_when: true
 
-- name: restart netflow9-fixup
+- name: Restart netflow9-fixup
   ansible.builtin.systemd:
     name: netflow9-fixup
     state: restarted

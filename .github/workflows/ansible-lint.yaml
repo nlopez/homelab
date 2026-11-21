@@ -25,5 +25,8 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
+      - name: Install Ansible collections
+        run: uv run ansible-galaxy collection install -r requirements.yaml
+
       - name: Run ansible-lint
         run: uv run ansible-lint
