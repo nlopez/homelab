@@ -72,30 +72,6 @@ spec:
         chart: cert-manager
         targetRevision: v1.21.3
         namespace: cert-manager
-      - name: democratic-csi-nas1-mtank
-        tier: storage
-        repoURL: https://democratic-csi.github.io/charts
-        chart: democratic-csi
-        targetRevision: "0.15.1"
-        namespace: democratic-csi-nas1-mtank
-      - name: democratic-csi-nas1-mtank-nfs
-        tier: storage
-        repoURL: https://democratic-csi.github.io/charts
-        chart: democratic-csi
-        targetRevision: "0.15.1"
-        namespace: democratic-csi-nas1-mtank
-      - name: democratic-csi-nas1-etank-iscsi
-        tier: storage
-        repoURL: https://democratic-csi.github.io/charts
-        chart: democratic-csi
-        targetRevision: "0.15.1"
-        namespace: democratic-csi-nas1-etank-iscsi
-      - name: democratic-csi-nas1-etank-nfs
-        tier: storage
-        repoURL: https://democratic-csi.github.io/charts
-        chart: democratic-csi
-        targetRevision: "0.15.1"
-        namespace: democratic-csi-nas1-etank-nfs
       - name: truenas-csi-nas2
         tier: storage
         repoURL: https://raw.githubusercontent.com/truenas/truenas-csi/master/charts

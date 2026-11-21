@@ -15,5 +15,5 @@ operator:
 storage:
   defaultArchiveImage: ""
   defaultImage: ""
-  defaultStorageClass: "nas1-mtank-iscsi"
+  defaultStorageClass: "tn-nas1-mtank-iscsi"
   defaultVolumeFormat: ""

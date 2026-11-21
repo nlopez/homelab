@@ -75,10 +75,10 @@ crash-consistent — see commit `4bd437f7` for the full hibernate/restore dance.
 
 **After re-init**, restore *before* the `apps` AppSet syncs — if it syncs a stateful app's plain
 PVC manifest first, that PVC binds to a brand-new empty volume and permanently orphans the real
-data. Velero itself, `external-snapshotter`, `democratic-csi`, and CloudNativePG are all deployed
+data. Velero itself, `external-snapshotter`, `truenas-csi`, and CloudNativePG are all deployed
 by the *other* AppSet (`apps-helm`), so bootstrap that one first and hold `apps` back:
 1. `kubectl apply --server-side -f bootstrap/apps-helm.yaml` (not the whole `bootstrap/` dir yet)
-   and wait for Velero, `external-snapshotter`, `democratic-csi-*`, and `cloudnative-pg` to sync
+   and wait for Velero, `external-snapshotter`, `truenas-csi-*`, and `cloudnative-pg` to sync
    healthy — these are what CSI snapshot restore and CNPG `Cluster` restore depend on.
 2. Wait for the `BackupStorageLocation` to report `Available`: `velero backup-location get`.
 3. `velero restore create --from-backup <name>` for each namespace that needs its data back.
@@ -86,7 +86,7 @@ by the *other* AppSet (`apps-helm`), so bootstrap that one first and hold `apps`
    so ArgoCD adopts the already-restored PVCs instead of creating fresh ones.
 
 If a namespace isn't covered by any Velero backup (new app, or backup window missed), fall back
-to the manual recovery process demonstrated in `apps/nas1-mtank-recovery/`: reclaim the orphaned
+to a manual recovery: reclaim the orphaned
 TrueNAS volume as a static PV/PVC, snapshot it, then re-expose that snapshot as the app's PVC
 `dataSource`.
 
