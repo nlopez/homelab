@@ -105,7 +105,7 @@ CouchDB Service (ClusterIP:5984)
     ↕
 CouchDB Pod (couchdb:3.5.3)
     ↕
-PVC (nas1-mtank-iscsi) → TrueNAS ZFS
+PVC (tn-nas1-mtank-iscsi) → TrueNAS ZFS
 ```
 
 Private access within the tailnet via `obsidian-livesync` (Tailscale Ingress).

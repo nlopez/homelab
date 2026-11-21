@@ -4,7 +4,6 @@ kind: Deployment
 metadata:
   name: atuin
 spec:
-  replicas: 0
   selector:
     matchLabels:
       app: atuin
