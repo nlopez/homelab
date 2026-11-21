@@ -21,8 +21,6 @@ tailscale_snat_subnet_routes: false
 snmp_v3_item_id: jrp7q7mbooiagyee5flo2twgcm
 datadog_gateway_address: 192.168.222.1
 
-# Reverse lookups for local addresses come from the gateway's dnsmasq
-# DHCP lease names.
 technitium_forwarders:
   - zone: 221.168.192.in-addr.arpa
     forwarder: "{{ datadog_gateway_address }}:5353"

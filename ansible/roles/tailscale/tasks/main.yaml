@@ -110,5 +110,4 @@
     state: started
     daemon_reload: true
   when: tailscale_advertise_routes | length > 0
-  # The unit file doesn't exist yet when this runs in check mode on a new host
   ignore_errors: "{{ ansible_check_mode }}"

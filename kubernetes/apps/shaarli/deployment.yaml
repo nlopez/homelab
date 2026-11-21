@@ -35,7 +35,6 @@ spec:
           fsType: ext4
       containers:
       - name: shaarli
-        # IMAGE=ghcr.io/shaarli/shaarli; skopeo --override-os linux list-tags "docker://${IMAGE}" | jq -r '.Tags[]' | sort -V | tail -n1
         image: ghcr.io/shaarli/shaarli:v0.16.10
         resources:
           requests:
@@ -55,8 +54,6 @@ spec:
         ports:
         - containerPort: 80
           name: shaarli
-        # Shaarli serves its install page when data/ is unreadable, so HTTP
-        # probes would pass. Check the iSCSI-backed config file directly.
         readinessProbe:
           exec:
             command: ["test", "-s", "/var/www/shaarli/data/config.json.php"]

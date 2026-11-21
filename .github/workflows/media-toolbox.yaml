@@ -4,7 +4,7 @@ on:
   push:
     paths: ['media-toolbox/**', '.github/workflows/media-toolbox.yaml']
   schedule:
-    - cron: '0 6 * * *'  # daily at 06:00 UTC - check for new yt-dlp / bgutil releases
+    - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
       yt_dlp_version:
@@ -18,15 +18,13 @@ on:
 
 concurrency:
   group: media-toolbox-${{ github.ref }}
-  cancel-in-progress: false  # never interrupt a push to the registry
+  cancel-in-progress: false
 
 permissions:
-  contents: write   # push the version-bump commit back to the branch
-  packages: write   # push images to GHCR
+  contents: write
+  packages: write
 
 jobs:
-  # Decide what to build. Scheduled runs only build when yt-dlp or the bgutil plugin has a new
-  # release; pushes and manual runs always build.
   check:
     runs-on: ubuntu-latest
     outputs:
@@ -111,8 +109,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       -
-        # <yt-dlp>-<run number> sorts monotonically, so Renovate can order rebuilds of the same
-        # yt-dlp version (bgutil bumps, Dockerfile changes). Commit-SHA tags cannot be ordered.
         name: Build and push
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf
         with:

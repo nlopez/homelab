@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build:
-    name: Ansible Lint # Naming the build is important to use it as a status check
+    name: Ansible Lint
     runs-on: ubuntu-latest
     defaults:
       run:

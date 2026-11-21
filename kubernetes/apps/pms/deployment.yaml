@@ -1,7 +1,4 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
-# NOTE: excluded from the kubeconform pre-commit hook (see .pre-commit-config.yaml) —
-# the initContainer's `<<: *pms` merge-key override is valid YAML/K8s but trips
-# kubeconform -strict's duplicate-key detector as a false positive.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,11 +30,7 @@ spec:
       containers:
       - &pms
         name: pms
-        # IMAGE=ghcr.io/linuxserver/plex; skopeo --override-os linux list-tags "docker://${IMAGE}" | jq -r '.Tags[]' | sort -V | tail -n1
         image: ghcr.io/linuxserver/plex:version-1.43.5.11079-b3b13e506
-        # image: docker.io/alpine:latest
-        # command: [ "sleep" ]
-        # args: [ "infinity" ]
         resources:
           limits:
             gpu.intel.com/i915: "1"
@@ -66,7 +59,7 @@ spec:
         - name: TZ
           value: "America/New_York"
         - name: VERSION
-          value: "docker" # don't auto update
+          value: "docker"
         ports:
         - name: https
           containerPort: 32400

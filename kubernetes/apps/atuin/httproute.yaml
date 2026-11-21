@@ -29,7 +29,6 @@ kind: HTTPRoute
 metadata:
   name: atuin
   annotations:
-    # Served through Cloudflare's proxy. external-dns reads this from the route, not the Gateway.
     external-dns.kubernetes.io/cloudflare-proxied: "true"
 spec:
   parentRefs:

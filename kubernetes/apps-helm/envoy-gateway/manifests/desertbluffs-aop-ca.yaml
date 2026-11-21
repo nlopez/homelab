@@ -4,10 +4,6 @@ kind: ConfigMap
 metadata:
   name: desertbluffs-aop-ca
 data:
-  # Private CA that signed the Authenticated Origin Pull client certificate uploaded to the
-  # desertbluffs.com zone (Cloudflare rejects self-signed zone-level certs). The CA key was discarded;
-  # the leaf key is in 1Password ("desertbluffs.com AOP client cert"). Rotate by issuing a new CA and
-  # leaf, uploading the leaf, and replacing this certificate. Valid until 2036-11-18.
   ca.crt: |-
     -----BEGIN CERTIFICATE-----
     MIIBuDCCAV2gAwIBAgIUEzRTe68XC67z9tqCBd7clwdDeIswCgYIKoZIzj0EAwIw

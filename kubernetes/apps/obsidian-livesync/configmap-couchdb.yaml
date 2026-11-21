@@ -1,6 +1,4 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/configmap-v1.json
-# CouchDB local.ini with CORS configuration
-# Used by init container to populate the PVC-mounted local.d directory
 apiVersion: v1
 kind: ConfigMap
 metadata:

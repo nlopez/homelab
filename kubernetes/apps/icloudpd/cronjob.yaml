@@ -7,14 +7,10 @@ spec:
   suspend: false
   concurrencyPolicy: Forbid
   timeZone: America/New_York
-  # Hourly incremental pass, plus a full pass at 03:00 (see the container command).
   schedule: '0 * * * *'
   jobTemplate:
     spec:
       backoffLimit: 1
-      # A full pass takes about 35-45 minutes and the start can be delayed by
-      # up to 15 minutes of jitter. concurrencyPolicy Forbid skips a trigger
-      # that would overlap a run that is still going.
       activeDeadlineSeconds: 7200
       template:
         metadata:
@@ -24,12 +20,8 @@ spec:
             tags.datadoghq.com/version: v1
         spec:
           serviceAccountName: icloudpd
-          # Only the sync-trigger container gets an API token (the projected
-          # kube-api-access volume below), not the icloudpd container.
           automountServiceAccountToken: false
           restartPolicy: Never
-          # The config PVC is ReadWriteOnce, so the pod has to run on the node
-          # where icloudpd-auth already has it attached.
           affinity:
             podAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
@@ -37,37 +29,14 @@ spec:
                 labelSelector:
                   matchLabels:
                     app: icloudpd-auth
-          # Alpine/musl's resolver aborts the whole ndots search-domain list on
-          # the first SERVFAIL instead of falling through (unlike glibc, which
-          # continues to the next suffix). Tailscale's injected search domains
-          # (macaroni-pirate.ts.net, <tailnet>) get forwarded externally by
-          # CoreDNS and come back SERVFAIL for made-up subdomains, which
-          # aborts resolution of the actual bare hostname (e.g. icloud.com).
-          # ndots:1 makes any dotted hostname resolve as absolute first,
-          # skipping that search-suffix path.
           dnsConfig:
             options:
             - name: ndots
               value: "1"
-          # icloudpd and xmp-changes run as init containers, in order, so the
-          # sync-trigger container below starts only after a pass has finished
-          # successfully.
           initContainers:
           - name: icloudpd
-            # Fork of boredazfcuk/docker-icloudpd that bundles icloudpd 1.33.0, which fixes
-            # --xmp-sidecar crashing the whole run on assets with malformed adjustment data,
-            # and lets environment variables override icloudpd.conf.
-            # Switch back to docker.io/boredazfcuk/icloudpd once upstream ships icloudpd >= 1.33.0.
-            #   skopeo inspect --override-os linux --override-arch amd64 --format '{{.Digest}}' docker://ghcr.io/nlopez/docker-icloudpd:<tag>
             image: ghcr.io/nlopez/docker-icloudpd@sha256:74aa2c7fa2dd6c433d59532014190c2af96aae3f5f75437f45a877fe4d335a22
             imagePullPolicy: Always
-            # Each run sets until_found through the environment before starting the
-            # launcher: hourly runs stop after 100 consecutive already-downloaded
-            # assets (new photos only), and the run that starts in the 03:00 hour
-            # sets it empty for a full pass that lists every asset and refreshes
-            # every XMP sidecar. The mode is chosen before the random 0-15 minute
-            # delay so a delayed full pass is still a full pass; the delay keeps
-            # runs from hitting Apple at the same minute every hour.
             command: ["/bin/sh", "-c"]
             args:
             - |
@@ -81,8 +50,6 @@ spec:
             env:
             - name: TZ
               value: "America/New_York"
-            # This job owns icloudpd.conf; the always-on icloudpd-auth Deployment
-            # uses icloudpd-auth.conf on the same volume.
             - name: single_pass
               value: "true"
             - name: skip_download
@@ -100,10 +67,6 @@ spec:
               limits:
                 memory: "512Mi"
                 cpu: "500m"
-          # icloudpd rewrites every sidecar it processes with identical content,
-          # so mtimes can't show which ones changed. This hashes every .xmp and
-          # queues the ones whose content differs from the previous pass in
-          # <download_path>/.xmp-changes/pending.list.
           - name: xmp-changes
             image: ghcr.io/nlopez/docker-icloudpd@sha256:74aa2c7fa2dd6c433d59532014190c2af96aae3f5f75437f45a877fe4d335a22
             imagePullPolicy: Always
@@ -122,10 +85,6 @@ spec:
                 memory: "256Mi"
                 cpu: "500m"
           containers:
-          # Starts an immich-sidecar-sync Job right after every pass, so tags,
-          # titles and other XMP metadata reach Immich as soon as the photos do.
-          # The job name is derived from this pod's name, so a retried pod
-          # never collides with an earlier trigger.
           - name: sync-trigger
             image: bitnami/kubectl
             env:
@@ -148,7 +107,7 @@ spec:
           volumes:
           - name: kube-api-access
             projected:
-              defaultMode: 292 # 0444: bitnami/kubectl runs as a non-root user
+              defaultMode: 292
               sources:
               - serviceAccountToken:
                   path: token

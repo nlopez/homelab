@@ -19,8 +19,6 @@ spec:
             tags.datadoghq.com/version: v1
         spec:
           restartPolicy: Never
-          # The pod's search domains break name resolution in the .NET/musl resolver for
-          # in-cluster FQDNs ("Name does not resolve"); ndots:1 tries the name as-is first.
           dnsConfig:
             options:
             - name: ndots
@@ -34,7 +32,6 @@ spec:
               type: RuntimeDefault
           containers:
           - name: recyclarr
-            # IMAGE=ghcr.io/recyclarr/recyclarr; skopeo --override-os linux list-tags "docker://${IMAGE}" | jq -r '.Tags[]' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1
             image: ghcr.io/recyclarr/recyclarr:8.8.1
             args:
             - sync

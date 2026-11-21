@@ -1,5 +1,3 @@
-# Runners execute workflow code from a public repo: allow the internet and
-# cluster DNS only, never the LAN, tailnet, nodes or other pods.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

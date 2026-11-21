@@ -1,16 +1,9 @@
 ---
 tailscale_operator: nlopez
-# Hosts that run their own resolver set this to false so tailscaled does not
-# replace /etc/resolv.conf with a resolver that has no upstream.
 tailscale_accept_dns: true
-# Written to /etc/resolv.conf when tailscale_accept_dns is false.
 tailscale_nameservers: []
 tailscale_search_domains: []
-# Subnets this host advertises to the tailnet. Empty means not a subnet router.
 tailscale_advertise_routes: []
-# When false, forwarded traffic keeps its tailnet source address. The next hop
-# on each advertised subnet must then route 100.64.0.0/10 back to this host.
 tailscale_snat_subnet_routes: true
 tailscale_accept_routes: true
-# Offer this host as an exit node for internet traffic from the tailnet.
 tailscale_advertise_exit_node: false

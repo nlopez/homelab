@@ -1,26 +1,4 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/cronjob-batch-v1.json
-#
-# The external library scan only re-imports an asset when the media file's mtime
-# changes, and nothing in Immich schedules sidecar or metadata jobs. icloudpd
-# writes .xmp files next to each photo, so this job:
-#   1. scans every external library so new photos are imported (library queue)
-#   2. links .xmp files to assets that have none linked yet (sidecar queue,
-#      force=false); this only records the path, it doesn't read the file
-#   3. re-reads the .xmp of every asset whose sidecar changed since the last
-#      pass (refresh-metadata asset job). icloudpd rewrites every sidecar it
-#      touches with identical content, so mtimes can't tell which changed; the
-#      xmp-changes step of the icloudpd job (apps/icloudpd/cronjob.yaml) hashes
-#      them and queues the changed paths in .xmp-changes/pending.list on the
-#      iCloud share (mounted writable at /xmp-changes)
-#
-# The API key needs the library.read, library.update, asset.read, job.create and
-# queue.read permissions. To re-extract the whole library by hand, start the
-# metadataExtraction job with force=true.
-#
-# The icloudpd job (apps/icloudpd/cronjob.yaml) starts a Job from this template
-# as soon as each icloudpd pass finishes (kubectl create job --from=...), so the
-# schedule itself is suspended. To run it by hand:
-#   kubectl create job -n immich --from=cronjob/immich-sidecar-sync immich-sidecar-sync-manual
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -35,10 +13,7 @@ spec:
   jobTemplate:
     spec:
       backoffLimit: 1
-      # One Job per icloudpd pass (hourly); remove each a day after it finishes
-      # so they don't pile up.
       ttlSecondsAfterFinished: 86400
-      # Worst case: 20m scan + 15m sidecar + a long asset lookup after a full pass.
       activeDeadlineSeconds: 5400
       template:
         metadata:
@@ -47,8 +22,6 @@ spec:
             tags.datadoghq.com/service: immich-sidecar-sync
             tags.datadoghq.com/version: v1
         spec:
-          # IMMICH_URL is a 4-dot FQDN; ndots:1 resolves it as absolute
-          # instead of walking the search list through Technitium first.
           dnsConfig:
             options:
             - name: ndots
@@ -83,7 +56,6 @@ spec:
               limits:
                 memory: 128Mi
             volumeMounts:
-            # Where icloudpd's xmp-changes step queues pending.list.
             - name: xmp-changes
               mountPath: /xmp-changes
             - name: tmp
@@ -94,7 +66,6 @@ spec:
             - |-
               api() { curl -fsS --max-time 30 -H "x-api-key: ${IMMICH_API_KEY}" -H 'content-type: application/json' "$@"; }
 
-              # Prints the number of active + waiting + delayed jobs in a queue.
               pending() {
                 counts=$(api "${IMMICH_URL}/api/queues/$1" | grep -o '"\(active\|waiting\|delayed\)":[0-9]*')
                 echo "${counts}" | cut -d: -f2 | awk '{s+=$1} END {print s+0}'
@@ -104,7 +75,6 @@ spec:
                 api -X PUT "${IMMICH_URL}/api/jobs/$1" -d "{\"command\":\"start\",\"force\":$2}" >/dev/null
               }
 
-              # Waits up to $2 polls of 15s for a queue to drain; returns non-zero if it doesn't.
               wait_drained() {
                 for _ in $(seq 1 "$2"); do
                   [ "$(pending "$1")" -eq 0 ] && return 0
@@ -113,10 +83,6 @@ spec:
                 return 1
               }
 
-              # Scan every external library (GET /api/libraries returns only
-              # libraries, so every "id" key is a library ID). The response is
-              # captured on its own so a failed request (e.g. an API key without
-              # library.read) fails the job instead of scanning nothing.
               response=$(api "${IMMICH_URL}/api/libraries")
               libraries=$(echo "${response}" | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
               for id in ${libraries}; do
@@ -131,11 +97,6 @@ spec:
               sleep 15
               wait_drained sidecar 60 || { echo "sidecar queue did not drain within 15m" >&2; exit 1; }
 
-              # Re-read the sidecars the icloudpd xmp-changes step found changed.
-              # A line is a path relative to the library root (/icloud in Immich),
-              # plus "<TAB><attempts>" when the asset wasn't in Immich yet.
-              # Lines stay in processing.list until the refresh has been queued,
-              # so a failed run retries them.
               changes=/xmp-changes
               if [ -f "${changes}/pending.list" ]; then
                 mv "${changes}/pending.list" "${changes}/pending.$$"
@@ -155,9 +116,6 @@ spec:
                 [ -n "${path}" ] || continue
                 attempts=${attempts:-0}
                 quoted=$(printf '%s' "/icloud/${path%.xmp}" | sed 's/\\/\\\\/g; s/"/\\"/g')
-                # The response lists albums before assets and both have an
-                # "items" array; the greedy sed keeps the assets one, whose first
-                # "id" is the asset's.
                 response=$(api -X POST "${IMMICH_URL}/api/search/metadata" -d "{\"originalPath\":\"${quoted}\"}")
                 id=$(echo "${response}" | sed 's/.*"items":\[//' | grep -o '"id":"[0-9a-f-]\{36\}"' | head -n 1 | cut -d'"' -f4)
                 if [ -n "${id}" ]; then

@@ -1,7 +1,5 @@
 ---
 tailscale_accept_dns: false
-# The site gateway's Unbound resolves the internal zones; Cloudflare covers
-# public names if the gateway is unreachable.
 tailscale_nameservers:
   - "{{ datadog_gateway_address }}"
   - 1.1.1.1
@@ -9,53 +7,35 @@ tailscale_nameservers:
 technitium_proxy_acme_email: letsencrypt@aethertrail.com
 technitium_proxy_upstream: "http://unix:{{ technitium_web_socket }}:"
 
-# Datadog Agent (datadog.dd.agent). The odroids collect for their site,
-# including the gateway's syslog and NetFlow.
-# API key read from 1Password on the controller so it never lands in the repo.
 datadog_api_key: >-
   {{ lookup('ansible.builtin.pipe',
   'op read op://evjh25ux2mnoufaut6qhvm2pdi/mpxer65frsgr6ugf7o7ebgas24/credential --account my.1password.com') }}
 datadog_site: datadoghq.com
-# Read access to the journal for the journald log check.
 datadog_additional_groups: systemd-journal
-# The listener ports below (syslog 5514, NetFlow 2055) are above 1024, so the
-# agent needs no extra capabilities to bind them.
 datadog_config:
-  # The odroids share the short hostname "odroid", so the agent's default
-  # hostname would merge them into a single Datadog host.
   hostname: "{{ inventory_hostname }}"
-  # Same site name as the NetFlow namespace below.
   tags:
     - "site:{{ inventory_hostname.split('.')[1] }}"
   logs_enabled: true
   logs_config:
     use_sourcehost_tag: true
-  # Keep the footprint small on a 2G board.
   apm_config:
     enabled: false
   process_config:
     process_collection:
       enabled: true
-  # Cloud Security misconfigurations (CIS host benchmarks). The security agent
-  # reads the same block from security-agent.yaml (compliance_config below).
   compliance_config:
     enabled: true
     host_benchmarks:
       enabled: true
   network_devices:
-    # Site name (lga1, lga2) from the FQDN, so flows from sites that reuse
-    # private ranges are not merged.
     namespace: "{{ inventory_hostname.split('.')[1] }}"
     netflow:
       enabled: true
-      # Resolve private IPs to names through the local Technitium server.
       reverse_dns_enrichment_enabled: true
       listeners:
         - flow_type: netflow9
           port: 2057
-# The role only writes security-agent.yaml (which starts the security agent)
-# when runtime_security_config is non-empty, so set it explicitly. Runtime
-# threat detection stays off: it needs system-probe.
 runtime_security_config:
   enabled: false
 compliance_config:

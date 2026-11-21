@@ -1,5 +1,3 @@
-# Lets the arc-runners diff-runner service account drive this Argo CD
-# (kubectl port-forward, applications, the admin secret).
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:

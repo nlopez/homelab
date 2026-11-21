@@ -1,12 +1,9 @@
-# The bare apex (desertbluffs.com) and www subdomain aren't a real app -
-# redirect anyone who hits them directly to Welcome to Night Vale.
 # yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.networking.k8s.io/httproute_v1.json
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
   name: apex-desertbluffs-com
   annotations:
-    # Served through Cloudflare's proxy. external-dns reads this from the route, not the Gateway.
     external-dns.kubernetes.io/cloudflare-proxied: "true"
 spec:
   parentRefs:

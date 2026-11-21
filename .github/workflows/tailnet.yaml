@@ -14,7 +14,6 @@ permissions:
 
 jobs:
   acls:
-    # Secrets live in the production environment, which only main can deploy to.
     if: github.event_name == 'push'
     environment: production
     runs-on: ubuntu-24.04

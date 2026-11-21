@@ -1,16 +1,3 @@
-# Datadog Synthetics private location worker.
-#
-# A private location lets Synthetic API/browser tests run from inside this
-# cluster (against internal-only endpoints on *.radoncanyon.com, cluster
-# Services, etc.) instead of Datadog's managed locations.
-#
-# The location itself ("k8s-home", id
-# pl:k8s-home-f3f578aff4bf51e5b30953259fcd87ce) was created via
-# POST /api/v1/synthetics/private-locations. Its worker config JSON
-# (dedicated keypair + access keys - NOT the org API key) is stored on the
-# same 1Password item as the Agent keys, field `synthetics-check-runner-json`,
-# so the existing `datadog-keys` Secret already exposes it as that key
-# (see manifests/datadog-keys.yaml).
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
 apiVersion: apps/v1
 kind: Deployment
@@ -43,18 +30,12 @@ spec:
         - name: ndots
           value: "1"
       securityContext:
-        # The image ships a built-in non-root user `dog` (uid 501) and
-        # refuses to start as any other uid not present in /etc/passwd,
-        # so don't override runAsUser here.
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
       containers:
       - name: worker
         image: datadog/synthetics-private-location-worker:1.75.0
-        # No args: the worker reads /etc/datadog/synthetics-check-runner.json
-        # by default. Its entrypoint also needs sudo (cert setup, /etc/passwd),
-        # so no allowPrivilegeEscalation:false / no_new_privs here.
         resources:
           requests:
             cpu: 250m

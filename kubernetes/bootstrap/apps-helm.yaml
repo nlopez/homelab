@@ -5,15 +5,8 @@ metadata:
   name: bootstrap
   namespace: argocd
 spec:
-  # ignoreApplicationDifferences:
-  # - jsonPointers:
-  #   - /spec/syncPolicy
   syncPolicy:
     preserveResourcesOnDeletion: true
-  # Progressive Syncs: order the infra tiers instead of syncing all apps at
-  # once. Requires the ApplicationSet controller's --enable-progressive-syncs
-  # flag (apps-helm/argocd/values.yaml). Each step waits for its tier's
-  # Applications to be Healthy before the next tier starts.
   strategy:
     type: RollingSync
     rollingSync:
@@ -38,9 +31,6 @@ spec:
   generators:
   - list:
       elements:
-      # ---- tier: network-and-secrets ----
-      # CNI, gateway/DNS, and the secrets provider most other apps need to
-      # even come up healthy.
       - name: cilium
         tier: network-and-secrets
         repoURL: https://helm.cilium.io
@@ -69,7 +59,7 @@ spec:
         tier: network-and-secrets
         repoURL: https://charts.obeone.cloud
         chart: technitium-dnsserver
-        targetRevision: "1.13.5" # chart version; appVersion 15.6.2
+        targetRevision: "1.13.5"
         namespace: technitium
       - name: onepassword-connect
         tier: network-and-secrets
@@ -83,9 +73,6 @@ spec:
         chart: cert-manager
         targetRevision: v1.21.3
         namespace: cert-manager
-      # ---- tier: storage ----
-      # CSI drivers + StorageClass/VolumeSnapshotClasses, and the operators
-      # (Velero, CNPG) whose own config depends on those existing.
       - name: democratic-csi-nas1-mtank
         tier: storage
         repoURL: https://democratic-csi.github.io/charts
@@ -134,8 +121,6 @@ spec:
         chart: cloudnative-pg
         targetRevision: "0.29.1"
         namespace: cnpg-system
-      # ---- tier: platform ----
-      # Everything else: ArgoCD itself and general workloads/add-ons.
       - name: argocd
         tier: platform
         repoURL: "https://argoproj.github.io/argo-helm"

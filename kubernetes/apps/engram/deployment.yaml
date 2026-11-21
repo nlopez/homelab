@@ -32,7 +32,6 @@ spec:
           value: "0.0.0.0"
         - name: ENGRAM_PORT
           value: "8080"
-        # Single-user; narrow to real project names before inviting anyone else.
         - name: ENGRAM_CLOUD_ALLOWED_PROJECTS
           value: "*"
         - name: DB_PASSWORD

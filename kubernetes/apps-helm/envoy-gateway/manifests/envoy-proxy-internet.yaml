@@ -11,14 +11,8 @@ spec:
       envoyService:
         type: LoadBalancer
         allocateLoadBalancerNodePorts: false
-        # Without this, Cilium SNATs cross-node LoadBalancer-IP traffic to
-        # the receiving node's IP, hiding the real Cloudflare edge peer.
         externalTrafficPolicy: Local
         annotations:
-          # Pin the Cilium LB-IPAM address explicitly. Gateway.spec.addresses
-          # alone doesn't reliably propagate to the generated Service's
-          # actual assigned IP in this Envoy Gateway version, so request it
-          # directly the same way technitium does.
           lbipam.cilium.io/ips: "10.43.64.20"
       envoyDeployment:
         container:
@@ -31,8 +25,6 @@ spec:
             tags.datadoghq.com/env: homelab
             tags.datadoghq.com/service: envoy-proxy-internet
             tags.datadoghq.com/version: v1
-          # Datadog Envoy integration: scrape the proxy's Prometheus stats
-          # via Autodiscovery. https://docs.datadoghq.com/integrations/envoy/
           annotations:
             ad.datadoghq.com/envoy.checks: |-
               {

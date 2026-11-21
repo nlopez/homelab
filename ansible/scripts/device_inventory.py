@@ -53,7 +53,6 @@ def api(site, path):
 def load_oui():
     if not OUI_CACHE.exists():
         OUI_CACHE.parent.mkdir(parents=True, exist_ok=True)
-        # The IEEE site answers 418 to some user agents.
         r = requests.get(OUI_URL, headers={"User-Agent": "device-inventory/1.0"}, timeout=60)
         r.raise_for_status()
         OUI_CACHE.write_bytes(r.content)

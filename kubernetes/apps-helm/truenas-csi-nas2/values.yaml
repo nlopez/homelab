@@ -1,13 +1,7 @@
-# Official TrueNAS CSI driver (iXsystems) for nas2. It talks to the TrueNAS
-# WebSocket API, which exists on 25.10 and replaces the REST API removed in
-# TrueNAS 27. One install serves NFS and iSCSI; the driver name is per NAS so
-# another NAS can run its own install side by side.
 driverName: org.truenas-csi.nas2
 truenas:
   url: wss://nas2.lga1.radoncanyon.com
   defaultPool: etank
-  # Secret created by the OnePasswordItem in manifests/api-key.yaml; the API key
-  # is that item's "credential" field.
   existingSecret: truenas-csi-nas2-api-key
   existingSecretKey: credential
 controller:
@@ -20,11 +14,7 @@ node:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: truenas-csi-nas2
     tags.datadoghq.com/version: v1
-# The VolumeSnapshotClass is a standalone manifest (manifests/) so it can carry the
-# Velero label, which the chart's volumeSnapshotClass does not support.
 storageClasses:
-# Default classes keep the volume (and its snapshots) on nas2 when the claim is
-# deleted; remove the leftover PV and dataset by hand.
 - name: nas2-etank-nfs
   reclaimPolicy: Retain
   parameters:
@@ -35,13 +25,8 @@ storageClasses:
   parameters:
     protocol: iscsi
     datasetPath: k8s/iscsi
-    # 16K matches the driver default; ext4 on the zvol.
     volblocksize: 16K
-    # Only the cluster nodes may log in to the targets (the driver's default is
-    # any initiator). Add a node's IQN here when the cluster grows.
     iscsi.initiators: iqn.2014-09.com.radoncanyon:knode1,iqn.2014-09.com.radoncanyon:knode2
-# Scratch classes delete the volume with its claim, so use them only for data
-# that can be lost. They sit under their own dataset paths.
 - name: nas2-etank-nfs-scratch
   reclaimPolicy: Delete
   parameters:

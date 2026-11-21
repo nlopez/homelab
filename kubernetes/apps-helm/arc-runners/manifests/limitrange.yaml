@@ -6,7 +6,6 @@ metadata:
 spec:
   limits:
   - type: Container
-    # The runner nodes are the control plane; keep a runaway job from OOMing them.
     default:
       memory: 12Gi
     defaultRequest:

@@ -1,14 +1,3 @@
-# Datadog Kubernetes Autoscaling (in-place vertical pod resize).
-# https://docs.datadoghq.com/containers/autoscaling/
-#
-# Vertical-only for all three Immich Deployments: horizontal scaling is
-# explicitly disabled (replicas stay as set in apps-helm/immich/values.yaml),
-# and update.strategy: Auto lets Datadog patch resources.requests/limits on
-# the running pod in place, falling back to a rollout only if the kubelet
-# reports the resize as infeasible. None of these containers have CPU/memory
-# requests set today (only gpu.intel.com/i915 on server/ML) -- Datadog's
-# recommender computes recommendations from observed usage and will populate
-# requests/limits itself once each autoscaler goes Active, same as VPA would.
 apiVersion: datadoghq.com/v1alpha2
 kind: DatadogPodAutoscaler
 metadata:

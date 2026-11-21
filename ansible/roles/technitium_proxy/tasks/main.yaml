@@ -75,7 +75,7 @@
     - name: Flush handlers so systemd knows about lego-renew
       ansible.builtin.meta: flush_handlers
 
-    - name: Obtain the initial certificate  # noqa: command-instead-of-module
+    - name: Obtain the initial certificate
       ansible.builtin.command: systemctl start lego-renew.service
       args:
         creates: "{{ technitium_proxy_lego_dir }}/certificates/{{ technitium_proxy_hostname }}.crt"

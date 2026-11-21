@@ -33,9 +33,6 @@ spec:
     spec:
       containers:
       - name: palworld-modded
-        # Fork of jammsen/docker-palworld-dedicated-server (same native Linux server binary
-        # as apps/palworld/) with UE4SS mod support bolted on via ENABLE_UE4SS. Published
-        # publicly -- no build/push step needed, unlike the Proton-based alternative.
         image: obnyis/palworld-dedicated-server@sha256:ad9c21f1636b184c2bd24644bdeb223062f5dd8019dd54d437136cd42e68832d
         envFrom:
         - configMapRef:
@@ -51,12 +48,6 @@ spec:
             secretKeyRef:
               name: palworld-modded-secrets
               key: serverPassword
-        # This image (unlike apps/palworld's thijsvanloef image) has no env var or CLI
-        # flag to change the game listen port -- PalServer.sh always starts with no
-        # -port arg, so it always binds 8211 here regardless of PUBLIC_PORT (that only
-        # sets the ini's NAT-advertise field). service.yaml maps its +100 external port
-        # (8311) back to this real one via targetPort. Query port isn't exposed -- it's
-        # not used by Palworld.
         ports:
         - name: game
           containerPort: 8211
@@ -76,11 +67,6 @@ spec:
           mountPath: /palworld
         - name: saved
           mountPath: /palworld/Pal/Saved
-        # Same official Linux dedicated-server binary as apps/palworld/, so the same
-        # process-name probe applies. Drop UE4SS Lua/blueprint mods into
-        # /palworld/Pal/Binaries/Linux/ue4ss and .pak LogicMods into
-        # /palworld/Pal/Content/Paks (both under the `data` PVC above) -- e.g. via a
-        # suspended editor pod like apps/palworld/editor/editor.yaml.
         startupProbe:
           exec:
             command: ["sh", "-c", "pgrep PalServer-Linux >/dev/null"]

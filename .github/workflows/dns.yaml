@@ -66,7 +66,6 @@ jobs:
             echo "### DNS plan (${OUTCOME})"
             echo
             echo '```'
-            # Stay well under the 65536 character comment limit.
             sed 's/\x1b\[[0-9;]*m//g' preview.txt | tail -c 60000
             echo '```'
           } > comment.md

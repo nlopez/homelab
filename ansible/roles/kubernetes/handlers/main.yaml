@@ -2,7 +2,7 @@
 - name: Reload sysctl
   ansible.builtin.command: sysctl --system
   changed_when: true
-  failed_when: false # tolerate keys the running kernel does not know
+  failed_when: false
 
 - name: Restart kubelet
   ansible.builtin.service:

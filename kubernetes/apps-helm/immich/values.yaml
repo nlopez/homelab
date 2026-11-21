@@ -1,13 +1,9 @@
-# immich Helm chart values
-# Official chart: https://github.com/immich-app/immich-charts
-# This chart uses the bjw-s common library
 global:
   propagateGlobalMetadataToPods: true
   labels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: immich
     tags.datadoghq.com/version: v1
-# Shared configuration for all controllers
 controllers:
   main:
     containers:
@@ -17,7 +13,6 @@ controllers:
           tag: v3.4.1
           pullPolicy: IfNotPresent
         env:
-          # PostgreSQL configuration - uses external cloudnative-pg instance
           DB_HOSTNAME: immich-database-rw.immich.svc.cluster.local
           DB_PORT: "5432"
           DB_USERNAME: immich
@@ -31,10 +26,8 @@ controllers:
 immich:
   configuration: {}
   persistence:
-    # Main data store for all photos shared between different components.
     library:
       existingClaim: immich-library-nfs
-# Dependencies
 valkey:
   enabled: true
   controllers:
@@ -51,7 +44,6 @@ valkey:
       size: 1Gi
       accessMode: ReadWriteOnce
       storageClass: nas1-mtank-iscsi
-# Immich components
 server:
   enabled: true
   controllers:
@@ -69,7 +61,6 @@ server:
             limits:
               gpu.intel.com/i915: 1
           env:
-            # GPU settings for thumbnail generation
             IMMICH_FFMPEG_HWACCEL: qsv
   persistence:
     icloud:
@@ -80,18 +71,10 @@ server:
           main:
           - path: /icloud
             readOnly: true
-# Machine learning component
 machine-learning:
   enabled: true
   controllers:
     main:
-      # immich-ml-cache is a ReadWriteOnce (iSCSI) PVC and this controller
-      # only ever runs a single replica, so RollingUpdate deadlocks: the new
-      # pod can't attach the volume until the old one releases it, but the
-      # old one isn't torn down until the new one is ready. Recreate avoids
-      # the deadlock by terminating the old pod first. (The chart itself sets
-      # no rollingUpdate default -- any value seen live was just the API
-      # server's own RollingUpdate default, cleared out-of-band once.)
       strategy: Recreate
       containers:
         main:
@@ -118,11 +101,3 @@ machine-learning:
           main:
           - path: /cache
             readOnly: false
-            # icloud:
-            #   enabled: true
-            #   existingClaim: immich-icloud-nfs
-            #   advancedMounts:
-            #     main:
-            #       main:
-            #       - path: /icloud
-            #         readOnly: true

@@ -8,7 +8,7 @@ kubernetes_packages:
   - kubernetes-cni=1.4.0-1.1
 
 kubernetes_other_packages:
-  - ipset  # needed for ipvs
+  - ipset
 
 kubernetes_vip: 192.168.222.245
 kubernetes_keepalived_interface: eno1

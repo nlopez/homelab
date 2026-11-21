@@ -31,7 +31,6 @@ metadata:
   name: obsidian-livesync
   namespace: obsidian-livesync
   annotations:
-    # Served through Cloudflare's proxy. external-dns reads this from the route, not the Gateway.
     external-dns.kubernetes.io/cloudflare-proxied: "true"
 spec:
   parentRefs:

@@ -4,10 +4,6 @@ kind: ConfigMap
 metadata:
   name: timekeeper-aop-ca
 data:
-  # Public halves of the self-signed Authenticated Origin Pull client certificates that Cloudflare
-  # presents for ash.kamotimestamps.com and oak.kamotimestamps.com (created by
-  # KamoTimestamps/timekeeper infra/modules/droplet, valid until 2036-10-31). Each one is its own
-  # trust anchor. Update this when either is rotated with `tofu apply -replace=...tls_private_key.aop`.
   ca.crt: |-
     -----BEGIN CERTIFICATE-----
     MIIDNTCCAh2gAwIBAgIQRSEYHVlB7u8pSSM/tt+H0DANBgkqhkiG9w0BAQsFADA7

@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/persistentvolume-v1.json
-# PostgreSQL database volume using iSCSI
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -17,10 +16,6 @@ spec:
   mountOptions:
   - noatime
   persistentVolumeReclaimPolicy: Retain
-
-# PostgreSQL cluster for Immich using cloudnative-pg
-# Reference: https://github.com/immich-app/immich-charts#prerequisites
-# https://github.com/immich-app/immich-charts/blob/main/local/cloudnative-pg.yaml
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
@@ -30,8 +25,6 @@ spec:
   instances: 1
   inheritedMetadata:
     annotations:
-      # Velero FSB opt-in: back up only the database volume (the pod also
-      # mounts scratch/shm emptyDirs); see apps-helm/velero/values.yaml.
       backup.velero.io/backup-volumes: pgdata
   postgresql:
     shared_preload_libraries:
@@ -53,6 +46,5 @@ spec:
       secret:
         name: onepassword-immich-database
       postInitApplicationSQL:
-      # Commands based on: https://immich.app/docs/administration/postgres-standalone/#without-superuser-permission
       - CREATE EXTENSION vchord CASCADE;
       - CREATE EXTENSION earthdistance CASCADE;

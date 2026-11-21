@@ -1,4 +1,3 @@
-# node-feature-discovery Helm chart values
 master:
   labels:
     tags.datadoghq.com/env: homelab

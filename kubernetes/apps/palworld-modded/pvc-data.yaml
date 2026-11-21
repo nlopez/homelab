@@ -10,7 +10,6 @@ spec:
   storageClassName: nas1-mtank-iscsi
   resources:
     requests:
-      # obnyis/jammsen image recommends ~30Gi base + 2Gi/player beyond 8; MAX_PLAYERS=16 here.
       storage: 50Gi
   accessModes:
   - ReadWriteOnce

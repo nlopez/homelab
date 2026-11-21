@@ -1,64 +1,32 @@
-# Datadog Helm chart values
-# Chart: https://github.com/DataDog/helm-charts/tree/main/charts/datadog
-#
-# Node Agent (DaemonSet) + Cluster Agent for cluster/container metrics,
-# orchestrator explorer, and log collection. API/App keys and the
-# Agent<->Cluster Agent shared token come from the `datadog-keys` Secret
-# (see manifests/datadog-keys.yaml).
 datadog:
   site: datadoghq.com
   apiKeyExistingSecret: datadog-keys
   appKeyExistingSecret: datadog-keys
   clusterName: k8s-home
-  # Cluster-wide Unified Service Tagging env. Per-pod
-  # tags.datadoghq.com/{env,service,version} labels (set on each workload)
-  # take precedence for that workload's own telemetry.
-  # https://docs.datadoghq.com/getting_started/tagging/unified_service_tagging/
   tags:
   - env:homelab
   - site:lga1
-  # kubeadm bare-metal kubelet serving certs aren't signed by a CA the
-  # Agent trusts by default.
   kubelet:
     tlsVerify: false
-  # Collect-all with an exclude-everything filter, then opt namespaces in via
-  # containerIncludeLogs (include takes precedence over exclude). Extend the
-  # space-separated include list to ship another namespace's logs.
-  # https://docs.datadoghq.com/containers/guide/container-discovery-management/
   logs:
     enabled: true
     containerCollectAll: true
   containerExcludeLogs: "kube_namespace:.*"
   containerIncludeLogs: "kube_namespace:cert-manager"
-  # https://docs.datadoghq.com/containers/monitoring/kubernetes_explorer/?tab=helm
   processAgent:
     enabled: true
     processCollection: true
   orchestratorExplorer:
     enabled: true
-  # https://docs.datadoghq.com/network_monitoring/cloud_network_monitoring/setup/?tab=helm
-  # Requires system-probe (privileged, eBPF); compatible with Cilium 1.6+.
   networkMonitoring:
     enabled: true
-  # Universal Service Monitoring: eBPF-based HTTP/gRPC request rate, latency
-  # and errors per service, no proxy or instrumentation needed. Shares the
-  # system-probe already enabled for network monitoring.
-  # https://docs.datadoghq.com/universal_service_monitoring/setup/?tab=helm
   serviceMonitoring:
     enabled: true
-  # https://docs.datadoghq.com/containers/autoscaling/?tab=helm#setup
-  # Only enables the capability; nothing scales until a DatadogPodAutoscaler
-  # resource targets a workload (see e.g.
-  # apps-helm/immich/manifests/datadogpodautoscalers.yaml).
   autoscaling:
     workload:
       enabled: true
   kubernetesEvents:
     unbundleEvents: true
-  # Cloud Security Management: misconfigurations (CSPM), vulnerability
-  # management (SBOM) for both hosts and container images, and Workload
-  # Protection (runtime threat detection via system-probe eBPF).
-  # https://docs.datadoghq.com/security/cloud_security_management/setup/agent/kubernetes/?tab=helm
   securityAgent:
     compliance:
       enabled: true
@@ -76,26 +44,8 @@ datadog:
     enrichment:
       usage:
         enabled: true
-  # Defaults to true; set explicitly since vertical scaling recommendations
-  # (shown in the UI for every workload, no DatadogPodAutoscaler/live
-  # mutation required) depend on it.
   kubeStateMetricsCore:
     enabled: true
-  # There's no official Datadog integration for Palworld, so this ships a
-  # custom Agent check that polls the dedicated server's built-in REST API
-  # metrics endpoint (server FPS, player count, uptime, ...):
-  # https://docs.palworldgame.com/api/rest-api/metrics
-  #
-  # The check itself is generic (talks to whatever host/port/credentials the
-  # instance config gives it); the actual instance is supplied per-pod via
-  # Autodiscovery annotations on the palworld Deployment
-  # (apps/palworld/game/deployment.yaml) using %%host%% for the pod IP and
-  # %%env_PALWORLD_ADMIN_PASSWORD%% for the REST API password.
-  # %%env_VARNAME%% resolves from the Agent process's OWN environment (not
-  # the annotated pod's - https://docs.datadoghq.com/containers/guide/template_variables/),
-  # so the password is mirrored into this namespace as its own Secret
-  # (manifests/palworld-secrets.yaml, same 1Password item as
-  # apps/palworld/game/onepassword-item.yaml) and wired in below via env.
   env:
   - name: PALWORLD_ADMIN_PASSWORD
     valueFrom:
@@ -140,9 +90,6 @@ datadog:
               self.gauge("uptime", payload.get("uptime"), tags=tags)
               self.gauge("basecamps", payload.get("basecampnum"), tags=tags)
               self.gauge("days", payload.get("days"), tags=tags)
-# Agents resolve dotted external names (*.datadoghq.com, NTP pools); ndots:1
-# resolves them as absolute instead of walking the search list through
-# Technitium first.
 agents:
   dnsConfig:
     options:
@@ -164,19 +111,9 @@ clusterAgent:
     enabled: false
   admissionController:
     enabled: true
-    # Fail open: if the webhook is unreachable, pods still get scheduled
-    # (unmutated) instead of blocking all cluster scheduling.
     failurePolicy: Ignore
-  # In-place vertical resize (patches a running pod's resources.requests /
-  # limits via the K8s pods/resize subresource) for DatadogPodAutoscalers
-  # that opt into it (update.strategy: Auto), instead of always recreating
-  # the pod. No structured Helm value for this yet, hence the raw env var.
-  # https://docs.datadoghq.com/containers/autoscaling/
   env:
   - name: DD_AUTOSCALING_WORKLOAD_IN_PLACE_VERTICAL_SCALING_ENABLED
     value: "true"
-# https://docs.datadoghq.com/remote_configuration/#enable-remote-configuration
-# Defaults to true in the chart; set explicitly so it's documented here and
-# doesn't drift silently if the chart default ever changes.
 remoteConfiguration:
   enabled: true

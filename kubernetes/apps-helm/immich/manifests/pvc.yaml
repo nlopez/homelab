@@ -1,6 +1,4 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/persistentvolume-v1.json
-# Immich library using shared NFS media volume
-# Points directly to /mnt/etank/media/immich on the NFS share
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -37,7 +35,6 @@ spec:
   accessModes:
   - ReadWriteMany
 ---
-# Machine Learning cache volume
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -68,8 +65,6 @@ spec:
   accessModes:
   - ReadWriteOnce
 ---
-# iCloud media volume (read-only)
-# Points to /mnt/etank/media/icloud on the NFS share
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -107,11 +102,6 @@ spec:
   accessModes:
   - ReadWriteMany
 ---
-# iCloud sidecar change queue (read-write)
-# Only the .xmp-changes directory of the iCloud share, which icloudpd's
-# xmp-changes step fills and the immich-sidecar-sync job drains. The library
-# volume above stays read-only. The directory has to exist for the mount to
-# work; xmp-changes creates it the first time a sidecar changes.
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -146,8 +136,6 @@ spec:
   accessModes:
   - ReadWriteMany
 ---
-# PhotoSync media volume (read-write)
-# Points to /mnt/etank/media/PhotoSync on the NFS share
 apiVersion: v1
 kind: PersistentVolume
 metadata:

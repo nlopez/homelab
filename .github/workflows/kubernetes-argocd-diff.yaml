@@ -16,7 +16,6 @@ jobs:
   diff:
     name: 'Manifest Diff'
     runs-on: home-runners
-    # Fork PRs get a read-only token and can't comment.
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
     - name: 'Checkout base branch'
@@ -30,10 +29,6 @@ jobs:
         path: target-branch
         fetch-depth: 0
     - name: 'Point the Helm ApplicationSet at the PR'
-      # argocd-diff-preview only redirects targetRevision in template.spec.sources.
-      # bootstrap/apps-helm.yaml keeps its repo sources inside a templatePatch
-      # string, so without this the apps-helm values/manifests are always read
-      # from main and changes to them never show up in the diff.
       run: |-
         sed -i 's|^\( *targetRevision:\) main$|\1 ${{ github.sha }}|' target-branch/kubernetes/bootstrap/apps-helm.yaml
         grep -c '${{ github.sha }}' target-branch/kubernetes/bootstrap/apps-helm.yaml
@@ -49,16 +44,6 @@ jobs:
         chmod +x "$RUNNER_TEMP/bin/kubectl"
         echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
     - name: 'Render manifests and diff'
-      # Renders every Application/ApplicationSet (including Helm charts) on
-      # both commits through the long-lived Argo CD in the argocd-diff-preview
-      # namespace (apps-helm/argocd-diff-preview).
-      #
-      # DIFF_IGNORE hides the datadog chart's kpi-telemetry ConfigMap
-      # (datadog/datadog-kpi-telemetry-configmap), whose install_id and
-      # install_time are regenerated on every render. It matches whole lines
-      # and can't be scoped to a resource, so it's anchored to the exact
-      # two-space indent of those keys under `data:`. install_type is left
-      # visible.
       run: |-
         argocd-diff-preview \
           --repo "$GITHUB_REPOSITORY" \
@@ -74,7 +59,6 @@ jobs:
           cat output/diff.md >> "$GITHUB_STEP_SUMMARY"
         fi
     - name: 'Comment on PR'
-      # The home runner image has no gh CLI.
       uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
       with:
         script: |-

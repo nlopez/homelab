@@ -1,9 +1,3 @@
-# Routes native gRPC (used by the argocd CLI) to argocd-server over HTTP/2
-# cleartext (h2c), disambiguated from grpc-web/UI traffic on the sibling
-# HTTPRoute by the Content-Type header. Requires
-# server.service.servicePortHttpsAppProtocol: kubernetes.io/h2c in values.yaml
-# so Envoy Gateway knows to speak h2c upstream on port 443.
-# Ref: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/
 # yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/gateway.networking.k8s.io/grpcroute_v1.json
 apiVersion: gateway.networking.k8s.io/v1
 kind: GRPCRoute

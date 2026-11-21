@@ -24,7 +24,7 @@ def fix(pkt):
         fid, length = struct.unpack(">HH", out[pos:pos + 4])
         if length < 4:
             break
-        if fid == 0:  # template flowset
+        if fid == 0: 
             q = pos + 4
             while q + 4 <= pos + length:
                 _, count = struct.unpack(">HH", out[q:q + 4])

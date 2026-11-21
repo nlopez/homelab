@@ -1,4 +1,3 @@
-# Stage 1: Create non-root user
 FROM ubuntu:24.04 AS stage1
 ARG UID=1000
 ARG GID=1000
@@ -8,7 +7,6 @@ ENV LC_ALL=en_US.UTF-8
 RUN groupadd -g "${GID}" user \
   && useradd --create-home --no-log-init -u "${UID}" -g "${GID}" user
 
-# Stage 2: Install system packages
 FROM ubuntu:24.04 AS stage2
 COPY --link --from=stage1 / /
 ARG DEBIAN_FRONTEND=noninteractive
@@ -55,14 +53,12 @@ RUN --mount=type=cache,target=/var/cache/apt \
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen \
   && locale-gen
 
-# Stage 3: Node.js and frontend tools
 FROM ubuntu:24.04 AS stage3
 COPY --link --from=stage2 / /
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
   && apt-get install -y nodejs \
   && npm install --global yarn twspace-crawler
 
-# Stage 4: Python tools via uv
 FROM ubuntu:24.04 AS stage4
 COPY --link --from=stage3 / /
 ARG YT_DLP_VERSION
@@ -71,7 +67,6 @@ ARG TARGETARCH
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_TOOL_BIN_DIR=/usr/local/bin
 
-# Download official yt-dlp binary (release tag pinned via the YT_DLP_VERSION build arg)
 ARG YT_DLP_RELEASE_URL=https://github.com/yt-dlp/yt-dlp/releases/download/${YT_DLP_VERSION}
 RUN case "${TARGETARCH}" in \
       amd64)  YT_DLP_BIN=yt-dlp_linux ;; \
@@ -81,7 +76,6 @@ RUN case "${TARGETARCH}" in \
     curl -fsSL "${YT_DLP_RELEASE_URL}/${YT_DLP_BIN}" -o /usr/local/bin/yt-dlp && \
     chmod +x /usr/local/bin/yt-dlp
 
-# Stage 5: Final user setup
 FROM ubuntu:24.04 AS stage5
 COPY --link --from=stage4 / /
 ARG YT_DLP_VERSION
@@ -94,7 +88,6 @@ LABEL org.opencontainers.image.description="Media Toolbox: A Docker-based develo
 USER user
 ENV HOME=/home/user
 ENV PATH="${HOME}/.local/bin:${PATH}"
-# bgutil PO token provider plugin for the standalone yt-dlp binary (must match the ytpot server version)
 RUN mkdir -p "${HOME}/.config/yt-dlp/plugins" \
   && curl -fsSL "https://github.com/Brainicism/bgutil-ytdlp-pot-provider/releases/download/${BGUTIL_YTDLP_POT_PROVIDER_VERSION}/bgutil-ytdlp-pot-provider.zip" \
     -o "${HOME}/.config/yt-dlp/plugins/bgutil-ytdlp-pot-provider.zip"
@@ -109,7 +102,6 @@ RUN git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf \
   && ~/.fzf/install --no-completion --key-bindings --update-rc
 RUN git clone https://github.com/rockandska/fzf-obc ~/.local/opt/fzf-obc \
   && /bin/sh -c 'echo "source ~/.local/opt/fzf-obc/bin/fzf-obc.bash" >> ~/.bashrc'
-# atuin shell history; initialised after fzf so it owns Ctrl-R
 RUN case "${TARGETARCH}" in \
       arm64) ATUIN_TARGET=aarch64-unknown-linux-gnu ;; \
       *)     ATUIN_TARGET=x86_64-unknown-linux-gnu ;; \

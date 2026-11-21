@@ -1,9 +1,7 @@
-// Providers
 
 var REG_NONE = NewRegistrar("none");
 var DNS_CLOUDFLARE = NewDnsProvider("cloudflare");
 
-// Domains
 
 D(
   "desertbluffs.com",
@@ -16,7 +14,6 @@ D(
   IGNORE_NAME("lga2", "A"),
   IGNORE("_acme-challenge", "TXT"),
   IGNORE("_acme-challenge.**", "TXT"),
-  // ALIAS('@', 'lga1.desertbluffs.com.'),
   A("unifi", "67.207.87.138", CF_PROXY_OFF),
   AAAA("unifi", "2604:a880:400:d1:0:4:8533:d001", CF_PROXY_OFF),
   CAA("@", "iodef", "mailto:sslabuse@desertbluffs.com", CAA_CRITICAL),
@@ -74,7 +71,6 @@ D(
     "@",
     "google-site-verification=ZnkGcjiK9_Od1OOq6ZxMFzoS3Q7ZatXb8W_aH89g5mY",
   ),
-  // https://www.gov.uk/guidance/protect-domains-that-dont-send-email
   TXT("*", "v=spf1 -all"),
   TXT("*._domainkey", "v=DKIM1; p="),
   TXT(
@@ -90,7 +86,6 @@ D(
   DnsProvider(DNS_CLOUDFLARE),
   DefaultTTL(1), // Auto
   CF_PROXY_DEFAULT_OFF,
-  // Keep this for continued ProtonMail verification
   TXT("@", "protonmail-verification=f1ab807d903a45b94591fa70864d795a030e118c"),
   MX("@", 10, "mail.protonmail.ch."),
   MX("@", 20, "mailsec.protonmail.ch."),
@@ -125,7 +120,6 @@ D(
   CF_PROXY_DEFAULT_OFF,
   IGNORE_NAME("lga1", "A"),
   IGNORE_NAME("lga2", "A"),
-  // Keep this for continued ProtonMail verification
   TXT("@", "protonmail-verification=95474329be7c5db7b13b98a1a7cf2a302dea3f57"),
   MX("@", 10, "mail.protonmail.ch."),
   MX("@", 20, "mailsec.protonmail.ch."),

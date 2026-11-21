@@ -10,8 +10,6 @@
     regexp: "^SIZE="
     line: "SIZE={{ armbian_ramlog_size }}"
   when: armbian_ramlog_defaults.stat.exists
-  # The zram disk is sized when it is created at boot, so the new size takes
-  # effect on the next reboot.
 
 - name: Purge sysstat
   ansible.builtin.apt:

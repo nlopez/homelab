@@ -1,5 +1,4 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/serviceaccount-v1.json
-# Based on upstream kubernetes-csi/external-snapshotter deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -97,8 +96,6 @@ roleRef:
   kind: Role
   name: snapshot-controller-leaderelection
 ---
-# Sync wave 1: RBAC + deployment (after CRDs in sync-wave "0")
-# Based on upstream kubernetes-csi/external-snapshotter deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -111,8 +108,6 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: snapshot-controller
-  # The upstream comment says minReadySeconds should be slightly higher than the default
-  # --retry-crd-interval-max value of 30s, so the controller has time to wait for CRDs.
   minReadySeconds: 35
   strategy:
     rollingUpdate:

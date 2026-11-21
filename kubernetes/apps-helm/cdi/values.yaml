@@ -1,5 +1,3 @@
-# CDI (Containerized Data Importer) Helm values
-# Handles ISO and disk image uploads for Kubevirt VMs
 cloneStrategy: ""
 config:
   upload:

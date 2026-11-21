@@ -1,7 +1,4 @@
 ---
-# Tailscale routes all of 100.64.0.0/10 into tailscale0 (table 52), so a host
-# running it sends replies to tailnet clients out that interface instead of
-# back through the subnet router, and non-SNAT subnet routing breaks.
 - name: Stop and disable tailscaled
   ansible.builtin.systemd_service:
     name: tailscaled

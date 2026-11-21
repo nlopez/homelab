@@ -15,8 +15,6 @@
     - Reload systemd
     - Restart netflow9-fixup
 
-# The relay forwards with the exporter's source address, which strict reverse
-# path filtering would drop on its way back in through loopback.
 - name: Relax reverse path filtering for the relay
   ansible.builtin.copy:
     dest: /etc/sysctl.d/90-netflow9-fixup.conf

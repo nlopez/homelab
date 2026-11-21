@@ -1,7 +1,6 @@
 githubConfigUrl: https://github.com/nlopez/homelab
 githubConfigSecret: arc-github-app
 runnerScaleSetName: home-runners
-# One warm runner per node (see topologySpreadConstraints) so jobs skip pod startup.
 minRunners: 2
 maxRunners: 4
 controllerServiceAccount:

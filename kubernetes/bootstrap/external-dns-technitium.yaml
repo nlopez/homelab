@@ -1,7 +1,4 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/argoproj.io/application_v1alpha1.json
-# Standalone (not in the apps-helm ApplicationSet): that set uses RollingSync,
-# which forces auto-sync off, and the DNSEndpoint and values here must apply on
-# every push to main.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

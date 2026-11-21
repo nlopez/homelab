@@ -7,7 +7,6 @@ spec:
   selector:
     matchLabels:
       app: timekeeper-server
-  # Single SQLite writer on a ReadWriteOnce volume.
   strategy:
     type: Recreate
   template:
@@ -20,7 +19,6 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        # The image's "node" user is non-numeric.
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
@@ -44,10 +42,8 @@ spec:
           value: "https://www.youtube.com"
         - name: PUBLIC_ORIGIN
           value: "https://ash.kamotimestamps.com"
-        # The route's Lua filter sets X-Client-* from Cloudflare's headers and drops client-supplied copies.
         - name: TRUST_PROXY_HEADERS
           value: "true"
-        # Feature switches: on in ash first, then oak.
         - name: FEATURE_MINI_PLAYER
           value: "true"
         - name: JWT_SECRET

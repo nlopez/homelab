@@ -18,7 +18,6 @@ spec:
         protocol: UDP
       - port: "53"
         protocol: TCP
-  # Plex library-refresh notifications.
   - toEndpoints:
     - matchLabels:
         k8s:io.kubernetes.pod.namespace: pms
@@ -27,22 +26,19 @@ spec:
     - ports:
       - port: "32400"
         protocol: TCP
-  # Download clients on the NAS hosts.
   - toCIDR:
-    - 192.168.222.149/32 # nas1
-    - 192.168.222.114/32 # nas2
+    - 192.168.222.149/32
+    - 192.168.222.114/32
     toPorts:
     - ports:
       - port: "30024"
         protocol: TCP
   - toCIDR:
-    - 192.168.222.114/32 # nas2
+    - 192.168.222.114/32
     toPorts:
     - ports:
       - port: "30055"
         protocol: TCP
-  # Indexers, metadata and update checks: public HTTPS only. The except list
-  # keeps this rule from reaching the LAN or cluster ranges.
   - toCIDRSet:
     - cidr: 0.0.0.0/0
       except:
