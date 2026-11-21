@@ -9,6 +9,7 @@ metadata:
     gethomepage.dev/group: Media
     gethomepage.dev/icon: sonarr.png
     gethomepage.dev/description: TV manager
+    gethomepage.dev/pod-selector: ""
 spec:
   parentRefs:
   - name: private

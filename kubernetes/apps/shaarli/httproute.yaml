@@ -9,6 +9,7 @@ metadata:
     gethomepage.dev/group: Tools
     gethomepage.dev/icon: shaarli.png
     gethomepage.dev/description: Bookmarks
+    gethomepage.dev/pod-selector: ""
 spec:
   parentRefs:
   - name: private
