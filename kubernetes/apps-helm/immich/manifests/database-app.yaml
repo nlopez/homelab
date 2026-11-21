@@ -2,12 +2,12 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Database
 metadata:
-  name: atuin-database-tn-postgres
+  name: immich-database-tn-immich
 spec:
   cluster:
-    name: atuin-database-tn
-  name: postgres
-  owner: postgres
+    name: immich-database-tn
+  name: immich
+  owner: immich
   extensions:
   - name: pg_stat_statements
     ensure: present

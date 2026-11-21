@@ -57,21 +57,6 @@ datadog:
       secretKeyRef:
         name: datadog-postgres
         key: password
-  confd:
-    postgres.yaml: |-
-      # Matches every CloudNativePG instance pod by image short name.
-      ad_identifiers:
-      - postgresql
-      - cloudnative-vectorchord
-      init_config:
-      instances:
-      - host: "%%host%%"
-        port: 5432
-        dbname: postgres
-        username: datadog
-        password: "%%env_DD_POSTGRES_PASSWORD%%"
-        ssl: require
-        dbm: true
   checksd:
     palworld.py: |-
       from datadog_checks.base import AgentCheck, ConfigurationError

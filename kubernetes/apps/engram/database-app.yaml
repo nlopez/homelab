@@ -2,12 +2,12 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Database
 metadata:
-  name: engram-database-tn-postgres
+  name: engram-database-tn-engram
 spec:
   cluster:
     name: engram-database-tn
-  name: postgres
-  owner: postgres
+  name: engram
+  owner: engram
   extensions:
   - name: pg_stat_statements
     ensure: present

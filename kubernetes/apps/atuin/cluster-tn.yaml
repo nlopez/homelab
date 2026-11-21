@@ -10,6 +10,10 @@ spec:
     isWALArchiver: true
     parameters:
       barmanObjectName: atuin-backups
+  inheritedMetadata:
+    annotations:
+      ad.datadoghq.com/postgres.checks: |
+        {"postgres":{"init_config":{},"instances":[{"host":"%%host%%","port":5432,"dbname":"atuin","username":"datadog","password":"%%env_DD_POSTGRES_PASSWORD%%","ssl":"require","dbm":true}]}}
   managed:
     roles:
     - name: datadog

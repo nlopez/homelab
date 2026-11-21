@@ -12,6 +12,8 @@ spec:
       barmanObjectName: immich-backups
   inheritedMetadata:
     annotations:
+      ad.datadoghq.com/postgres.checks: |
+        {"postgres":{"init_config":{},"instances":[{"host":"%%host%%","port":5432,"dbname":"immich","username":"datadog","password":"%%env_DD_POSTGRES_PASSWORD%%","ssl":"require","dbm":true}]}}
       backup.velero.io/backup-volumes: pgdata
   postgresql:
     shared_preload_libraries:
