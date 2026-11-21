@@ -39,8 +39,7 @@ spec:
         namespace: kube-system
       - name: envoy-gateway
         tier: network-and-secrets
-        repoURL: registry-1.docker.io
-        chart: envoyproxy/gateway-helm
+        repoURL: oci://docker.io/envoyproxy/gateway-helm
         targetRevision: 1.9.3
         namespace: envoy-gateway-system
       - name: tailscale-operator
