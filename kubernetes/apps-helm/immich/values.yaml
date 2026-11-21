@@ -43,7 +43,7 @@ valkey:
       type: persistentVolumeClaim
       size: 1Gi
       accessMode: ReadWriteOnce
-      storageClass: nas1-mtank-iscsi
+      storageClass: tn-nas1-mtank-iscsi
 server:
   enabled: true
   controllers:

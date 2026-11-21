@@ -4,7 +4,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: warp-nas1-mtank
 spec:
-  storageClassName: nas1-mtank-iscsi
+  storageClassName: tn-nas1-mtank-iscsi
   accessModes:
   - ReadWriteOnce
   resources:
