@@ -4,7 +4,6 @@ kind: Deployment
 metadata:
   name: engram
 spec:
-  replicas: 0
   selector:
     matchLabels:
       app: engram
@@ -41,7 +40,7 @@ spec:
               name: onepassword-engram
               key: password
         - name: ENGRAM_DATABASE_URL
-          value: "postgres://engram:$(DB_PASSWORD)@engram-database-rw.engram.svc.cluster.local:5432/engram?sslmode=require"
+          value: "postgres://engram:$(DB_PASSWORD)@engram-database-tn-rw.engram.svc.cluster.local:5432/engram?sslmode=require"
         - name: ENGRAM_CLOUD_TOKEN
           valueFrom:
             secretKeyRef:

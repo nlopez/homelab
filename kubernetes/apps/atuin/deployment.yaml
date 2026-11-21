@@ -4,7 +4,6 @@ kind: Deployment
 metadata:
   name: atuin
 spec:
-  replicas: 0
   selector:
     matchLabels:
       app: atuin
@@ -44,7 +43,7 @@ spec:
               name: onepassword-atuin-database
               key: password
         - name: ATUIN_DB_URI
-          value: "postgresql://atuin:$(DB_PASSWORD)@atuin-database-rw.atuin.svc.cluster.local/atuin"
+          value: "postgresql://atuin:$(DB_PASSWORD)@atuin-database-tn-rw.atuin.svc.cluster.local/atuin"
         ports:
         - name: http
           containerPort: 8888
