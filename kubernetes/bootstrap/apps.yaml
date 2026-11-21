@@ -41,9 +41,9 @@ spec:
   templatePatch: |-
     {{- $patchedName := .path.basename }}
     {{- $patchedNamespace := .path.basename }}
-    {{- if gt (len .path.segments) 2 }}
-    {{- $patchedName = printf "%s-%s" (index .path.segments 1) .path.basename -}}
-    {{- $patchedNamespace = printf "%s" (index .path.segments 1) -}}
+    {{- if gt (len .path.segments) 3 }}
+    {{- $patchedName = printf "%s-%s" (index .path.segments 2) .path.basename -}}
+    {{- $patchedNamespace = printf "%s" (index .path.segments 2) -}}
     {{- end }}
     metadata:
       name: '{{ $patchedName }}'
