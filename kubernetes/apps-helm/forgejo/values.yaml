@@ -44,8 +44,8 @@ gitea:
   config:
     APP_NAME: Forgejo
     server:
-      DOMAIN: git.desertbluffs.com
-      ROOT_URL: https://git.desertbluffs.com/
+      DOMAIN: dazzi.desertbluffs.com
+      ROOT_URL: https://dazzi.desertbluffs.com/
       SSH_DOMAIN: git.desertbluffs.com
       SSH_PORT: 22
       SSH_LISTEN_PORT: 2222
