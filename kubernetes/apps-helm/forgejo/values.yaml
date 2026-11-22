@@ -64,6 +64,9 @@ gitea:
     indexer:
       ISSUE_INDEXER_TYPE: bleve
       REPO_INDEXER_ENABLED: true
+    security:
+      # Envoy Gateway runs in the pod network and sets X-Forwarded-For.
+      REVERSE_PROXY_TRUSTED_PROXIES: 10.43.16.0/20
     service:
       DISABLE_REGISTRATION: true
       REQUIRE_SIGNIN_VIEW: true
