@@ -47,6 +47,21 @@ spec:
           value: "America/New_York"
         - name: DOTNET_SYSTEM_NET_DISABLEIPV6
           value: "1"
+        - name: SONARR__POSTGRES__HOST
+          value: sonarr-database-tn-rw
+        - name: SONARR__POSTGRES__PORT
+          value: "5432"
+        - name: SONARR__POSTGRES__USER
+          value: sonarr
+        - name: SONARR__POSTGRES__PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-sonarr-database
+              key: password
+        - name: SONARR__POSTGRES__MAINDB
+          value: sonarr-main
+        - name: SONARR__POSTGRES__LOGDB
+          value: sonarr-log
         ports:
         - name: http
           containerPort: 8989
