@@ -82,6 +82,18 @@ spec:
                   targets:
                   - ${a}
               EOF
+
+              # Publish every internet route as A (WAN address) and AAAA (the gateway's
+              # public IPv6 address) instead of a CNAME to lga1.
+              ns=envoy-gateway-system
+              v6=$(kubectl get gateway -n "${ns}" internet -o jsonpath='{.status.addresses[*].value}' | tr ' ' '\n' | grep ':' | grep -v -i '^fd' | head -n 1 || true)
+              target="${a}"
+              [ -n "${v6}" ] && target="${a},${v6}"
+              current=$(kubectl get gateway -n "${ns}" internet -o jsonpath='{.metadata.annotations.external-dns\.kubernetes\.io/target}')
+              if [ "${current}" != "${target}" ]; then
+                kubectl annotate gateway -n "${ns}" internet --overwrite "external-dns.kubernetes.io/target=${target}"
+                echo "internet gateway target ${current:-unset} -> ${target}"
+              fi
           volumes:
           - name: tmp
             emptyDir: {}

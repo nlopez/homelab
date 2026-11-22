@@ -26,3 +26,30 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: wan-ip
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/role-rbac-v1.json
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: wan-ip
+  namespace: envoy-gateway-system
+rules:
+- apiGroups: ["gateway.networking.k8s.io"]
+  resources: ["gateways"]
+  resourceNames: ["internet"]
+  verbs: ["get", "patch"]
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/rolebinding-rbac-v1.json
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: wan-ip
+  namespace: envoy-gateway-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: wan-ip
+subjects:
+- kind: ServiceAccount
+  name: wan-ip
+  namespace: wan-ip
