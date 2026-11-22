@@ -5,6 +5,7 @@ metadata:
   name: private
   namespace: envoy-gateway-system
 spec:
+  ipFamily: DualStack
   provider:
     type: Kubernetes
     kubernetes:
@@ -13,7 +14,7 @@ spec:
         allocateLoadBalancerNodePorts: false
         externalTrafficPolicy: Local
         annotations:
-          lbipam.cilium.io/ips: "10.43.64.10"
+          lbipam.cilium.io/ips: "10.43.64.10,fd54:571b:560a:4364::10"
           tailscale.com/expose: "true"
           tailscale.com/hostname: envoy-gateway-private
           tailscale.com/proxy-group: heimdall

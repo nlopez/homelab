@@ -8,6 +8,8 @@ spec:
   addresses:
   - type: IPAddress
     value: 10.43.64.10
+  - type: IPAddress
+    value: fd54:571b:560a:4364::10
   listeners:
   - name: wildcard-radoncanyon-com-https
     protocol: HTTPS
