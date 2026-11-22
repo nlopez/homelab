@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/gateway.networking.k8s.io/tcproute_v1alpha2.json
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: forgejo-ssh-private
+spec:
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: private
+    namespace: envoy-gateway-system
+    sectionName: forgejo-ssh
+  rules:
+  - backendRefs:
+    - name: forgejo-ssh
+      port: 22
+      group: ""
+      kind: Service
+      weight: 1

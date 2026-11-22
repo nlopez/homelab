@@ -10,11 +10,8 @@ deployment:
     tags.datadoghq.com/version: v1
 service:
   ssh:
-    type: LoadBalancer
+    type: ClusterIP
     port: 22
-    annotations:
-      lbipam.cilium.io/ips: "10.43.64.22"
-      external-dns.kubernetes.io/hostname: forgejo-ssh.radoncanyon.com
 persistence:
   enabled: true
   create: true
@@ -37,9 +34,9 @@ gitea:
   config:
     APP_NAME: Forgejo
     server:
-      DOMAIN: forgejo.desertbluffs.com
-      ROOT_URL: https://forgejo.desertbluffs.com/
-      SSH_DOMAIN: forgejo-ssh.radoncanyon.com
+      DOMAIN: git.desertbluffs.com
+      ROOT_URL: https://git.desertbluffs.com/
+      SSH_DOMAIN: git.desertbluffs.com
       SSH_PORT: 22
       SSH_LISTEN_PORT: 2222
     database:
