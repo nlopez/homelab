@@ -1,11 +1,11 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/gateway.envoyproxy.io/envoypatchpolicy_v1alpha1.json
-# Lets clients run WebSockets over HTTP/2 (RFC 8441 extended CONNECT).
-# Envoy Gateway merges every HTTPS listener on port 443 into one Envoy listener
-# named after the first Gateway listener, with one filter chain per Gateway
-# listener in spec order. Each patch adds allow_connect to one chain's HTTP
-# connection manager and keeps the http2_protocol_options Envoy Gateway sets.
-# Adding, removing, or reordering a 443 listener on a Gateway changes the chain
-# indexes below.
+# Lets clients run WebSockets over HTTP/2 (RFC 8441 extended CONNECT) and HTTP/3
+# (RFC 9220). Envoy Gateway has no API field for either, so these patch policies
+# add the flags to the listeners it generates.
+#
+# Each Gateway serves every HTTPS hostname from one listener, so Envoy Gateway
+# builds exactly one filter chain and the patches below always target chain 0.
+# Adding a hostname means adding a certificate, not a listener.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyPatchPolicy
 metadata:
@@ -18,29 +18,16 @@ spec:
     name: internet
   type: JSONPatch
   jsonPatches:
-  # wildcard-desertbluffs-com-https
   - type: "type.googleapis.com/envoy.config.listener.v3.Listener"
-    name: "envoy-gateway-system/internet/wildcard-desertbluffs-com-https"
+    name: "envoy-gateway-system/internet/https"
     operation:
       op: add
       path: "/filter_chains/0/filters/0/typed_config/http2_protocol_options/allow_connect"
       value: true
-  # kamotimestamps-com-https
-  - type: "type.googleapis.com/envoy.config.listener.v3.Listener"
-    name: "envoy-gateway-system/internet/wildcard-desertbluffs-com-https"
-    operation:
-      op: add
-      path: "/filter_chains/1/filters/0/typed_config/http2_protocol_options/allow_connect"
-      value: true
-  # apex-desertbluffs-com-https
-  - type: "type.googleapis.com/envoy.config.listener.v3.Listener"
-    name: "envoy-gateway-system/internet/wildcard-desertbluffs-com-https"
-    operation:
-      op: add
-      path: "/filter_chains/2/filters/0/typed_config/http2_protocol_options/allow_connect"
-      value: true
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/gateway.envoyproxy.io/envoypatchpolicy_v1alpha1.json
+# The private Gateway serves HTTP/3, advertised with alt-svc, so it needs the
+# HTTP/3 flag as well as the HTTP/2 one.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: EnvoyPatchPolicy
 metadata:
@@ -53,17 +40,15 @@ spec:
     name: private
   type: JSONPatch
   jsonPatches:
-  # wildcard-desertbluffs-com-https
   - type: "type.googleapis.com/envoy.config.listener.v3.Listener"
-    name: "envoy-gateway-system/private/wildcard-desertbluffs-com-https"
+    name: "envoy-gateway-system/private/https"
     operation:
       op: add
       path: "/filter_chains/0/filters/0/typed_config/http2_protocol_options/allow_connect"
       value: true
-  # apex-desertbluffs-com-https
   - type: "type.googleapis.com/envoy.config.listener.v3.Listener"
-    name: "envoy-gateway-system/private/wildcard-desertbluffs-com-https"
+    name: "envoy-gateway-system/private/https-quic"
     operation:
       op: add
-      path: "/filter_chains/1/filters/0/typed_config/http2_protocol_options/allow_connect"
+      path: "/filter_chains/0/filters/0/typed_config/http3_protocol_options/allow_extended_connect"
       value: true

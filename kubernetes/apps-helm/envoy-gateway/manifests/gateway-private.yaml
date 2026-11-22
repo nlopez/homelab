@@ -11,25 +11,11 @@ spec:
   - type: IPAddress
     value: fd54:571b:560a:4364::10
   listeners:
-  - name: wildcard-desertbluffs-com-https
+  # One listener for every hostname the gateway serves. Envoy Gateway builds one
+  # filter chain per Gateway listener, so a single listener keeps the HTTP/2
+  # websocket patch at a fixed /filter_chains/0. Certificates are selected by SNI.
+  - name: https
     protocol: HTTPS
-    hostname: "*.desertbluffs.com"
-    port: 443
-    tls:
-      mode: Terminate
-      certificateRefs:
-      - kind: Secret
-        name: omni-certificate-rsa
-        group: ""
-      - kind: Secret
-        name: omni-certificate-ecdsa
-        group: ""
-    allowedRoutes:
-      namespaces:
-        from: All
-  - name: apex-desertbluffs-com-https
-    protocol: HTTPS
-    hostname: "desertbluffs.com"
     port: 443
     tls:
       mode: Terminate
