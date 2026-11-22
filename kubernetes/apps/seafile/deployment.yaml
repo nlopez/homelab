@@ -40,6 +40,12 @@ spec:
           value: mariadb
         - name: SEAFILE_MYSQL_DB_USER
           value: seafile
+        - name: SEAFILE_MYSQL_DB_CCNET_DB_NAME
+          value: ccnet_db
+        - name: SEAFILE_MYSQL_DB_SEAFILE_DB_NAME
+          value: seafile_db
+        - name: SEAFILE_MYSQL_DB_SEAHUB_DB_NAME
+          value: seahub_db
         - name: SEAFILE_MYSQL_DB_PASSWORD
           valueFrom:
             secretKeyRef:
