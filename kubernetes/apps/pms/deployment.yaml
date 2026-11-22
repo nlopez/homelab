@@ -21,8 +21,6 @@ spec:
     metadata:
       labels:
         app: pms
-        app.kubernetes.io/name: pms
-        app.kubernetes.io/instance: pms
         version: v1
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: pms
