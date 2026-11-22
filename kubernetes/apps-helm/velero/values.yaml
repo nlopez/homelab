@@ -214,3 +214,14 @@ schedules:
       includeClusterResources: false
       snapshotVolumes: false
       snapshotMoveData: false
+  seafile-daily:
+    schedule: "50 11 * * *"
+    paused: false
+    template:
+      includedNamespaces:
+      - seafile
+      storageLocation: do-spaces-sfo3
+      ttl: 336h
+      includeClusterResources: false
+      snapshotVolumes: false
+      snapshotMoveData: false
