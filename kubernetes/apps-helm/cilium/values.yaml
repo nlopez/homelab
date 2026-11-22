@@ -13,7 +13,9 @@ ipam:
   operator:
     clusterPoolIPv4PodCIDRList: ["10.43.16.0/20"]
     clusterPoolIPv4MaskSize: 24
-    clusterPoolIPv6PodCIDRList: ["2600:4041:5b21:6b10::/64"]
+    # Cluster-pool rejects a per-node mask more than 16 bits longer than the pool, so this
+    # slice of 2600:4041:5b21:6b10::/64 is a /96 rather than the whole /64.
+    clusterPoolIPv6PodCIDRList: ["2600:4041:5b21:6b10::/96"]
     clusterPoolIPv6MaskSize: 112
 routingMode: "native"
 autoDirectNodeRoutes: true
