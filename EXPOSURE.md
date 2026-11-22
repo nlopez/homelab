@@ -42,8 +42,11 @@ gateway) get a catch-all `418` route (`kubernetes/apps-helm/envoy-gateway/manife
 
 1. Cloudflare serves the public DNS record, proxied (`external-dns.kubernetes.io/cloudflare-proxied: "true"`).
    The `external-dns` instance only publishes routes attached to the `internet` gateway.
-2. Cloudflare connects to the origin at `lga1.desertbluffs.com`, the home WAN address (managed
-   outside this repo; the `dns/` tofu config does not manage it).
+2. Cloudflare connects to the origin at `lga1.desertbluffs.com`. The `external-dns` instance
+   owns both of its records: the A record is the WAN address, which the `wan-ip` CronJob
+   (`apps/wan-ip`) detects every 5 minutes and writes to the `lga1` DNSEndpoint, and the AAAA
+   record is the `internet` gateway's public IPv6 address, from an annotation on its Service. The
+   gateway's dynamic DNS client no longer updates `lga1`.
 3. The router sends that traffic to the `internet` gateway at `10.43.64.20`.
 4. The gateway accepts only TLS clients that present a Cloudflare authenticated origin pull
    certificate (`tls-settings-internet` in `tls-settings-policy.yaml`), so connections that
@@ -54,7 +57,9 @@ Cilium `public-v6` pool (`2600:4041:5b21:6b64::/112`, in `apps-helm/cilium/manif
 Only Services labeled `lbipam.homelab/pool: public` get addresses from that pool, and the gateway
 is the only one. OPNsense's WAN rule `ingress gateway` allows port 443 to it (alias
 `ingress_gateway_v6`) only from Cloudflare's published ranges (`cf_ips_v6`). The address sits
-inside the prefix Verizon delegates, so it changes if that prefix does.
+inside the prefix Verizon delegates, so it changes if that prefix does; the pool, the alias, and
+the gateway's `lbipam.cilium.io/ips` annotation then need the new prefix, and external-dns follows.
+With both records published, Cloudflare still reaches the origin over IPv4.
 
 ### Private
 
