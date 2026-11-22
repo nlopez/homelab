@@ -7,14 +7,14 @@ route between the `internet` and `private` gateways.
 
 | Service | Namespace | Internet | Private (LAN + tailnet) | Notes |
 | --- | --- | --- | --- | --- |
-| Argo CD | `argocd` | `flopie.desertbluffs.com` | `argocd`, `flopie` | HTTP and gRPC routes on the private gateway; HTTP only on the internet gateway. |
-| Atuin | `atuin` | `pyrin.desertbluffs.com` | `atuin`, `pyrin` | |
-| Forgejo | `forgejo` | `dazzi.desertbluffs.com` | `git`, `dazzi`; SSH `git.desertbluffs.com:22` | Git SSH runs only on the private gateway's TCP listener; Cloudflare can't proxy it. HTTPS pushes over the internet are subject to Cloudflare's request body limit (100 MB on Free and Pro). |
-| Immich | `immich` | `nox.desertbluffs.com` | `immich`, `nox` | |
-| Jellyfin | `jellyfin` | `wixen.desertbluffs.com` | `jellyfin`, `wixen` | |
-| Obsidian LiveSync | `obsidian-livesync` | `lifmunk.desertbluffs.com` | `livesync`, `lifmunk` | |
-| Plex | `pms` | `vixy.desertbluffs.com` | `plex`, `vixy`; LoadBalancer `10.43.64.2:32400` | |
-| Shaarli | `shaarli` | `gumoss.desertbluffs.com` | `shaarli`, `gumoss` | |
+| Argo CD | `argocd` | `flopie.desertbluffs.com` | `argocd` | HTTP and gRPC routes on the private gateway; HTTP only on the internet gateway. |
+| Atuin | `atuin` | `pyrin.desertbluffs.com` | `atuin` | |
+| Forgejo | `forgejo` | `dazzi.desertbluffs.com` | `git`; SSH `git.desertbluffs.com:22` | Git SSH runs only on the private gateway's TCP listener; Cloudflare can't proxy it. HTTPS pushes over the internet are subject to Cloudflare's request body limit (100 MB on Free and Pro). |
+| Immich | `immich` | `nox.desertbluffs.com` | `immich` | |
+| Jellyfin | `jellyfin` | `wixen.desertbluffs.com` | `jellyfin` | |
+| Obsidian LiveSync | `obsidian-livesync` | `lifmunk.desertbluffs.com` | `livesync` | |
+| Plex | `pms` | `vixy.desertbluffs.com` | `plex`; LoadBalancer `10.43.64.2:32400` | |
+| Shaarli | `shaarli` | `gumoss.desertbluffs.com` | `shaarli` | |
 | Timekeeper (ash) | `timekeeper-ash` | `ash.kamotimestamps.com` | — | Internet only. |
 | Timekeeper (oak) | `timekeeper-oak` | `oak.kamotimestamps.com` | — | Internet only. |
 | Apex redirect | `envoy-gateway-system` | `desertbluffs.com`, `www` | `desertbluffs.com`, `www` | Redirect only; no backend. |
@@ -29,16 +29,17 @@ route between the `internet` and `private` gateways.
 | Sonarr | `sonarr` | — | `sonarr`, `jolthog` | |
 | Technitium | `technitium` | — | Web `dns`; DNS `10.43.64.53`, `fd54:571b:560a:4364::53`; tailnet `technitium` | |
 
-Hostnames in the Private column are under `desertbluffs.com` unless written in full. A public
-service's codename (pick new ones from [CODENAMES.md](CODENAMES.md)) is also on its private
-route, so the same URL resolves to the private gateway from the LAN and the tailnet.
+Hostnames in the Private column are under `desertbluffs.com` unless written in full. Private DNS
+holds those short names only. Codenames (pick new ones from [CODENAMES.md](CODENAMES.md)) exist
+only in public DNS, so they resolve to Cloudflare from the LAN and the tailnet too.
 
 Unmatched hostnames under `*.desertbluffs.com` (both gateways) get a catch-all `418` route (`kubernetes/apps-helm/envoy-gateway/manifests/unmatched-teapot.yaml`).
 
 ## Split-horizon DNS
 
-The same name resolves differently depending on where the client asks. Using the codename
-`pyrin.desertbluffs.com` as an example:
+Short names resolve differently depending on where the client asks; codenames never appear in
+private DNS, so they resolve the same way everywhere. Using `atuin.desertbluffs.com` and its
+codename `pyrin.desertbluffs.com` as the examples:
 
 ```mermaid
 flowchart LR
@@ -63,11 +64,11 @@ flowchart LR
   edge["Cloudflare proxy"]
   gw["gw.lga1 (OPNsense)<br/>WAN 96.246.156.39"]
 
-  edt -- "A + AAAA for private hostnames" --> tech
+  edt -- "A + AAAA for short names" --> tech
   wanip -- "Gateway target annotation" --> edc
   edc -- "proxied A + AAAA for internet hostnames" --> cfdns
 
-  lan -- "pyrin? (via the site gateway's resolver)" --> tech
+  lan -- "atuin? (via the site gateway's resolver)" --> tech
   tech -- "local record: 10.43.64.10 / fd54:…::10" --> lan
   tech -. "names it does not hold<br/>(MX, SES, lga2, …)" .-> cfdns
   lan -- "HTTPS" --> priv
@@ -83,7 +84,7 @@ flowchart LR
   inet -- "Cloudflare origin-pull mTLS required" --> app
 ```
 
-- **Inside:** Technitium answers from its own records, so a codename goes straight to the private
+- **Inside:** Technitium answers from its own records, so a short name goes straight to the private
   gateway and never leaves the network. Each site's gateway (OPNsense Unbound) forwards
   `desertbluffs.com` and `nulogorsk.com` to Technitium (`10.43.64.53`) and nothing else; there
   are no zone copies on the gateways. Names Technitium doesn't hold are forwarded to public DNS.
@@ -94,8 +95,8 @@ flowchart LR
 - **Outside:** Cloudflare answers with its own anycast addresses, because every internet record is
   proxied. The A and AAAA contents (the WAN address and the gateway's public IPv6 address) are only
   where Cloudflare connects, and never appear in public answers.
-- Only names on both gateways (the codenames) resolve both ways. Friendly names such as
-  `atuin.desertbluffs.com` exist only inside.
+- Only short names resolve both ways. A codename such as `pyrin.desertbluffs.com` is absent from
+  Technitium, so a LAN client follows the same Cloudflare path as the internet.
 
 ## Paths
 

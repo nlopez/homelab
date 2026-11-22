@@ -18,7 +18,6 @@ spec:
     kind: Gateway
   hostnames:
   - shaarli.desertbluffs.com
-  - gumoss.desertbluffs.com
   rules:
   - backendRefs:
     - name: shaarli

@@ -12,7 +12,6 @@ spec:
     kind: Gateway
   hostnames:
   - argocd.desertbluffs.com
-  - flopie.desertbluffs.com
   rules:
   - matches:
     - headers:

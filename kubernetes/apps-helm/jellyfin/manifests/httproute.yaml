@@ -18,7 +18,6 @@ spec:
     kind: Gateway
   hostnames:
   - jellyfin.desertbluffs.com
-  - wixen.desertbluffs.com
   rules:
   - backendRefs:
     - name: jellyfin

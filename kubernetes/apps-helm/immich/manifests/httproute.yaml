@@ -18,7 +18,6 @@ spec:
     kind: Gateway
   hostnames:
   - immich.desertbluffs.com
-  - nox.desertbluffs.com
   rules:
   - backendRefs:
     - name: immich-server

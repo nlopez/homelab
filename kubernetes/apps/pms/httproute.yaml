@@ -45,7 +45,6 @@ spec:
     kind: Gateway
   hostnames:
   - plex.desertbluffs.com
-  - vixy.desertbluffs.com
   rules:
   - backendRefs:
     - name: pms

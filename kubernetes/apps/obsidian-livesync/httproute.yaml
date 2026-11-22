@@ -12,7 +12,6 @@ spec:
     kind: Gateway
   hostnames:
   - livesync.desertbluffs.com
-  - lifmunk.desertbluffs.com
   rules:
   - backendRefs:
     - name: couchdb
