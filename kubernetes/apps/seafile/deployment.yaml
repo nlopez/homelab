@@ -71,6 +71,31 @@ spec:
             secretKeyRef:
               name: onepassword-seafile
               key: admin-password
+        - name: SMTP_HOST
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-seafile-smtp
+              key: host
+        - name: SMTP_PORT
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-seafile-smtp
+              key: port
+        - name: SMTP_USER
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-seafile-smtp
+              key: username
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-seafile-smtp
+              key: password
+        - name: SMTP_FROM
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-seafile-smtp
+              key: from
         - name: CACHE_PROVIDER
           value: redis
         - name: REDIS_HOST
@@ -102,7 +127,14 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /shared
+        - name: local-settings
+          mountPath: /opt/seafile/seafile-server-latest/seahub/seahub/local_settings.py
+          subPath: local_settings.py
+          readOnly: true
       volumes:
       - name: data
         persistentVolumeClaim:
           claimName: data
+      - name: local-settings
+        configMap:
+          name: seahub-local-settings
