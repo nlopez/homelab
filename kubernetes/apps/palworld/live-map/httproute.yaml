@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/group: Games
     gethomepage.dev/icon: mdi-map
     gethomepage.dev/description: Live map
-    gethomepage.dev/pod-selector: ""
+    gethomepage.dev/pod-selector: app=palworld-live-map
   namespace: palworld
 spec:
   parentRefs:

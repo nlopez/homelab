@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/group: Media
     gethomepage.dev/icon: immich.png
     gethomepage.dev/description: Photos
-    gethomepage.dev/pod-selector: ""
+    gethomepage.dev/pod-selector: app.kubernetes.io/name=server
 spec:
   parentRefs:
   - name: private
