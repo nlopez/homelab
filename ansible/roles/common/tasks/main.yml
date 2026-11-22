@@ -48,9 +48,9 @@
 - name: Setup Nick's keys
   ansible.posix.authorized_key:
     user: nlopez
-    key: https://github.com/nlopez.keys
+    key: "{{ common_authorized_keys | join('\n') }}"
     exclusive: true
-    validate_certs: true
+  tags: authorized_keys
 
 - name: Allow members of sudoers group to run all commands without a password
   ansible.builtin.template:

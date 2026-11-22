@@ -1,2 +1,8 @@
 ---
 common_sudo_group: wheel
+
+# Public keys of the SSH keys in nlopez's 1Password SSH agent. These replace
+# every other key in ~nlopez/.ssh/authorized_keys.
+common_authorized_keys:
+  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEvDNgTluafxfN++WnyRNqyVO7LfbvpTY5M6N24Kr9dI
+  - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGdsuL9gfvu+aqCFhs12VeEv+uUkbtUskZ1Ny8T7ZkxZ
