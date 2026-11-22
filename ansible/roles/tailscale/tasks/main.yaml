@@ -70,6 +70,14 @@
     - net.ipv6.conf.all.forwarding
   when: tailscale_advertise_routes | length > 0
 
+- name: Keep accepting router advertisements while forwarding
+  ansible.posix.sysctl:
+    name: net.ipv6.conf.all.accept_ra
+    value: "2"
+    sysctl_file: /etc/sysctl.d/99-tailscale-subnet-router.conf
+    reload: true
+  when: tailscale_advertise_routes | length > 0
+
 - name: Configure Tailscale subnet routing
   ansible.builtin.command: >-
     tailscale set
