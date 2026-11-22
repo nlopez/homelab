@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/configmap-v1.json
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: forgejo-runner-config
+data:
+  config.yml: |-
+    log:
+      level: info
+    runner:
+      capacity: 2
+      timeout: 3h
+      labels:
+      - docker:docker://data.forgejo.org/oci/node:22-bookworm
+      - ubuntu-latest:docker://data.forgejo.org/oci/node:22-bookworm
+    cache:
+      enabled: true
+      dir: /data/cache
+    container:
+      network: ""
+      privileged: false
+      docker_host: "-"
+    server:
+      connections:
+        forgejo:
+          url: http://forgejo-http.forgejo.svc.cluster.local:3000/
+          uuid: 32653431-3839-3634-3934-643662643236
+          token_url: file:/secrets/token

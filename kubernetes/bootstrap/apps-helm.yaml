@@ -161,6 +161,11 @@ spec:
         repoURL: oci://ghcr.io/immich-app/immich-charts/immich
         targetRevision: '0.13.4'
         namespace: immich
+      - name: forgejo
+        tier: platform
+        repoURL: oci://code.forgejo.org/forgejo-helm/forgejo
+        targetRevision: "17.3.3"
+        namespace: forgejo
       - name: spegel
         tier: platform
         repoURL: oci://ghcr.io/spegel-org/helm-charts/spegel

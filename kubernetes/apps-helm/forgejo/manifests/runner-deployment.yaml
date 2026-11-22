@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forgejo-runner
+  labels:
+    app: forgejo-runner
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: forgejo-runner
+  template:
+    metadata:
+      labels:
+        app: forgejo-runner
+        tags.datadoghq.com/env: homelab
+        tags.datadoghq.com/service: forgejo-runner
+        tags.datadoghq.com/version: v1
+    spec:
+      automountServiceAccountToken: false
+      initContainers:
+      - name: dind
+        image: docker.io/library/docker:29.10.0-dind
+        restartPolicy: Always
+        args:
+        - --host=tcp://127.0.0.1:2375
+        - --tls=false
+        env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+        securityContext:
+          privileged: true
+        startupProbe:
+          exec:
+            command: ["docker", "-H", "tcp://127.0.0.1:2375", "info"]
+          periodSeconds: 2
+          failureThreshold: 60
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 8Gi
+        volumeMounts:
+        - name: docker
+          mountPath: /var/lib/docker
+      containers:
+      - name: runner
+        image: code.forgejo.org/forgejo/runner:13.2.2
+        workingDir: /data
+        command:
+        - forgejo-runner
+        - daemon
+        - --config
+        - /config/config.yml
+        env:
+        - name: DOCKER_HOST
+          value: tcp://127.0.0.1:2375
+        securityContext:
+          runAsUser: 1000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: true
+        - name: token
+          mountPath: /secrets
+          readOnly: true
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: config
+        configMap:
+          name: forgejo-runner-config
+      - name: token
+        secret:
+          secretName: onepassword-forgejo-runner
+          items:
+          - key: token
+            path: token
+      - name: data
+        emptyDir: {}
+      - name: docker
+        emptyDir:
+          sizeLimit: 50Gi

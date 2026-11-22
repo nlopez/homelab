@@ -187,6 +187,7 @@ schedules:
       includedNamespaces:
       - atuin
       - engram
+      - forgejo
       - jellyfin
       - palworld-modded
       - pms
