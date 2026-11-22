@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/onepassword.com/onepassworditem_v1.json
+apiVersion: onepassword.com/v1
+kind: OnePasswordItem
+metadata:
+  name: datadog-mariadb
+spec:
+  itemPath: "vaults/evjh25ux2mnoufaut6qhvm2pdi/items/ow7tgtwrozrc3luc3fznl6el44"
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/k8s.mariadb.com/user_v1alpha1.json
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: User
+metadata:
+  name: datadog
+spec:
+  mariaDbRef:
+    name: mariadb
+  passwordSecretKeyRef:
+    name: datadog-mariadb
+    key: password
+  maxUserConnections: 5
+  host: "%"
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/k8s.mariadb.com/grant_v1alpha1.json
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Grant
+metadata:
+  name: datadog-global
+spec:
+  mariaDbRef:
+    name: mariadb
+  username: datadog
+  host: "%"
+  database: "*"
+  table: "*"
+  privileges:
+  - REPLICATION CLIENT
+  - PROCESS
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/k8s.mariadb.com/grant_v1alpha1.json
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Grant
+metadata:
+  name: datadog-performance-schema
+spec:
+  mariaDbRef:
+    name: mariadb
+  username: datadog
+  host: "%"
+  database: performance_schema
+  table: "*"
+  privileges:
+  - SELECT

@@ -57,6 +57,11 @@ datadog:
       secretKeyRef:
         name: datadog-postgres
         key: password
+  - name: DD_MARIADB_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: datadog-mariadb
+        key: password
   checksd:
     palworld.py: |-
       from datadog_checks.base import AgentCheck, ConfigurationError

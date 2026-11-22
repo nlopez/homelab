@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/k8s.mariadb.com/mariadb_v1alpha1.json
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: MariaDB
+metadata:
+  name: mariadb
+spec:
+  image: mariadb:11.4.13
+  rootPasswordSecretKeyRef:
+    name: onepassword-seafile
+    key: mysql-root-password
+    generate: false
+  storage:
+    size: 10Gi
+    storageClassName: tn-nas1-mtank-iscsi
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+  myCnf: |
+    [mariadb]
+    performance_schema=ON
+    performance-schema-consumer-events-statements-current=ON
+    performance-schema-consumer-events-waits-current=ON
+    max_digest_length=4096
+    performance_schema_max_digest_length=4096
+    performance_schema_max_sql_text_length=4096
+  podMetadata:
+    labels:
+      app.kubernetes.io/instance: seafile
+    annotations:
+      ad.datadoghq.com/mariadb.checks: |-
+        {"mysql":{"init_config":{},"instances":[{"host":"%%host%%","port":3306,"username":"datadog","password":"%%env_DD_MARIADB_PASSWORD%%","dbm":true,"options":{"replication":false,"extra_status_metrics":true,"extra_innodb_metrics":true,"schema_size_metrics":true}}]}}

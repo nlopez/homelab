@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/onepassword.com/onepassworditem_v1.json
+apiVersion: onepassword.com/v1
+kind: OnePasswordItem
+metadata:
+  name: cnpg-backups-spaces
+spec:
+  itemPath: "vaults/evjh25ux2mnoufaut6qhvm2pdi/items/uvfekeu7grfa7wzz2pe33rticq"
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/k8s.mariadb.com/backup_v1alpha1.json
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Backup
+metadata:
+  name: mariadb-daily
+spec:
+  mariaDbRef:
+    name: mariadb
+  schedule:
+    cron: "0 3 * * *"
+  maxRetention: 336h
+  compression: gzip
+  storage:
+    s3:
+      bucket: homelab-cnpg-backups-1sslgx
+      prefix: seafile-mariadb
+      endpoint: sfo3.digitaloceanspaces.com
+      region: sfo3
+      accessKeyIdSecretKeyRef:
+        name: cnpg-backups-spaces
+        key: ACCESS_KEY_ID
+      secretAccessKeySecretKeyRef:
+        name: cnpg-backups-spaces
+        key: ACCESS_SECRET_KEY
+      tls:
+        enabled: true
