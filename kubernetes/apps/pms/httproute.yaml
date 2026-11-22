@@ -44,6 +44,7 @@ spec:
     group: gateway.networking.k8s.io
     kind: Gateway
   hostnames:
+  - plex.desertbluffs.com
   - vixy.desertbluffs.com
   rules:
   - backendRefs:
