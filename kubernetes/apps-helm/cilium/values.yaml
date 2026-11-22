@@ -13,7 +13,7 @@ ipam:
   operator:
     clusterPoolIPv4PodCIDRList: ["10.43.16.0/20"]
     clusterPoolIPv4MaskSize: 24
-    clusterPoolIPv6PodCIDRList: ["fd54:571b:560a:4316::/64"]
+    clusterPoolIPv6PodCIDRList: ["fd54:571b:560a:4316::/96"]
     clusterPoolIPv6MaskSize: 112
 routingMode: "native"
 autoDirectNodeRoutes: true
