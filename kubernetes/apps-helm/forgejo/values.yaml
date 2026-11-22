@@ -31,6 +31,16 @@ gitea:
       secretKeyRef:
         name: onepassword-forgejo-database
         key: password
+  - name: FORGEJO__MAILER__USER
+    valueFrom:
+      secretKeyRef:
+        name: onepassword-forgejo-smtp
+        key: username
+  - name: FORGEJO__MAILER__PASSWD
+    valueFrom:
+      secretKeyRef:
+        name: onepassword-forgejo-smtp
+        key: password
   config:
     APP_NAME: Forgejo
     server:
@@ -57,6 +67,13 @@ gitea:
     service:
       DISABLE_REGISTRATION: true
       REQUIRE_SIGNIN_VIEW: true
+      ENABLE_NOTIFY_MAIL: true
+    mailer:
+      ENABLED: true
+      PROTOCOL: smtp+starttls
+      SMTP_ADDR: email-smtp.us-east-1.amazonaws.com
+      SMTP_PORT: 587
+      FROM: Forgejo <forgejo@desertbluffs.com>
     actions:
       ENABLED: true
       DEFAULT_ACTIONS_URL: https://code.forgejo.org
