@@ -2,10 +2,13 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: seahub-local-settings
+  name: seahub-settings
 data:
-  local_settings.py: |-
+  seahub_settings.py: |-
     import os
+
+    SECRET_KEY = os.environ["SEAHUB_SECRET_KEY"]
+    TIME_ZONE = os.environ["TIME_ZONE"]
 
     EMAIL_USE_TLS = True
     EMAIL_HOST = os.environ["SMTP_HOST"]

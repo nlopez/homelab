@@ -71,6 +71,11 @@ spec:
             secretKeyRef:
               name: onepassword-seafile
               key: admin-password
+        - name: SEAHUB_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-seafile
+              key: seahub-secret-key
         - name: SMTP_HOST
           valueFrom:
             secretKeyRef:
@@ -127,14 +132,14 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /shared
-        - name: local-settings
-          mountPath: /opt/seafile/seafile-server-latest/seahub/seahub/local_settings.py
-          subPath: local_settings.py
+        - name: seahub-settings
+          mountPath: /shared/seafile/conf/seahub_settings.py
+          subPath: seahub_settings.py
           readOnly: true
       volumes:
       - name: data
         persistentVolumeClaim:
           claimName: data
-      - name: local-settings
+      - name: seahub-settings
         configMap:
-          name: seahub-local-settings
+          name: seahub-settings
