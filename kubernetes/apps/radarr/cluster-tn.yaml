@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/postgresql.cnpg.io/cluster_v1.json
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: radarr-database-tn
+spec:
+  instances: 1
+  plugins:
+  - name: barman-cloud.cloudnative-pg.io
+    isWALArchiver: true
+    parameters:
+      barmanObjectName: radarr-backups
+  inheritedMetadata:
+    annotations:
+      ad.datadoghq.com/postgres.checks: |
+        {"postgres":{"init_config":{},"instances":[{"host":"%%host%%","port":5432,"dbname":"radarr-main","username":"datadog","password":"%%env_DD_POSTGRES_PASSWORD%%","ssl":"require","dbm":true}]}}
+  postgresql:
+    parameters:
+      pg_stat_statements.track: all
+      track_activity_query_size: "4096"
+  managed:
+    roles:
+    - name: datadog
+      ensure: present
+      login: true
+      inRoles:
+      - pg_monitor
+      passwordSecret:
+        name: datadog-postgres
+  storage:
+    size: 5Gi
+    pvcTemplate:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: tn-nas1-mtank-iscsi
+      resources:
+        requests:
+          storage: 5Gi
+  bootstrap:
+    initdb:
+      database: radarr-main
+      owner: radarr
+      secret:
+        name: onepassword-radarr-database
