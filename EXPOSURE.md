@@ -51,9 +51,14 @@ gateway) get a catch-all `418` route (`kubernetes/apps-helm/envoy-gateway/manife
 
 ### Private
 
-- The `private` gateway at `10.43.64.10` is advertised to the LAN router (`192.168.222.1`) over
-  BGP from Cilium.
-- `external-dns-technitium` publishes its routes to Technitium for LAN DNS.
+- The `private` gateway at `10.43.64.10` and `fd54:571b:560a:4364::10` is advertised to the LAN
+  router (`192.168.222.1`) over BGP from Cilium.
+- `external-dns-technitium` publishes its routes to Technitium for LAN DNS, as A and AAAA records.
+- Technitium serves `desertbluffs.com` as a Conditional Forwarder zone: names it holds resolve to
+  the private gateway, and every other name is forwarded to public DNS (mail records, `lga1`).
+  Every name it holds needs both an A and an AAAA record; an AAAA query for a name with only an A
+  record is forwarded and returns Cloudflare's public address. external-dns can't own the apex, so
+  the apex AAAA is a static record in Technitium.
 - The Tailscale operator exposes the private gateway and Technitium DNS on the tailnet through the
   `heimdall` proxy group.
 
