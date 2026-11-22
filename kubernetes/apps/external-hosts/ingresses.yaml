@@ -10,6 +10,7 @@ metadata:
     gethomepage.dev/icon: truenas.png
     gethomepage.dev/description: TrueNAS
     gethomepage.dev/href: https://nas1.lga1.radoncanyon.com/ui/
+    gethomepage.dev/external: "true"
 spec:
   rules:
   - host: nas1.lga1.radoncanyon.com
@@ -35,6 +36,7 @@ metadata:
     gethomepage.dev/icon: truenas.png
     gethomepage.dev/description: TrueNAS
     gethomepage.dev/href: https://nas2.lga1.radoncanyon.com/ui/
+    gethomepage.dev/external: "true"
 spec:
   rules:
   - host: nas2.lga1.radoncanyon.com
@@ -60,6 +62,7 @@ metadata:
     gethomepage.dev/icon: mdi-router-network
     gethomepage.dev/description: Gateway
     gethomepage.dev/href: https://gw.lga1.radoncanyon.com/
+    gethomepage.dev/external: "true"
 spec:
   rules:
   - host: gw.lga1.radoncanyon.com
@@ -85,6 +88,7 @@ metadata:
     gethomepage.dev/icon: mdi-router-network
     gethomepage.dev/description: Gateway
     gethomepage.dev/href: https://gw.lga2.radoncanyon.com/
+    gethomepage.dev/external: "true"
 spec:
   rules:
   - host: gw.lga2.radoncanyon.com
