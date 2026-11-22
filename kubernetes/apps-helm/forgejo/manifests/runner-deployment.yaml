@@ -29,7 +29,7 @@ spec:
         restartPolicy: Always
         args:
         - dockerd
-        - --host=unix:///run/docker/docker.sock
+        - --host=unix:///run/dind/docker.sock
         - --group=1000
         env:
         - name: DOCKER_TLS_CERTDIR
@@ -38,7 +38,7 @@ spec:
           privileged: true
         startupProbe:
           exec:
-            command: ["docker", "-H", "unix:///run/docker/docker.sock", "info"]
+            command: ["docker", "-H", "unix:///run/dind/docker.sock", "info"]
           periodSeconds: 2
           failureThreshold: 60
         resources:
@@ -51,7 +51,7 @@ spec:
         - name: docker
           mountPath: /var/lib/docker
         - name: docker-socket
-          mountPath: /run/docker
+          mountPath: /run/dind
       containers:
       - name: runner
         image: code.forgejo.org/forgejo/runner:13.2.2
@@ -63,9 +63,10 @@ spec:
         - /config/config.yml
         env:
         - name: DOCKER_HOST
-          value: unix:///run/docker/docker.sock
+          value: unix:///run/dind/docker.sock
         securityContext:
           runAsUser: 1000
+          runAsGroup: 1000
           runAsNonRoot: true
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
@@ -88,7 +89,7 @@ spec:
         - name: data
           mountPath: /data
         - name: docker-socket
-          mountPath: /run/docker
+          mountPath: /run/dind
       volumes:
       - name: docker-socket
         emptyDir: {}
