@@ -14,7 +14,7 @@ service:
     port: 22
     annotations:
       lbipam.cilium.io/ips: "10.43.64.22"
-      external-dns.alpha.kubernetes.io/hostname: forgejo-ssh.radoncanyon.com
+      external-dns.kubernetes.io/hostname: forgejo-ssh.radoncanyon.com
 persistence:
   enabled: true
   create: true
