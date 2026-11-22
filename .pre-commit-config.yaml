@@ -42,9 +42,8 @@ repos:
     language: system
     files: ^ansible/
     pass_filenames: false
-  - id: dnscontrol-check
-    name: dnscontrol check
-    entry: bash -c 'cd dns && dnscontrol check'
+  - id: tofu-fmt-dns
+    name: tofu fmt (dns)
+    entry: tofu fmt -check -diff
     language: system
-    files: ^dns/(dnsconfig\.js|creds\.json)$
-    pass_filenames: false
+    files: ^dns/.*\.tf$

@@ -2,7 +2,6 @@
 
 {
   packages = [
-    pkgs.dnscontrol
     pkgs.go
     pkgs.pre-commit
     pkgs.uv

@@ -32,6 +32,6 @@ Never push a feature branch's work to `main` without rebasing onto current `main
 ## Where checks run
 
 - `ansible/` changes: `ansible-lint` hook.
-- `dns/` changes: `dnscontrol check` hook. `main` pushes apply DNS changes automatically, so review these carefully.
+- `dns/` changes: `tofu fmt` hook. Nothing applies automatically; run `tofu plan` then `tofu apply` in `dns/` after merging.
 - `kubernetes/` changes: yamlfmt, schema, and kubeconform hooks. Rendered manifest diffs only appear on PRs.
 - `tailnet/` changes apply on push to `main` with no pre-merge check.

@@ -43,7 +43,7 @@ gateway) get a catch-all `418` route (`kubernetes/apps-helm/envoy-gateway/manife
 1. Cloudflare serves the public DNS record, proxied (`external-dns.kubernetes.io/cloudflare-proxied: "true"`).
    The `external-dns` instance only publishes routes attached to the `internet` gateway.
 2. Cloudflare connects to the origin at `lga1.desertbluffs.com`, the home WAN address (managed
-   outside this repo; dnscontrol ignores it).
+   outside this repo; the `dns/` tofu config does not manage it).
 3. The router sends that traffic to the `internet` gateway at `10.43.64.20`.
 4. The gateway accepts only TLS clients that present a Cloudflare authenticated origin pull
    certificate (`tls-settings-internet` in `tls-settings-policy.yaml`), so connections that

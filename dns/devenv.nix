@@ -2,10 +2,10 @@
 
 {
   packages = [
-    pkgs.dnscontrol
+    pkgs.opentofu
   ];
 
   enterShell = ''
-    echo "dnscontrol $(dnscontrol version)"
+    echo "$(tofu version | head -1)"
   '';
 }
