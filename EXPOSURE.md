@@ -27,14 +27,13 @@ route between the `internet` and `private` gateways.
 | Radarr | `radarr` | — | `radarr`, `dumud` | |
 | Seafile | `seafile` | — | `seafile` | |
 | Sonarr | `sonarr` | — | `sonarr`, `jolthog` | |
-| Technitium | `technitium` | — | Web `balmy-cactus.desertbluffs.com`, `balmy-cactus.radoncanyon.com`; DNS `10.43.64.53`; tailnet `technitium` | |
+| Technitium | `technitium` | — | Web `dns`; DNS `10.43.64.53`, `fd54:571b:560a:4364::53`; tailnet `technitium` | |
 
 Hostnames in the Private column are under `desertbluffs.com` unless written in full. A public
 service's codename (pick new ones from [CODENAMES.md](CODENAMES.md)) is also on its private
 route, so the same URL resolves to the private gateway from the LAN and the tailnet.
 
-Unmatched hostnames under `*.desertbluffs.com` (both gateways) and `*.radoncanyon.com` (private
-gateway) get a catch-all `418` route (`kubernetes/apps-helm/envoy-gateway/manifests/unmatched-teapot.yaml`).
+Unmatched hostnames under `*.desertbluffs.com` (both gateways) get a catch-all `418` route (`kubernetes/apps-helm/envoy-gateway/manifests/unmatched-teapot.yaml`).
 
 ## Split-horizon DNS
 
