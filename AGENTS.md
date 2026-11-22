@@ -18,7 +18,7 @@ Several agents and people work in this repo at the same time. Every rule below e
 
 1. Commit in your worktree. The pre-commit hooks run on each commit.
 2. Run `wt merge --no-remove`. It squashes, rebases onto the latest `main`, and fast-forwards `main`. The worktree stays, so your shell keeps a valid directory.
-3. Push `main` from the main clone: `git -C ~/src/github.com/nlopez/homelab push origin main`.
+3. The post-merge hook pushes `main` for you. Check the result with `wt config state logs`.
 4. Run `wt remove` as the last command. Removing the worktree you are standing in ends your shell.
 
 Never push a feature branch's work to `main` without rebasing onto current `main` first.

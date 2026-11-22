@@ -1,3 +1,6 @@
 [pre-start]
 pre-commit = "pre-commit install"
 direnv-allow = "(cd {{ base_worktree_path }} && direnv status) 2>/dev/null | grep -q 'Found RC allowed 0' && direnv allow {{ worktree_path }}; true"
+
+[post-merge]
+push = "git push origin {{ target }}"
