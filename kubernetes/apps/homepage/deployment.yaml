@@ -5,6 +5,7 @@ metadata:
   name: homepage
   annotations:
     configmap.reloader.stakater.com/reload: "homepage"
+    secret.reloader.stakater.com/reload: "homepage-radarr,homepage-sonarr"
 spec:
   replicas: 1
   selector:
@@ -34,6 +35,16 @@ spec:
         env:
         - name: HOMEPAGE_ALLOWED_HOSTS
           value: home.desertbluffs.com
+        - name: HOMEPAGE_VAR_RADARR_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: homepage-radarr
+              key: RADARR_API_KEY
+        - name: HOMEPAGE_VAR_SONARR_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: homepage-sonarr
+              key: SONARR_API_KEY
         resources:
           requests:
             cpu: 10m

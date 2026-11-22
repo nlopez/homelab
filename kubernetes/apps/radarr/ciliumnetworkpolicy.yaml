@@ -24,5 +24,13 @@ spec:
     - ports:
       - port: "7878"
         protocol: TCP
+  - fromEndpoints:
+    - matchLabels:
+        k8s:io.kubernetes.pod.namespace: homepage
+        app: homepage
+    toPorts:
+    - ports:
+      - port: "7878"
+        protocol: TCP
   - fromEntities:
     - host

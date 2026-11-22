@@ -10,6 +10,9 @@ metadata:
     gethomepage.dev/icon: radarr.png
     gethomepage.dev/description: Movie manager
     gethomepage.dev/pod-selector: ""
+    gethomepage.dev/widget.type: radarr
+    gethomepage.dev/widget.url: http://radarr.radarr.svc.cluster.local
+    gethomepage.dev/widget.key: "{{HOMEPAGE_VAR_RADARR_API_KEY}}"
 spec:
   parentRefs:
   - name: private
