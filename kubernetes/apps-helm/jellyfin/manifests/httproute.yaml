@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/group: Media
     gethomepage.dev/icon: jellyfin.png
     gethomepage.dev/description: Media server
-    gethomepage.dev/pod-selector: ""
+    gethomepage.dev/pod-selector: app.kubernetes.io/name=jellyfin
 spec:
   parentRefs:
   - name: private

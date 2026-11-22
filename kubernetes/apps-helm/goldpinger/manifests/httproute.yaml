@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/group: Infrastructure
     gethomepage.dev/icon: mdi-lan-connect
     gethomepage.dev/description: Cluster network checks
-    gethomepage.dev/pod-selector: ""
+    gethomepage.dev/pod-selector: app.kubernetes.io/name=goldpinger
 spec:
   parentRefs:
   - name: private
