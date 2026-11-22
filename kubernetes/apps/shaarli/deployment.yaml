@@ -16,6 +16,8 @@ spec:
     metadata:
       labels:
         app: shaarli
+        app.kubernetes.io/name: shaarli
+        app.kubernetes.io/instance: shaarli
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: shaarli
         tags.datadoghq.com/version: v1

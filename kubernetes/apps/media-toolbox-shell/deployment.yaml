@@ -19,6 +19,8 @@ spec:
     metadata:
       labels:
         app: toolbox
+        app.kubernetes.io/name: toolbox
+        app.kubernetes.io/instance: toolbox
         version: v1
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: toolbox

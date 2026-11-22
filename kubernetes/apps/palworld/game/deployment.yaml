@@ -22,6 +22,8 @@ spec:
     metadata:
       labels:
         app: palworld
+        app.kubernetes.io/name: palworld
+        app.kubernetes.io/instance: palworld
         version: v1
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: palworld

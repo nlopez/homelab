@@ -13,6 +13,8 @@ spec:
     metadata:
       labels:
         app: timekeeper-server
+        app.kubernetes.io/name: timekeeper-server
+        app.kubernetes.io/instance: timekeeper-server
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: timekeeper-server-ash
         tags.datadoghq.com/version: v1

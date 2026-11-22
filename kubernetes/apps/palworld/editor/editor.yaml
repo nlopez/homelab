@@ -18,6 +18,8 @@ spec:
     metadata:
       labels:
         app: palworld-editor
+        app.kubernetes.io/name: palworld-editor
+        app.kubernetes.io/instance: palworld-editor
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: palworld-editor
         tags.datadoghq.com/version: v1

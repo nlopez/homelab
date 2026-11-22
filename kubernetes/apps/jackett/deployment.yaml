@@ -13,6 +13,8 @@ spec:
     metadata:
       labels:
         app: jackett
+        app.kubernetes.io/name: jackett
+        app.kubernetes.io/instance: jackett
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: jackett
         tags.datadoghq.com/version: v1

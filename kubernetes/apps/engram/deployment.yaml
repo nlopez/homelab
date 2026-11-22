@@ -11,6 +11,8 @@ spec:
     metadata:
       labels:
         app: engram
+        app.kubernetes.io/name: engram
+        app.kubernetes.io/instance: engram
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: engram
         tags.datadoghq.com/version: v1

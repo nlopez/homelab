@@ -19,6 +19,8 @@ spec:
     metadata:
       labels:
         app: httpbin
+        app.kubernetes.io/name: httpbin
+        app.kubernetes.io/instance: httpbin
         version: v1
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: httpbin

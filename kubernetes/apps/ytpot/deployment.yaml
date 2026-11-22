@@ -12,6 +12,8 @@ spec:
     metadata:
       labels:
         app: ytpot
+        app.kubernetes.io/name: ytpot
+        app.kubernetes.io/instance: ytpot
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: ytpot
         tags.datadoghq.com/version: v1

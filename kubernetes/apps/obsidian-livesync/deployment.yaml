@@ -20,6 +20,8 @@ spec:
     metadata:
       labels:
         app: obsidian-livesync
+        app.kubernetes.io/name: obsidian-livesync
+        app.kubernetes.io/instance: obsidian-livesync
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: obsidian-livesync
         tags.datadoghq.com/version: v1

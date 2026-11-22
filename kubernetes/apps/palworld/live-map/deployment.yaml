@@ -18,6 +18,8 @@ spec:
     metadata:
       labels:
         app: palworld-live-map
+        app.kubernetes.io/name: palworld-live-map
+        app.kubernetes.io/instance: palworld-live-map
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: palworld-live-map
         tags.datadoghq.com/version: v1

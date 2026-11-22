@@ -15,6 +15,8 @@ spec:
     metadata:
       labels:
         app: warp
+        app.kubernetes.io/name: warp
+        app.kubernetes.io/instance: warp
         version: v1
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: warp

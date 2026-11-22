@@ -14,6 +14,8 @@ spec:
     metadata:
       labels:
         app: icloudpd-auth
+        app.kubernetes.io/name: icloudpd-auth
+        app.kubernetes.io/instance: icloudpd-auth
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: icloudpd-auth
         tags.datadoghq.com/version: v1

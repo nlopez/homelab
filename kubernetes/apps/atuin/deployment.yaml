@@ -13,6 +13,8 @@ spec:
     metadata:
       labels:
         app: atuin
+        app.kubernetes.io/name: atuin
+        app.kubernetes.io/instance: atuin
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: atuin
         tags.datadoghq.com/version: v1
