@@ -133,6 +133,9 @@ With both records published, Cloudflare still reaches the origin over IPv4.
   Every name it holds needs both an A and an AAAA record; an AAAA query for a name with only an A
   record is forwarded and returns Cloudflare's public address. external-dns can't own the apex, so
   the apex AAAA is a static record in Technitium.
+- Pods have global IPv6 addresses from `2600:4041:5b21:6b10::/64`, taken from the delegated
+  `2600:4041:5b21:6b00::/56`. Cilium advertises the pod CIDRs to the LAN router over BGP and IPv6
+  masquerade is off, so pods egress as themselves. Unsolicited inbound is still blocked at the WAN.
 - The Tailscale operator exposes the private gateway and Technitium DNS on the tailnet through the
   `heimdall` proxy group.
 

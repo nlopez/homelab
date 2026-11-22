@@ -13,7 +13,7 @@ ipam:
   operator:
     clusterPoolIPv4PodCIDRList: ["10.43.16.0/20"]
     clusterPoolIPv4MaskSize: 24
-    clusterPoolIPv6PodCIDRList: ["fd54:571b:560a:4316::/96"]
+    clusterPoolIPv6PodCIDRList: ["2600:4041:5b21:6b10::/64"]
     clusterPoolIPv6MaskSize: 112
 routingMode: "native"
 autoDirectNodeRoutes: true
@@ -23,7 +23,9 @@ ipv4:
 ipv6:
   enabled: true
 ipv4NativeRoutingCIDR: "10.43.0.0/16"
-ipv6NativeRoutingCIDR: "fd54:571b:560a:4300::/56"
+ipv6NativeRoutingCIDR: "2600:4041:5b21:6b00::/56"
+# Pods keep their global address on egress; the gateway routes the pod /64 back over BGP.
+enableIPv6Masquerade: false
 localRedirectPolicies:
   enabled: true
 bpf:
