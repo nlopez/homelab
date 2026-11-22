@@ -17,14 +17,15 @@ Several agents and people work in this repo at the same time. Every rule below e
 ## Merge to main before you push
 
 1. Commit in your worktree. The pre-commit hooks run on each commit.
-2. Run `wt merge`. It squashes, rebases onto the latest `main`, fast-forwards `main`, and removes the worktree.
-3. Push `main`: `git push origin main`.
+2. Run `wt merge --no-remove`. It squashes, rebases onto the latest `main`, and fast-forwards `main`. The worktree stays, so your shell keeps a valid directory.
+3. Push `main` from the main clone: `git -C ~/src/github.com/nlopez/homelab push origin main`.
+4. Run `wt remove` as the last command. Removing the worktree you are standing in ends your shell.
 
 Never push a feature branch's work to `main` without rebasing onto current `main` first.
 
 ## When something goes wrong
 
-- Push rejected because `main` moved: run `wt merge` again, then push. Do not force-push.
+- Push rejected because `main` moved: run `wt merge --no-remove` again, then push. Do not force-push.
 - Rebase conflict: resolve it in your worktree, re-run the hooks, and continue. If another agent's change is involved, keep both intents.
 - A hook fails: fix the cause and commit again. Do not bypass it.
 
