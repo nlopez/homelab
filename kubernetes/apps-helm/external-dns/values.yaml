@@ -30,6 +30,10 @@ extraArgs:
 - --gateway-name=internet
 - --domain-filter=desertbluffs.com
 - --domain-filter=kamotimestamps.com
+# Only public addresses belong in Cloudflare. The internet gateway Service also has a
+# private IPv4 address, and only its public IPv6 address should be published for lga1.
+- --exclude-target-net=10.0.0.0/8
+- --exclude-target-net=fd00::/8
 logLevel: debug
 podLabels:
   tags.datadoghq.com/env: homelab
