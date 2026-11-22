@@ -13,6 +13,11 @@ spec:
       peerAddress: 192.168.222.1
       peerConfigRef:
         name: "cilium-peer"
+    - name: "peer-64513-gw-v6"
+      peerASN: 64513
+      peerAddress: fd54:571b:560a:2::1
+      peerConfigRef:
+        name: "cilium-peer-v6"
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/cilium.io/ciliumloadbalancerippool_v2alpha1.json
 apiVersion: cilium.io/v2
@@ -22,6 +27,7 @@ metadata:
 spec:
   blocks:
   - cidr: "10.43.64.0/24"
+  - cidr: "fd54:571b:560a:4364::/112"
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/cilium.io/ciliumbgppeerconfig_v2alpha1.json
 apiVersion: cilium.io/v2
@@ -34,6 +40,22 @@ spec:
     restartTimeSeconds: 15
   families:
   - afi: ipv4
+    safi: unicast
+    advertisements:
+      matchLabels:
+        advertise: bgp
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/cilium.io/ciliumbgppeerconfig_v2alpha1.json
+apiVersion: cilium.io/v2
+kind: CiliumBGPPeerConfig
+metadata:
+  name: cilium-peer-v6
+spec:
+  gracefulRestart:
+    enabled: true
+    restartTimeSeconds: 15
+  families:
+  - afi: ipv6
     safi: unicast
     advertisements:
       matchLabels:
