@@ -49,6 +49,13 @@ gateway) get a catch-all `418` route (`kubernetes/apps-helm/envoy-gateway/manife
    certificate (`tls-settings-internet` in `tls-settings-policy.yaml`), so connections that
    bypass Cloudflare fail the TLS handshake.
 
+The `internet` gateway also has the public IPv6 address `2600:4041:5b21:6b64::20`, from the
+Cilium `public-v6` pool (`2600:4041:5b21:6b64::/112`, in `apps-helm/cilium/manifests/bgp.yaml`).
+Only Services labeled `lbipam.homelab/pool: public` get addresses from that pool, and the gateway
+is the only one. OPNsense's WAN rule `ingress gateway` allows port 443 to it (alias
+`ingress_gateway_v6`) only from Cloudflare's published ranges (`cf_ips_v6`). The address sits
+inside the prefix Verizon delegates, so it changes if that prefix does.
+
 ### Private
 
 - The `private` gateway at `10.43.64.10` and `fd54:571b:560a:4364::10` is advertised to the LAN
