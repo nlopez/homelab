@@ -59,7 +59,7 @@ spec:
             - -c
             - |-
               # Pods reach the internet through the lga1 gateway's NAT, so the address
-              # these services see is the WAN address Cloudflare must use for lga1.
+              # these services see is the WAN address Cloudflare must use as the origin.
               a=$(curl -4 -fsS --max-time 10 https://api.ipify.org)
               b=$(curl -4 -fsS --max-time 10 https://cloudflare.com/cdn-cgi/trace | sed -n 's/^ip=//p')
               if ! echo "${a}" | grep -Eq '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
@@ -69,22 +69,9 @@ spec:
                 echo "WAN address sources disagree: ipify=${a} cloudflare=${b}" >&2; exit 1
               fi
               echo "WAN address ${a}"
-              kubectl apply --server-side --field-manager=wan-ip -f - <<EOF
-              apiVersion: externaldns.k8s.io/v1alpha1
-              kind: DNSEndpoint
-              metadata:
-                name: lga1
-              spec:
-                endpoints:
-                - dnsName: lga1.desertbluffs.com
-                  recordType: A
-                  recordTTL: 300
-                  targets:
-                  - ${a}
-              EOF
 
               # Publish every internet route as A (WAN address) and AAAA (the gateway's
-              # public IPv6 address) instead of a CNAME to lga1.
+              # public IPv6 address).
               ns=envoy-gateway-system
               v6=$(kubectl get gateway -n "${ns}" internet -o jsonpath='{.status.addresses[*].value}' | tr ' ' '\n' | grep ':' | grep -v -i '^fd' | head -n 1 || true)
               target="${a}"

@@ -17,9 +17,6 @@ spec:
           lbipam.homelab/pool: public
         annotations:
           lbipam.cilium.io/ips: "10.43.64.20,2600:4041:5b21:6b64::20"
-          external-dns.kubernetes.io/hostname: lga1.desertbluffs.com
-          external-dns.kubernetes.io/cloudflare-proxied: "false"
-          external-dns.kubernetes.io/ttl: "300"
       envoyDeployment:
         container:
           resources:

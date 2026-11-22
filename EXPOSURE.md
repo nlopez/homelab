@@ -85,8 +85,12 @@ flowchart LR
 
 - **Inside:** Technitium answers from its own records, so a codename goes straight to the private
   gateway and never leaves the network. Each site's gateway (OPNsense Unbound) forwards
-  `desertbluffs.com`, `radoncanyon.com`, and `nulogorsk.com` to Technitium. Names Technitium doesn't
-  hold are forwarded to public DNS.
+  `desertbluffs.com` and `nulogorsk.com` to Technitium (`10.43.64.53`) and nothing else; there
+  are no zone copies on the gateways. Names Technitium doesn't hold are forwarded to public DNS.
+- **Site infrastructure** (`*.lga1.radoncanyon.com`, `*.lga2.radoncanyon.com`: gateways, nodes,
+  NAS, odroids) is not in the cluster. Both gateways answer the same list of names from Unbound
+  host overrides, so infrastructure names resolve at either site even when the cluster is down.
+  Update both gateways when that list changes. Other `radoncanyon.com` names resolve publicly.
 - **Outside:** Cloudflare answers with its own anycast addresses, because every internet record is
   proxied. The A and AAAA contents (the WAN address and the gateway's public IPv6 address) are only
   where Cloudflare connects, and never appear in public answers.
@@ -99,11 +103,12 @@ flowchart LR
 
 1. Cloudflare serves the public DNS record, proxied (`external-dns.kubernetes.io/cloudflare-proxied: "true"`).
    The `external-dns` instance only publishes routes attached to the `internet` gateway.
-2. Cloudflare connects to the origin at `lga1.desertbluffs.com`. The `external-dns` instance
-   owns both of its records: the A record is the WAN address, which the `wan-ip` CronJob
-   (`apps/wan-ip`) detects every 5 minutes and writes to the `lga1` DNSEndpoint, and the AAAA
-   record is the `internet` gateway's public IPv6 address, from an annotation on its Service. The
-   gateway's dynamic DNS client no longer updates `lga1`.
+2. Each internet hostname has its own proxied A and AAAA record. Their content is where Cloudflare
+   connects: the WAN address and the `internet` gateway's public IPv6 address. The `wan-ip`
+   CronJob (`apps/wan-ip`) detects the WAN address every 5 minutes and writes both addresses to
+   the gateway's `external-dns.kubernetes.io/target` annotation, which the `external-dns` instance
+   applies to every route. The apex `desertbluffs.com` is a proxied CNAME to `www` in
+   `dns/desertbluffs.com.tf`, because external-dns can't own apex records.
 3. The router sends that traffic to the `internet` gateway at `10.43.64.20`.
 4. The gateway accepts only TLS clients that present a Cloudflare authenticated origin pull
    certificate (`tls-settings-internet` in `tls-settings-policy.yaml`), so connections that
@@ -124,7 +129,7 @@ With both records published, Cloudflare still reaches the origin over IPv4.
   router (`192.168.222.1`) over BGP from Cilium.
 - `external-dns-technitium` publishes its routes to Technitium for LAN DNS, as A and AAAA records.
 - Technitium serves `desertbluffs.com` as a Conditional Forwarder zone: names it holds resolve to
-  the private gateway, and every other name is forwarded to public DNS (mail records, `lga1`).
+  the private gateway, and every other name is forwarded to public DNS (mail records, `lga2`).
   Every name it holds needs both an A and an AAAA record; an AAAA query for a name with only an A
   record is forwarded and returns Cloudflare's public address. external-dns can't own the apex, so
   the apex AAAA is a static record in Technitium.
