@@ -22,6 +22,8 @@
       tags: tailscale_absent
     - sshd
     - nic_offload
+    - role: nm_ipv6_never_default
+      tags: nm_ipv6_never_default
     - role: unattended_upgrades
       tags: unattended_upgrades
 

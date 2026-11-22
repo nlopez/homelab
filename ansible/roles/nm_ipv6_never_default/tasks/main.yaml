@@ -1,0 +1,26 @@
+---
+- name: Read whether each NetworkManager connection may own the IPv6 default route
+  ansible.builtin.command:
+    cmd: nmcli --get-values ipv6.never-default connection show {{ item }}
+  loop: "{{ nm_ipv6_never_default_connections }}"
+  register: nm_ipv6_never_default_current
+  changed_when: false
+  check_mode: false
+
+- name: Keep each connection from installing an IPv6 default route
+  ansible.builtin.command:
+    cmd: nmcli connection modify {{ item.item }} ipv6.never-default yes
+  loop: "{{ nm_ipv6_never_default_current.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.stdout != "yes"
+  register: nm_ipv6_never_default_modified
+  changed_when: true
+
+- name: Reactivate modified connections so the route change applies
+  ansible.builtin.command:
+    cmd: nmcli connection up {{ item.item.item }}
+  loop: "{{ nm_ipv6_never_default_modified.results | selectattr('changed', 'defined') | selectattr('changed') | list }}"
+  loop_control:
+    label: "{{ item.item.item }}"
+  changed_when: true
