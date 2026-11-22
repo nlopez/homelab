@@ -50,3 +50,44 @@ spec:
   table: "*"
   privileges:
   - SELECT
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/k8s.mariadb.com/grant_v1alpha1.json
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Grant
+metadata:
+  name: datadog-explain-statement
+spec:
+  mariaDbRef:
+    name: mariadb
+  username: datadog
+  host: "%"
+  database: datadog
+  table: "*"
+  privileges:
+  - EXECUTE
+  - CREATE TEMPORARY TABLES
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/k8s.mariadb.com/sqljob_v1alpha1.json
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: SqlJob
+metadata:
+  name: datadog-explain-statement
+spec:
+  mariaDbRef:
+    name: mariadb
+  username: root
+  passwordSecretKeyRef:
+    name: onepassword-seafile
+    key: mysql-root-password
+  sql: |-
+    CREATE SCHEMA IF NOT EXISTS datadog;
+    DELIMITER $$
+    CREATE OR REPLACE PROCEDURE datadog.explain_statement(IN query TEXT)
+      SQL SECURITY DEFINER
+    BEGIN
+      SET @explain := CONCAT('EXPLAIN FORMAT=json ', query);
+      PREPARE stmt FROM @explain;
+      EXECUTE stmt;
+      DEALLOCATE PREPARE stmt;
+    END $$
+    DELIMITER ;
