@@ -1,12 +1,14 @@
 locals {
   desertbluffs_com_records = {
-    "a-unifi"                                           = { name = "unifi", type = "A", content = "67.207.87.138" }
-    "aaaa-unifi"                                        = { name = "unifi", type = "AAAA", content = "2604:a880:400:d1:0:4:8533:d001" }
-    "caa-apex-issue-letsencrypt"                        = { name = "@", type = "CAA", data = { flags = 0, tag = "issue", value = "letsencrypt.org" } }
-    "caa-apex-issue-pki"                                = { name = "@", type = "CAA", data = { flags = 0, tag = "issue", value = "pki.goog" } }
-    "caa-apex-issuewild-letsencrypt"                    = { name = "@", type = "CAA", data = { flags = 0, tag = "issuewild", value = "letsencrypt.org" } }
-    "caa-apex-issuewild-pki"                            = { name = "@", type = "CAA", data = { flags = 0, tag = "issuewild", value = "pki.goog" } }
-    "caa-apex-iodef-mailto"                             = { name = "@", type = "CAA", data = { flags = 128, tag = "iodef", value = "mailto:sslabuse@desertbluffs.com" } }
+    "a-unifi"                        = { name = "unifi", type = "A", content = "67.207.87.138" }
+    "aaaa-unifi"                     = { name = "unifi", type = "AAAA", content = "2604:a880:400:d1:0:4:8533:d001" }
+    "caa-apex-issue-letsencrypt"     = { name = "@", type = "CAA", data = { flags = 0, tag = "issue", value = "letsencrypt.org" } }
+    "caa-apex-issue-pki"             = { name = "@", type = "CAA", data = { flags = 0, tag = "issue", value = "pki.goog" } }
+    "caa-apex-issuewild-letsencrypt" = { name = "@", type = "CAA", data = { flags = 0, tag = "issuewild", value = "letsencrypt.org" } }
+    "caa-apex-issuewild-pki"         = { name = "@", type = "CAA", data = { flags = 0, tag = "issuewild", value = "pki.goog" } }
+    "caa-apex-iodef-mailto"          = { name = "@", type = "CAA", data = { flags = 128, tag = "iodef", value = "mailto:sslabuse@desertbluffs.com" } }
+    # external-dns serves www from the internet gateway but cannot own apex records.
+    "cname-apex"                                        = { name = "@", type = "CNAME", content = "www.desertbluffs.com", proxied = true }
     "cname-ec25ukpzz6h4nddab3jyevcnzmmmbrgm._domainkey" = { name = "ec25ukpzz6h4nddab3jyevcnzmmmbrgm._domainkey", type = "CNAME", content = "ec25ukpzz6h4nddab3jyevcnzmmmbrgm.dkim.amazonses.com" }
     "cname-gc4caluqqezmfk6xanwpdpw5eytglrkn._domainkey" = { name = "gc4caluqqezmfk6xanwpdpw5eytglrkn._domainkey", type = "CNAME", content = "gc4caluqqezmfk6xanwpdpw5eytglrkn.dkim.amazonses.com" }
     "cname-ptusb247sybmwk4i32j5lmagtmtqq7qi._domainkey" = { name = "ptusb247sybmwk4i32j5lmagtmtqq7qi._domainkey", type = "CNAME", content = "ptusb247sybmwk4i32j5lmagtmtqq7qi.dkim.amazonses.com" }

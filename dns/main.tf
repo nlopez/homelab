@@ -60,7 +60,7 @@ resource "cloudflare_dns_record" "this" {
   name    = each.value.name == "@" ? each.value.zone : "${each.value.name}.${each.value.zone}"
   type    = each.value.type
   ttl     = each.value.ttl
-  proxied = false
+  proxied = try(each.value.proxied, false)
 
   # Cloudflare stores TXT content wrapped in double quotes.
   content  = each.value.type == "TXT" ? "\"${each.value.content}\"" : try(each.value.content, null)
