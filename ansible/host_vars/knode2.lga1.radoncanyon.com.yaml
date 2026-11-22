@@ -1,0 +1,4 @@
+---
+kubernetes_node_ips:
+  - 192.168.222.144
+  - fd54:571b:560a:2:21f:c6ff:fe9c:bfd7

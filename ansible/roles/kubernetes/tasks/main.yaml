@@ -7,6 +7,7 @@
     group: root
     mode: '0644'
   notify: Reload sysctl
+  tags: kubernetes_sysctls
 
 - name: Remove stale Docker-era sysctl file
   ansible.builtin.file:
@@ -74,6 +75,7 @@
     dest: /etc/default/kubelet
     mode: '0640'
   notify: Restart kubelet
+  tags: kubelet_args
 
 - name: Start and enable Kubelet
   ansible.builtin.service:

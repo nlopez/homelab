@@ -1,1 +1,1 @@
-KUBELET_EXTRA_ARGS=--cgroup-driver=systemd --container-runtime-endpoint='unix:///run/containerd/containerd.sock' --runtime-request-timeout=5m --fail-swap-on=false
+KUBELET_EXTRA_ARGS=--cgroup-driver=systemd --container-runtime-endpoint='unix:///run/containerd/containerd.sock' --runtime-request-timeout=5m --fail-swap-on=false{% if kubernetes_node_ips | length > 0 %} --node-ip={{ kubernetes_node_ips | join(',') }}{% endif %}

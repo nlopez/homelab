@@ -2,3 +2,7 @@
 # Wi-Fi to the WLAN VLAN; eno1 carries the node's IPv4 and IPv6 default routes.
 nm_ipv6_never_default_connections:
   - eeb4493a-efc0-48a7-9e70-dad5806188a4
+
+kubernetes_node_ips:
+  - 192.168.222.143
+  - fd54:571b:560a:2:d65d:dfff:fe07:5137
