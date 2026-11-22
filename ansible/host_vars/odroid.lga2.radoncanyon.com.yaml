@@ -12,6 +12,7 @@ tailscale_search_domains:
 
 tailscale_advertise_routes:
   - 192.168.239.0/24
+  - 2600:4041:5b37:201::/64
 tailscale_snat_subnet_routes: false
 
 snmp_v3_item_id: htoizttdg3zdajhl26ugujufzu

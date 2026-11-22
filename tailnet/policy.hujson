@@ -57,6 +57,10 @@
         "tag:lga2",
         "autogroup:admin"
       ],
+      "2600:4041:5b37:201::/64": [
+        "tag:lga2",
+        "autogroup:admin"
+      ],
       "10.43.64.0/24": [
         "tag:k8s-operator",
         "tag:lga1"
@@ -103,6 +107,20 @@
       ],
       "via": [
         "tag:lga1"
+      ],
+    },
+    {
+      "src": [
+        "*"
+      ],
+      "dst": [
+        "2600:4041:5b37:201::/64"
+      ],
+      "ip": [
+        "*"
+      ],
+      "via": [
+        "tag:lga2"
       ],
     },
     {
