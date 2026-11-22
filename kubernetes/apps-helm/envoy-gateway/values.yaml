@@ -2,6 +2,7 @@ config:
   envoyGateway:
     extensionApis:
       enableLua: true
+      enableEnvoyPatchPolicy: true
 deployment:
   pod:
     labels:
