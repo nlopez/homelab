@@ -3,6 +3,7 @@ fullnameOverride: truenas-csi-nas1
 healthPort: 9809
 truenas:
   url: wss://nas1.lga1.radoncanyon.com
+  iscsiPortal: "192.168.222.149:3260"
   defaultPool: mtank
   existingSecret: truenas-csi-nas1-api-key
   existingSecretKey: credential

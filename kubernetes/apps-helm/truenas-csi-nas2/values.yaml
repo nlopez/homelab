@@ -1,6 +1,7 @@
 driverName: org.truenas-csi.nas2
 truenas:
   url: wss://nas2.lga1.radoncanyon.com
+  iscsiPortal: "192.168.222.114:3260"
   defaultPool: etank
   existingSecret: truenas-csi-nas2-api-key
   existingSecretKey: credential
