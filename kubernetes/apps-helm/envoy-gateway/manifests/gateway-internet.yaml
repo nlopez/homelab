@@ -10,6 +10,8 @@ spec:
   addresses:
   - type: IPAddress
     value: 10.43.64.20
+  - type: IPAddress
+    value: 2600:4041:5b21:6b64::20
   listeners:
   - name: wildcard-desertbluffs-com-https
     protocol: HTTPS

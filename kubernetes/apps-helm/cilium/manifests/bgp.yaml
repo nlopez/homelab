@@ -29,6 +29,18 @@ spec:
   - cidr: "10.43.64.0/24"
   - cidr: "fd54:571b:560a:4364::/112"
 ---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/cilium.io/ciliumloadbalancerippool_v2alpha1.json
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: public-v6
+spec:
+  blocks:
+  - cidr: "2600:4041:5b21:6b64::/112"
+  serviceSelector:
+    matchLabels:
+      lbipam.homelab/pool: public
+---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/cilium.io/ciliumbgppeerconfig_v2alpha1.json
 apiVersion: cilium.io/v2
 kind: CiliumBGPPeerConfig
