@@ -36,6 +36,64 @@ route, so the same URL resolves to the private gateway from the LAN and the tail
 Unmatched hostnames under `*.desertbluffs.com` (both gateways) and `*.radoncanyon.com` (private
 gateway) get a catch-all `418` route (`kubernetes/apps-helm/envoy-gateway/manifests/unmatched-teapot.yaml`).
 
+## Split-horizon DNS
+
+The same name resolves differently depending on where the client asks. Using the codename
+`pyrin.desertbluffs.com` as an example:
+
+```mermaid
+flowchart LR
+  subgraph inside["LAN and tailnet clients"]
+    lan["Client at lga1 or lga2,<br/>or on the tailnet"]
+  end
+  subgraph outside["Internet clients"]
+    web["Browser anywhere"]
+  end
+
+  subgraph k8s["Kubernetes"]
+    edt["external-dns-technitium<br/>(routes on the private gateway)"]
+    edc["external-dns<br/>(routes on the internet gateway)"]
+    wanip["wan-ip CronJob<br/>(WAN IPv4 + gateway IPv6)"]
+    priv["private gateway<br/>10.43.64.10<br/>fd54:571b:560a:4364::10"]
+    inet["internet gateway<br/>10.43.64.20<br/>2600:4041:5b21:6b64::20"]
+    app["atuin"]
+  end
+
+  tech[("Technitium<br/>desertbluffs.com<br/>conditional forwarder zone")]
+  cfdns[("Cloudflare DNS<br/>desertbluffs.com")]
+  edge["Cloudflare proxy"]
+  gw["gw.lga1 (OPNsense)<br/>WAN 96.246.156.39"]
+
+  edt -- "A + AAAA for private hostnames" --> tech
+  wanip -- "Gateway target annotation" --> edc
+  edc -- "proxied A + AAAA for internet hostnames" --> cfdns
+
+  lan -- "pyrin? (via the site gateway's resolver)" --> tech
+  tech -- "local record: 10.43.64.10 / fd54:…::10" --> lan
+  tech -. "names it does not hold<br/>(MX, SES, lga2, …)" .-> cfdns
+  lan -- "HTTPS" --> priv
+
+  web -- "pyrin?" --> cfdns
+  cfdns -- "Cloudflare anycast IPs" --> web
+  web -- "HTTPS" --> edge
+  edge -- "IPv4: 96.246.156.39:443" --> gw
+  gw -- "port forward" --> inet
+  edge -- "IPv6: [2600:…::20]:443<br/>(WAN rule allows Cloudflare ranges only)" --> inet
+
+  priv --> app
+  inet -- "Cloudflare origin-pull mTLS required" --> app
+```
+
+- **Inside:** Technitium answers from its own records, so a codename goes straight to the private
+  gateway and never leaves the network. Each site's gateway (OPNsense Unbound) forwards
+  `desertbluffs.com`, `radoncanyon.com`, and `nulogorsk.com` to Technitium. Names Technitium doesn't
+  hold are forwarded to public DNS.
+- **Outside:** Cloudflare answers with its own anycast addresses, because every internet record is
+  proxied. The A and AAAA contents (the WAN address and the gateway's public IPv6 address) are only
+  where Cloudflare connects, and never appear in public answers.
+- Only names on both gateways (the codenames) resolve both ways. Friendly names such as
+  `atuin.desertbluffs.com` exist only inside.
+
 ## Paths
 
 ### Internet
