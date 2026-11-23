@@ -4,14 +4,14 @@ kind: ConfigMap
 metadata:
   name: dnsdist-conf
 data:
-  dnsdist.conf: |
+  dnsdist.conf.template: |
     setLocal("0.0.0.0:53")
     setACL({"0.0.0.0/0", "::/0"})
 
     -- The recursor is the default backend: it validates DNSSEC and answers the
     -- public zones. Only names the authoritative zones hold go to pdns.
-    newServer({address = "recursor.pdns.svc.cluster.local:53", name = "public"})
-    newServer({address = "pdns.pdns.svc.cluster.local:53", name = "auth", pool = "auth"})
+    newServer({address = "__RECURSOR__:53", name = "public"})
+    newServer({address = "__PDNS__:53", name = "auth", pool = "auth"})
     setServerPolicy(firstAvailable)
 
     local chunk = loadfile("/etc/dnsdist/routes/internal.lua")
@@ -31,7 +31,7 @@ data:
   routes.sh: |
     #!/bin/sh
     # Rebuilds the routed-name set from the records the authoritative zones hold.
-    # Uses only busybox tools so it needs no package downloads.
+    # Busybox tools only, so nothing is downloaded at start.
     set -eu
     target=$1
     names=$(for zone in desertbluffs.com nulogorsk.com; do
@@ -73,14 +73,12 @@ spec:
       labels:
         app: recursor
     spec:
-      securityContext:
-        runAsNonRoot: true
       containers:
       - name: recursor
         image: docker.io/powerdns/pdns-recursor-49:4.9.9
         args: ["--config-dir=/etc/pdns-recursor"]
         securityContext:
-          # Unprivileged, but it has to bind port 53.
+          # The image's user is unprivileged, but it has to bind port 53.
           capabilities:
             add: ["NET_BIND_SERVICE"]
         ports:
@@ -146,12 +144,29 @@ spec:
     spec:
       shareProcessNamespace: true
       initContainers:
+      # dnsdist only accepts addresses, so the service names are resolved here.
+      - name: config
+        image: docker.io/library/alpine:3.20
+        command:
+        - sh
+        - -c
+        - |
+          pdns_ip=$(nslookup pdns.pdns.svc.cluster.local | awk '/^Address: /{print $2; exit}')
+          recursor_ip=$(nslookup recursor.pdns.svc.cluster.local | awk '/^Address: /{print $2; exit}')
+          echo "pdns=${pdns_ip:-unresolved} recursor=${recursor_ip:-unresolved}"
+          sed -e "s/__PDNS__/${pdns_ip}/" -e "s/__RECURSOR__/${recursor_ip}/" \
+            /template/dnsdist.conf.template > /etc/dnsdist/dnsdist.conf
+        volumeMounts:
+        - name: conf
+          mountPath: /etc/dnsdist
+        - name: template
+          mountPath: /template
       - name: routes
         image: docker.io/library/alpine:3.20
         command:
         - sh
         - -c
-        - sh /scripts/routes.sh /shared/internal.lua
+        - sh /scripts/routes.sh /etc/dnsdist/routes/internal.lua
         env:
         - name: PDNS_API_KEY
           valueFrom:
@@ -159,8 +174,8 @@ spec:
               name: onepassword-pdns-api-key
               key: password
         volumeMounts:
-        - name: routes
-          mountPath: /shared
+        - name: conf
+          mountPath: /etc/dnsdist
         - name: scripts
           mountPath: /scripts
       containers:
@@ -171,9 +186,9 @@ spec:
         - -c
         - |
           while sleep 300; do
-            sh /scripts/routes.sh /shared/internal.lua.new
-            if ! cmp -s /shared/internal.lua /shared/internal.lua.new; then
-              mv /shared/internal.lua.new /shared/internal.lua
+            sh /scripts/routes.sh /tmp/internal.lua.new
+            if ! cmp -s /etc/dnsdist/routes/internal.lua /tmp/internal.lua.new; then
+              cp /tmp/internal.lua.new /etc/dnsdist/routes/internal.lua
               pkill -TERM dnsdist 2>/dev/null || killall dnsdist 2>/dev/null || true
             fi
           done
@@ -184,13 +199,17 @@ spec:
               name: onepassword-pdns-api-key
               key: password
         volumeMounts:
-        - name: routes
-          mountPath: /shared
+        - name: conf
+          mountPath: /etc/dnsdist
         - name: scripts
           mountPath: /scripts
       - name: dnsdist
         image: docker.io/powerdns/dnsdist-19:1.9.16
         args: ["--supervised", "--disable-syslog", "--config", "/etc/dnsdist/dnsdist.conf"]
+        securityContext:
+          # Unprivileged, but it has to bind port 53.
+          capabilities:
+            add: ["NET_BIND_SERVICE"]
         ports:
         - name: dns-udp
           containerPort: 53
@@ -212,14 +231,12 @@ spec:
         volumeMounts:
         - name: conf
           mountPath: /etc/dnsdist
-        - name: routes
-          mountPath: /etc/dnsdist/routes
       volumes:
       - name: conf
+        emptyDir: {}
+      - name: template
         configMap:
           name: dnsdist-conf
-      - name: routes
-        emptyDir: {}
       - name: scripts
         configMap:
           name: dnsdist-routes-script

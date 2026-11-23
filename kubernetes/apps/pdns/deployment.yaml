@@ -18,8 +18,6 @@ spec:
       labels:
         app: pdns
     spec:
-      securityContext:
-        runAsNonRoot: true
       initContainers:
       # The gpgsql schema is applied once; every later start skips it.
       - name: schema
