@@ -4,18 +4,18 @@ locals {
     "desertbluffs.com" = {
       uuid        = "8f76533f-cd8a-4f8f-8d63-dee6b5d46c4d"
       domain      = "desertbluffs.com"
-      server      = "10.43.64.53"
+      server      = "192.168.239.2"
       port        = 53
       type        = "query"
-      description = "Cluster Technitium (the only authority for this zone)"
+      description = "Site Technitium (192.168.239.2), which holds the cluster's view of this zone"
     }
     "nulogorsk.com" = {
       uuid        = "165ce9a9-4338-44d5-b351-b96a7b84ca71"
       domain      = "nulogorsk.com"
-      server      = "10.43.64.53"
+      server      = "192.168.239.2"
       port        = 53
       type        = "query"
-      description = "Cluster Technitium (the only authority for this zone)"
+      description = "Site Technitium (192.168.239.2), which holds the cluster's view of this zone"
     }
     "239.168.192.in-addr.arpa" = {
       uuid        = "ff45439a-69d9-4322-9eb4-554c30ba2914"
