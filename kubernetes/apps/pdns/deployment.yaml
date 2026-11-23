@@ -98,7 +98,7 @@ spec:
           mountPath: /conf
       containers:
       - name: pdns
-        image: docker.io/powerdns/pdns-auth-49:4.9.18
+        image: docker.io/powerdns/pdns-auth-50:5.0.8
         args: ["--config-dir=/conf"]
         ports:
         - name: dns-udp
