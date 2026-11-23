@@ -35,17 +35,22 @@ jobs:
       - name: Join the tailnet
         uses: tailscale/github-action@6cae46e2d796f265265cfcf628b72a32b4d7cade # v4.4.0
         with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
+          authkey: ${{ secrets.TS_AUTHKEY }}
 
-      - name: Resolve the gateways through their site addresses
+      - name: Resolve and reach the gateways
         run: |
           # Split DNS on the tailnet answers for radoncanyon.com, but the
           # userspace resolver inside the Tailscale action does not forward
           # those queries. The site addresses route over the subnet routers.
           echo "192.168.222.1 gw.lga1.radoncanyon.com" | sudo tee -a /etc/hosts
           echo "192.168.239.254 gw.lga2.radoncanyon.com" | sudo tee -a /etc/hosts
+          for h in gw.lga1.radoncanyon.com gw.lga2.radoncanyon.com; do
+            code=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' "https://$h/api/core/firmware/status" || true)
+            if [ "$code" = 000 ]; then
+              echo "$h is unreachable from the runner" >&2
+              exit 1
+            fi
+          done
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
@@ -85,17 +90,22 @@ jobs:
       - name: Join the tailnet
         uses: tailscale/github-action@6cae46e2d796f265265cfcf628b72a32b4d7cade # v4.4.0
         with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
+          authkey: ${{ secrets.TS_AUTHKEY }}
 
-      - name: Resolve the gateways through their site addresses
+      - name: Resolve and reach the gateways
         run: |
           # Split DNS on the tailnet answers for radoncanyon.com, but the
           # userspace resolver inside the Tailscale action does not forward
           # those queries. The site addresses route over the subnet routers.
           echo "192.168.222.1 gw.lga1.radoncanyon.com" | sudo tee -a /etc/hosts
           echo "192.168.239.254 gw.lga2.radoncanyon.com" | sudo tee -a /etc/hosts
+          for h in gw.lga1.radoncanyon.com gw.lga2.radoncanyon.com; do
+            code=$(curl -sS -m 10 -o /dev/null -w '%{http_code}' "https://$h/api/core/firmware/status" || true)
+            if [ "$code" = 000 ]; then
+              echo "$h is unreachable from the runner" >&2
+              exit 1
+            fi
+          done
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
