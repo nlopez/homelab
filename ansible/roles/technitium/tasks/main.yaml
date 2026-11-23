@@ -218,7 +218,8 @@
 
 # Tailnet clients need the device's tailscale address, not the LAN address the
 # site gateway answers with. Each zone keeps forwarding to that gateway, so names
-# without an override here still resolve.
+# without an override here still resolve. An item is an A record unless it names
+# another type, in which case `address` is that record's content.
 - name: Create the tailnet override zones
   ansible.builtin.uri:
     url: "{{ technitium_api_url }}/api/zones/create"
@@ -241,7 +242,7 @@
 
 # shortcut: an address change needs the old record deleted by hand, upgrade if
 # these devices start re-registering with new addresses.
-- name: Add the tailnet A records
+- name: Add the tailnet records
   ansible.builtin.uri:
     url: "{{ technitium_api_url }}/api/zones/records/add"
     method: POST
@@ -249,9 +250,10 @@
     body:
       token: "{{ technitium_api_token }}"
       domain: "{{ item.name }}"
-      type: A
-      ipAddress: "{{ item.address }}"
+      type: "{{ item.type | default('A') }}"
       ttl: "{{ technitium_tailnet_record_ttl }}"
+      ipAddress: "{{ item.address if (item.type | default('A')) == 'A' else omit }}"
+      cname: "{{ item.address if (item.type | default('A')) == 'CNAME' else omit }}"
     return_content: true
   register: technitium_tailnet_record
   failed_when: >-

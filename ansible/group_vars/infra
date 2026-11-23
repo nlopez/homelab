@@ -18,6 +18,16 @@ technitium_tailnet_records:
     address: 100.92.205.106
   - name: nas2.lga1.radoncanyon.com
     address: 100.73.101.17
+  - name: odroid.lga1.radoncanyon.com
+    address: 100.127.60.59
+  - name: odroid.lga2.radoncanyon.com
+    address: 100.110.65.2
+  - name: dns.lga1.radoncanyon.com
+    type: CNAME
+    address: odroid.lga1.radoncanyon.com
+  - name: dns.lga2.radoncanyon.com
+    type: CNAME
+    address: odroid.lga2.radoncanyon.com
 
 technitium_proxy_acme_email: letsencrypt@aethertrail.com
 technitium_proxy_upstream: "http://unix:{{ technitium_web_socket }}:"
