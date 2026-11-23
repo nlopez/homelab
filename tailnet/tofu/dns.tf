@@ -11,12 +11,13 @@ locals {
     data.tailscale_device.gw_lga2.addresses[0],
   ]
 
-  # A tailnet client needs the devices' tailscale addresses instead, which the
-  # site Technitium instances answer. Both hold both zones.
-  tailnet_dns = [
-    data.tailscale_device.odroid_lga1.addresses[0],
-    data.tailscale_device.odroid_lga2.addresses[0],
-  ]
+  # A tailnet client needs the devices' tailscale addresses instead, which each
+  # site's Technitium answers. Each site answers for its own zone only, since
+  # there is no path between the sites.
+  tailnet_dns = {
+    lga1 = data.tailscale_device.odroid_lga1.addresses[0]
+    lga2 = data.tailscale_device.odroid_lga2.addresses[0]
+  }
 }
 
 resource "tailscale_dns_configuration" "this" {
@@ -41,11 +42,7 @@ resource "tailscale_dns_configuration" "this" {
   split_dns {
     domain = "lga1.radoncanyon.com"
     nameservers {
-      address            = local.tailnet_dns[0]
-      use_with_exit_node = true
-    }
-    nameservers {
-      address            = local.tailnet_dns[1]
+      address            = local.tailnet_dns.lga1
       use_with_exit_node = true
     }
   }
@@ -53,11 +50,7 @@ resource "tailscale_dns_configuration" "this" {
   split_dns {
     domain = "lga2.radoncanyon.com"
     nameservers {
-      address            = local.tailnet_dns[0]
-      use_with_exit_node = true
-    }
-    nameservers {
-      address            = local.tailnet_dns[1]
+      address            = local.tailnet_dns.lga2
       use_with_exit_node = true
     }
   }
