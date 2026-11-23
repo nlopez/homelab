@@ -1,0 +1,238 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/configmap-v1.json
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dnsdist-conf
+data:
+  dnsdist.conf: |
+    setLocal("0.0.0.0:53")
+    setACL({"0.0.0.0/0", "::/0"})
+
+    -- The recursor is the default backend: it validates DNSSEC and answers the
+    -- public zones. Only names the authoritative zones hold go to pdns.
+    newServer({address = "recursor.pdns.svc.cluster.local:53", name = "public"})
+    newServer({address = "pdns.pdns.svc.cluster.local:53", name = "auth", pool = "auth"})
+    setServerPolicy(firstAvailable)
+
+    local chunk = loadfile("/etc/dnsdist/routes/internal.lua")
+    if chunk then
+      local ok, routes = pcall(chunk)
+      if ok and type(routes) == "table" and routes.internalNames then
+        addAction(SuffixMatchNodeRule(routes.internalNames), PoolAction("auth"))
+      end
+    end
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/configmap-v1.json
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dnsdist-routes-script
+data:
+  routes.sh: |
+    #!/bin/sh
+    # Rebuilds the routed-name set from the records the authoritative zones hold.
+    set -eu
+    target=$1
+    names=$(for zone in desertbluffs.com nulogorsk.com; do
+      curl -sf -H "X-API-Key: $PDNS_API_KEY" \
+        "http://pdns.pdns.svc.cluster.local:8081/api/v1/servers/localhost/zones/$zone." \
+        | jq -r '.rrsets[].name' 2>/dev/null || true
+    done | sort -u)
+    {
+      echo 'local names = newSuffixMatchNode()'
+      for n in $names; do echo "names:add(newDNSName(\"$n\"))"; done
+      echo 'return { internalNames = names }'
+    } > "$target"
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/configmap-v1.json
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: recursor-conf
+data:
+  recursor.conf: |
+    allow-from=0.0.0.0/0,::/0
+    dnssec=validate
+    local-address=0.0.0.0
+    quiet=yes
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recursor
+  labels:
+    app: recursor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recursor
+  template:
+    metadata:
+      labels:
+        app: recursor
+    spec:
+      containers:
+      - name: recursor
+        image: docker.io/powerdns/pdns-recursor-49:4.9.9
+        args: ["--config-dir=/etc/pdns-recursor"]
+        ports:
+        - name: dns-udp
+          containerPort: 53
+          protocol: UDP
+        - name: dns-tcp
+          containerPort: 53
+          protocol: TCP
+        readinessProbe:
+          tcpSocket:
+            port: dns-tcp
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 20m
+            memory: 96Mi
+          limits:
+            memory: 512Mi
+        volumeMounts:
+        - name: conf
+          mountPath: /etc/pdns-recursor
+      volumes:
+      - name: conf
+        configMap:
+          name: recursor-conf
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/service-v1.json
+apiVersion: v1
+kind: Service
+metadata:
+  name: recursor
+spec:
+  selector:
+    app: recursor
+  ports:
+  - name: dns-udp
+    port: 53
+    targetPort: dns-udp
+    protocol: UDP
+  - name: dns-tcp
+    port: 53
+    targetPort: dns-tcp
+    protocol: TCP
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dnsdist
+  labels:
+    app: dnsdist
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dnsdist
+  template:
+    metadata:
+      labels:
+        app: dnsdist
+    spec:
+      shareProcessNamespace: true
+      initContainers:
+      - name: routes
+        image: docker.io/library/alpine:3.20
+        command:
+        - sh
+        - -c
+        - apk add --no-cache curl jq >/dev/null && sh /scripts/routes.sh /shared/internal.lua
+        env:
+        - name: PDNS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-pdns-api-key
+              key: password
+        volumeMounts:
+        - name: routes
+          mountPath: /shared
+        - name: scripts
+          mountPath: /scripts
+      containers:
+      - name: routes-sync
+        image: docker.io/library/alpine:3.20
+        command:
+        - sh
+        - -c
+        - |
+          apk add --no-cache curl jq procps >/dev/null
+          while sleep 300; do
+            sh /scripts/routes.sh /shared/internal.lua.new
+            if ! cmp -s /shared/internal.lua /shared/internal.lua.new; then
+              mv /shared/internal.lua.new /shared/internal.lua
+              pkill -TERM dnsdist
+            fi
+          done
+        env:
+        - name: PDNS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-pdns-api-key
+              key: password
+        volumeMounts:
+        - name: routes
+          mountPath: /shared
+        - name: scripts
+          mountPath: /scripts
+      - name: dnsdist
+        image: docker.io/powerdns/dnsdist-19:1.9.16
+        args: ["--supervised", "--disable-syslog", "--config", "/etc/dnsdist/dnsdist.conf"]
+        ports:
+        - name: dns-udp
+          containerPort: 53
+          protocol: UDP
+        - name: dns-tcp
+          containerPort: 53
+          protocol: TCP
+        readinessProbe:
+          tcpSocket:
+            port: dns-tcp
+          initialDelaySeconds: 5
+          periodSeconds: 15
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
+        volumeMounts:
+        - name: conf
+          mountPath: /etc/dnsdist
+        - name: routes
+          mountPath: /etc/dnsdist/routes
+      volumes:
+      - name: conf
+        configMap:
+          name: dnsdist-conf
+      - name: routes
+        emptyDir: {}
+      - name: scripts
+        configMap:
+          name: dnsdist-routes-script
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/service-v1.json
+apiVersion: v1
+kind: Service
+metadata:
+  name: dnsdist
+spec:
+  selector:
+    app: dnsdist
+  ports:
+  - name: dns-udp
+    port: 53
+    targetPort: dns-udp
+    protocol: UDP
+  - name: dns-tcp
+    port: 53
+    targetPort: dns-tcp
+    protocol: TCP
