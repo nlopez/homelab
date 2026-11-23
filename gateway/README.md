@@ -15,6 +15,10 @@ Not covered by the provider, so left to the GUI and `config.xml` snapshots:
 IDS, Squid, BIND, radvd, Tailscale, SNMP, captive portal, TAYGA, and the
 system settings pages.
 
+The `enabled` flag on routes and gateways is also left to the GUI: provider
+`~> 0.30` never reads it back, so a route disabled here would show a permanent
+diff and fail the apply that tries to write it.
+
 ## Running it
 
 Credentials come from the two 1Password items that `ansible/scripts/device_inventory.py`

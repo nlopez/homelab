@@ -170,7 +170,6 @@ resource "opnsense_system_route" "lga2_routes" {
   network     = each.value.network
   gateway     = each.value.gateway
   description = each.value.description
-  enabled     = true
 }
 
 import {
