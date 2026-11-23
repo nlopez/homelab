@@ -10,8 +10,9 @@ data:
 
     -- The recursor is the default backend: it validates DNSSEC and answers the
     -- public zones. Only names the authoritative zones hold go to pdns.
-    newServer({address = "__RECURSOR__:5353", name = "public"})
-    newServer({address = "__PDNS__:5353", name = "auth", pool = "auth"})
+    -- The service ClusterIP listens on 53 and maps to the pod's 5353.
+    newServer({address = "__RECURSOR__:53", name = "public"})
+    newServer({address = "__PDNS__:53", name = "auth", pool = "auth"})
     setServerPolicy(firstAvailable)
 
     local chunk = loadfile("/etc/dnsdist/routes/internal.lua")
