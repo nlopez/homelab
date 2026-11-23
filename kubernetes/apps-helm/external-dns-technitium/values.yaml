@@ -25,7 +25,7 @@ domainFilters:
 extraArgs:
 - --gateway-name=private
 - --pdns-server=http://pdns.pdns.svc.cluster.local:8081
-- --default-ttl=60s
+- --min-ttl=60s
 - --txt-owner-id=technitium
 logLevel: debug
 dnsConfig:
