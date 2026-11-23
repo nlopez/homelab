@@ -1,6 +1,10 @@
 ---
 tailscale_accept_dns: false
-tailscale_accept_routes: false
+# The site's odroid is the only box that routes tailnet traffic between
+# networks: it advertises the site's ranges and accepts whatever the other
+# sites advertise, so LAN clients reach them through it as a next hop. The
+# gateways advertise their own LAN and accept no tailnet routes.
+tailscale_accept_routes: true
 tailscale_ssh: true
 tailscale_nameservers:
   - "{{ datadog_gateway_address }}"
