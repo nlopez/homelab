@@ -1,5 +1,7 @@
 ---
 tailscale_accept_dns: false
+tailscale_accept_routes: false
+tailscale_ssh: true
 tailscale_nameservers:
   - "{{ datadog_gateway_address }}"
   - 1.1.1.1

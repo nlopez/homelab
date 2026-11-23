@@ -26,6 +26,47 @@
     enabled: true
     state: started
 
+- name: Get Tailscale status
+  ansible.builtin.command: tailscale status --json
+  register: tailscale_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+# Tags can only be requested at login: `tailscale set` has no --advertise-tags.
+# Changing them later needs --force-reauth here or an edit in the admin console.
+- name: Log in to Tailscale
+  ansible.builtin.command: >-
+    tailscale up
+    --timeout={{ tailscale_login_timeout }}
+    --accept-dns={{ tailscale_accept_dns | lower }}
+    --accept-routes={{ tailscale_accept_routes | lower }}
+    --ssh={{ tailscale_ssh | lower }}
+    {% if tailscale_advertise_tags | length > 0 %}--advertise-tags={{ tailscale_advertise_tags | join(',') }}{% endif %}
+  register: tailscale_login
+  changed_when: true
+  failed_when: false
+  when: (tailscale_status.stdout | from_json).BackendState | default('') != 'Running'
+
+- name: Get Tailscale status after login
+  ansible.builtin.command: tailscale status --json
+  register: tailscale_status
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Note whether this device is logged in
+  ansible.builtin.set_fact:
+    tailscale_logged_in: "{{ (tailscale_status.stdout | from_json).BackendState | default('') == 'Running' }}"
+
+- name: Show the Tailscale login URL
+  ansible.builtin.debug:
+    msg: >-
+      {{ inventory_hostname }} is not logged in yet. Open
+      {{ tailscale_login.stderr | regex_search('https://login\.tailscale\.com/\\S+') | default('the URL in tailscale status', true) }}
+      and then run this play again.
+  when: not tailscale_logged_in
+
 - name: Get Tailscale prefs
   ansible.builtin.command: tailscale debug prefs
   register: tailscale_prefs
@@ -35,12 +76,24 @@
 - name: Allow Tailscale operator to manage tailscale without root
   ansible.builtin.command: "tailscale set --operator={{ tailscale_operator }}"
   changed_when: true
-  when: (tailscale_prefs.stdout | from_json).OperatorUser | default('') != tailscale_operator
+  when:
+    - tailscale_logged_in
+    - (tailscale_prefs.stdout | from_json).OperatorUser | default('') != tailscale_operator
 
 - name: Set whether Tailscale manages DNS
   ansible.builtin.command: "tailscale set --accept-dns={{ tailscale_accept_dns | lower }}"
   changed_when: true
-  when: (tailscale_prefs.stdout | from_json).CorpDNS | default(true) != tailscale_accept_dns
+  when:
+    - tailscale_logged_in
+    - (tailscale_prefs.stdout | from_json).CorpDNS | default(true) != tailscale_accept_dns
+
+- name: Set whether Tailscale SSH is enabled
+  ansible.builtin.command: "tailscale set --ssh={{ tailscale_ssh | lower }}"
+  changed_when: true
+  when:
+    - tailscale_logged_in
+    - (tailscale_prefs.stdout | from_json).RunSSH | default(false) != tailscale_ssh
+
 
 - name: Write resolv.conf when Tailscale does not manage DNS
   ansible.builtin.copy:
@@ -89,12 +142,13 @@
   vars:
     tailscale_exit_routes: "{{ ['0.0.0.0/0', '::/0'] if tailscale_advertise_exit_node else [] }}"
   when: >-
+    tailscale_logged_in and (
     ((tailscale_prefs.stdout | from_json).AdvertiseRoutes | default([], true) | sort)
     != ((tailscale_advertise_routes + tailscale_exit_routes) | sort)
     or (not (tailscale_prefs.stdout | from_json).NoSNAT | default(false))
     != tailscale_snat_subnet_routes
     or (tailscale_prefs.stdout | from_json).RouteAll | default(false)
-    != tailscale_accept_routes
+    != tailscale_accept_routes)
 
 - name: Install iptables for MSS clamping
   ansible.builtin.package:

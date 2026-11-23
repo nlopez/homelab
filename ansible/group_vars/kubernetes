@@ -9,3 +9,12 @@ resolved_dns_servers:
   - 192.168.222.1
 resolved_ignore_link_dns:
   - eno1
+
+# The nodes stay out of tailnet DNS and routing: they answer the cluster, and
+# resolved keeps pointing at the site gateway. tag:k8s belongs to the operator.
+tailscale_accept_dns: false
+tailscale_accept_routes: false
+tailscale_ssh: true
+tailscale_advertise_tags:
+  - tag:home
+  - tag:lga1

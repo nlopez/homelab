@@ -189,6 +189,7 @@
     {
       "action": "accept",
       "src": [
+        "autogroup:member",
         "tag:admin"
       ],
       "dst": [

@@ -18,8 +18,7 @@
     - nfs
     - containerd
     - kubernetes
-    - role: tailscale_absent
-      tags: tailscale_absent
+    - tailscale
     - sshd
     - nic_offload
     - role: nm_ipv6_never_default
