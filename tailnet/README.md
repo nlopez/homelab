@@ -43,7 +43,9 @@ role, assumed through GitHub's OIDC provider; both are defined in
 
 # Not managed here
 * Subnet routes and exit nodes. Routes are advertised by the devices themselves
-  (see `tailscale_advertise_routes` in `ansible/host_vars/`) and approved by the
-  `autoApprovers` block in `policy.hujson`. Adding a
+  and approved by the `autoApprovers` block in `policy.hujson`. The odroids take
+  their list from `tailscale_advertise_routes` in `ansible/host_vars/`; each
+  site's OPNsense gateway advertises the same site ranges with
+  `tailscale set --advertise-routes`. Adding a
   `tailscale_device_subnet_routes` resource would duplicate that and drift.
 * Per-device settings pushed by the Ansible role in `ansible/roles/tailscale/`.

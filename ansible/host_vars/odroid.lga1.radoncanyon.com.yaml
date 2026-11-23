@@ -15,6 +15,9 @@ tailscale_advertise_routes:
   - 192.168.221.0/24
   - 192.168.222.0/24
   - 192.168.223.0/24
+  - fd54:571b:560a:1::/64
+  - fd54:571b:560a:2::/64
+  - fd54:571b:560a:3::/64
   - fd54:571b:560a:4364::/64
 tailscale_snat_subnet_routes: false
 
