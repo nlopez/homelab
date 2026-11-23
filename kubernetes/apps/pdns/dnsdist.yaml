@@ -34,6 +34,7 @@ data:
     # Busybox tools only, so nothing is downloaded at start.
     set -eu
     target=$1
+    mkdir -p "$(dirname "$target")"
     names=$(for zone in desertbluffs.com nulogorsk.com; do
       wget -q -O - --header="X-API-Key: $PDNS_API_KEY" \
         "http://pdns.pdns.svc.cluster.local:8081/api/v1/servers/localhost/zones/$zone." 2>/dev/null || true
