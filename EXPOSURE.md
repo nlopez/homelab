@@ -93,8 +93,7 @@ flowchart LR
 - **Site infrastructure (`*.lga1.radoncanyon.com`, `*.lga2.radoncanyon.com`):** Gateways, nodes,
   NAS, and odroids live as Unbound host overrides (LAN A + ULA AAAA) on both `gw.lga1` and
   `gw.lga2` (`gateway/`), so they resolve even when the cluster is down. Tailnet split-DNS routes
-  `lga1.radoncanyon.com` and `lga2.radoncanyon.com` to both gateways (`100.83.144.88`,
-  `100.86.37.97`), and Tailscale MagicDNS (`*.macaroni-pirate.ts.net`) answers tailnet IPs
+  `radoncanyon.com` to both gateways (`100.83.144.88`, `100.86.37.97`), and Tailscale MagicDNS (`*.macaroni-pirate.ts.net`) answers tailnet IPs
   automatically. No private IPs are published in Cloudflare (`dns/`).
 - **Outside:** Cloudflare answers with its own anycast addresses, because every internet record is
   proxied. The A and AAAA contents (the WAN address and the gateway's public IPv6 address) are only

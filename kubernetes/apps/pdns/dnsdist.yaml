@@ -19,7 +19,13 @@ data:
     if chunk then
       local ok, routes = pcall(chunk)
       if ok and type(routes) == "table" and routes.internalNames then
-        addAction(SuffixMatchNodeRule(routes.internalNames), PoolAction("auth"))
+        addAction(
+          AndRule({
+            QNameSetRule(routes.internalNames),
+            OrRule({QTypeRule(DNSQType.A), QTypeRule(DNSQType.AAAA), QTypeRule(DNSQType.CNAME)}),
+          }),
+          PoolAction("auth")
+        )
       end
     end
 ---
@@ -42,7 +48,7 @@ data:
       "http://$api:8081/api/v1/servers/localhost/zones/desertbluffs.com." 2>/dev/null \
       | grep -oE '"name"[[:space:]]*:[[:space:]]*"[^"]*"' | sed -E 's/.*"([^"]*)"$/\1/' | sort -u)
     {
-      echo 'local names = newSuffixMatchNode()'
+      echo 'local names = newDNSNameSet()'
       for n in $names; do echo "names:add(newDNSName(\"$n\"))"; done
       echo 'return { internalNames = names }'
     } > "$target"

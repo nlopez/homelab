@@ -9,9 +9,8 @@ resource "tailscale_dns_configuration" "this" {
 # infrastructure resolves through the two gateways' Unbound resolvers.
 resource "tailscale_dns_split_nameservers" "internal" {
   for_each = {
-    "desertbluffs.com"     = ["100.95.107.254"]
-    "lga1.radoncanyon.com" = ["100.83.144.88", "100.86.37.97"]
-    "lga2.radoncanyon.com" = ["100.83.144.88", "100.86.37.97"]
+    "desertbluffs.com" = ["100.95.107.254"]
+    "radoncanyon.com"  = ["100.83.144.88", "100.86.37.97"]
   }
 
   domain      = each.key
