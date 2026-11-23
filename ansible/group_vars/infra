@@ -1,10 +1,10 @@
 ---
 tailscale_accept_dns: false
-# Accepting routes installs one for the site LAN the odroid is already on,
-# which sends its own LAN traffic into the tunnel. Only enable it where the
-# box has to forward to another site (odroid.lga2 holds the route the gateway
-# uses for 10.43.64.0/24); the gateways accept no tailnet routes at all.
-tailscale_accept_routes: false
+# Each site's odroid is the only advertiser for that site's networks, so
+# accepting routes cannot install a route for the LAN the box sits on. It has
+# to accept them to forward the gateway's 10.43.64.0/24 traffic into the
+# tailnet; the gateways accept no tailnet routes at all.
+tailscale_accept_routes: true
 tailscale_ssh: true
 tailscale_nameservers:
   - "{{ datadog_gateway_address }}"

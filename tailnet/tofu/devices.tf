@@ -45,12 +45,6 @@ resource "tailscale_device_subnet_routes" "gw_lga1" {
   device_id = data.tailscale_device.gw_lga1.node_id
 
   routes = [
-    "192.168.221.0/24",
-    "192.168.222.0/24",
-    "192.168.223.0/24",
-    "fd54:571b:560a:1::/64",
-    "fd54:571b:560a:2::/64",
-    "fd54:571b:560a:3::/64",
   ]
 }
 
@@ -73,8 +67,6 @@ resource "tailscale_device_subnet_routes" "gw_lga2" {
   device_id = data.tailscale_device.gw_lga2.node_id
 
   routes = [
-    "192.168.239.0/24",
-    "fd72:ce7b:d4a9:9511::/64",
   ]
 }
 

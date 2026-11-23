@@ -11,8 +11,6 @@ technitium_proxy_site: lga2
 tailscale_search_domains:
   - lga2.radoncanyon.com
 
-# Needed to forward the gateway's 10.43.64.0/24 traffic into the tailnet.
-tailscale_accept_routes: true
 tailscale_advertise_routes:
   - 10.43.64.0/24
   - 192.168.239.0/24
