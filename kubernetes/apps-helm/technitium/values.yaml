@@ -10,11 +10,6 @@ service:
       http:
         port: 5380
     externalTrafficPolicy: Local
-    annotations:
-      lbipam.cilium.io/ips: "10.43.64.53,fd54:571b:560a:4364::53"
-      tailscale.com/expose: "true"
-      tailscale.com/hostname: technitium
-      tailscale.com/proxy-group: heimdall
 persistence:
   config:
     enabled: true

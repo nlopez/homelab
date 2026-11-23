@@ -186,7 +186,7 @@ spec:
         - sh
         - -c
         - |
-          while sleep 300; do
+          while sleep 60; do
             sh /scripts/routes.sh /tmp/internal.lua.new
             if ! cmp -s /etc/dnsdist/routes/internal.lua /tmp/internal.lua.new; then
               cp /tmp/internal.lua.new /etc/dnsdist/routes/internal.lua
@@ -247,7 +247,13 @@ apiVersion: v1
 kind: Service
 metadata:
   name: dnsdist
+  annotations:
+    lbipam.cilium.io/ips: "10.43.64.53,fd54:571b:560a:4364::53"
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: technitium
+    tailscale.com/proxy-group: heimdall
 spec:
+  type: LoadBalancer
   selector:
     app: dnsdist
   ports:
