@@ -13,8 +13,8 @@ tailnet-wide DNS settings, using the
   `.envrc`.
 * The Tailscale OAuth client the ACL apply workflow already used, expanded with
   the `dns` and `devices:routes` scopes. It has the `dns`, `policy_file`,
-  `devices:core:write`, `devices:routes:write` and `devices:posture_attributes`
-  scopes. Its ID and secret are stored in 1Password
+  `devices:core:write` and `devices:routes:write` scopes. Its ID and secret are
+  stored in 1Password
   as `Tailscale GitOps` in the `Automation` vault. The pull-request validation
   workflow uses the same client.
 
