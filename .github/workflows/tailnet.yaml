@@ -1,12 +1,9 @@
-name: Sync Tailscale ACLs
+name: Validate Tailscale ACLs
 
 on:
-  push:
-    branches: [ "main" ]
-    paths: ['tailnet/**', '.github/workflows/tailnet.yaml']
   pull_request:
     branches: [ "main" ]
-    paths: ['tailnet/**', '.github/workflows/tailnet.yaml']
+    paths: ['tailnet/policy.hujson', '.github/workflows/tailnet.yaml']
 
 permissions:
   contents: read
@@ -14,8 +11,6 @@ permissions:
 
 jobs:
   acls:
-    if: github.event_name == 'push'
-    environment: production
     runs-on: ubuntu-24.04
 
     steps:
@@ -31,7 +26,6 @@ jobs:
             version-cache.json-
 
       - name: Test ACL
-        if: github.event_name == 'push'
         id: test-acl
         uses: tailscale/gitops-acl-action@5a4a17f5708e9bf96f4ee915a95e9f83c2eebe1a # v1
         with:
@@ -40,14 +34,3 @@ jobs:
           tailnet: ${{ secrets.TS_TAILNET }}
           policy-file: tailnet/policy.hujson
           action: test
-
-      - name: Deploy ACL
-        if: github.event_name == 'push'
-        id: deploy-acl
-        uses: tailscale/gitops-acl-action@5a4a17f5708e9bf96f4ee915a95e9f83c2eebe1a # v1
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tailnet: ${{ secrets.TS_TAILNET }}
-          policy-file: tailnet/policy.hujson
-          action: apply

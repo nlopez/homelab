@@ -42,8 +42,8 @@ repos:
     language: system
     files: ^ansible/
     pass_filenames: false
-  - id: tofu-fmt-dns
-    name: tofu fmt (dns)
+  - id: tofu-fmt
+    name: tofu fmt
     entry: tofu fmt -check -diff
     language: system
-    files: ^dns/.*\.tf$
+    files: ^(dns|tailnet/tofu)/.*\.tf$
