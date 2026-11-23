@@ -4,18 +4,10 @@ locals {
     "desertbluffs.com" = {
       uuid        = "8f76533f-cd8a-4f8f-8d63-dee6b5d46c4d"
       domain      = "desertbluffs.com"
-      server      = "192.168.239.2"
+      server      = "10.43.64.53"
       port        = 53
       type        = "query"
-      description = "Site Technitium (192.168.239.2), which holds the cluster's view of this zone"
-    }
-    "nulogorsk.com" = {
-      uuid        = "165ce9a9-4338-44d5-b351-b96a7b84ca71"
-      domain      = "nulogorsk.com"
-      server      = "192.168.239.2"
-      port        = 53
-      type        = "query"
-      description = "Site Technitium (192.168.239.2), which holds the cluster's view of this zone"
+      description = "Cluster PowerDNS (dnsdist)"
     }
     "239.168.192.in-addr.arpa" = {
       uuid        = "ff45439a-69d9-4322-9eb4-554c30ba2914"
@@ -27,15 +19,7 @@ locals {
     }
   }
 
-  lga2_unbound_hosts = {
-    "dns-A" = {
-      uuid        = "2e97c1d3-5582-45a0-9ce7-e88c46c297ba"
-      hostname    = "dns"
-      domain      = "lga2.radoncanyon.com"
-      rr          = "A"
-      server      = "192.168.239.2"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
+  lga2_local_hosts = {
     "gw-A" = {
       uuid        = "084d3588-2efa-4cab-9249-fda1945ab555"
       hostname    = "gw"
@@ -60,14 +44,6 @@ locals {
       server      = "fd72:ce7b:d4a9:9511::254"
       description = "Site infrastructure name"
     }
-    "dns-AAAA" = {
-      uuid        = "83f3d42b-71b5-4c84-9f51-390872beb5a9"
-      hostname    = "dns"
-      domain      = "lga2.radoncanyon.com"
-      rr          = "AAAA"
-      server      = "fd72:ce7b:d4a9:9511::2"
-      description = "Site infrastructure name"
-    }
     "odroid-AAAA" = {
       uuid        = "99fed737-5eb9-4159-890e-f27f65fa5ef6"
       hostname    = "odroid"
@@ -77,6 +53,17 @@ locals {
       description = "Site infrastructure name"
     }
   }
+
+  lga2_unbound_hosts = merge(
+    local.lga2_local_hosts,
+    { for k, v in local.lga1_local_hosts : "lga1-${k}" => {
+      hostname    = v.hostname
+      domain      = v.domain
+      rr          = v.rr
+      server      = v.server
+      description = v.description
+    } }
+  )
 
   lga2_gateways = {
     "ODROID_LGA2" = {
@@ -181,7 +168,7 @@ import {
 
 import {
   provider = opnsense.lga2
-  for_each = local.lga2_unbound_hosts
+  for_each = local.lga2_local_hosts
   to       = opnsense_unbound_host_override.lga2_unbound_hosts[each.key]
   id       = each.value.uuid
 }

@@ -1,6 +1,0 @@
-#!/bin/sh
-sock={{ technitium_web_socket }}
-[ -S "$sock" ] || exit 0
-[ "$(stat -c %a:%G "$sock")" = "660:{{ technitium_web_socket_group }}" ] && exit 0
-chgrp {{ technitium_web_socket_group }} "$sock"
-chmod 0660 "$sock"

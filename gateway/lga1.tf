@@ -4,18 +4,10 @@ locals {
     "desertbluffs.com" = {
       uuid        = "ff7bacd1-e510-4b0d-94b2-2bfb52242004"
       domain      = "desertbluffs.com"
-      server      = "192.168.222.2"
+      server      = "10.43.64.53"
       port        = 53
       type        = "query"
-      description = "Site Technitium (192.168.222.2), which holds the cluster's view of this zone"
-    }
-    "nulogorsk.com" = {
-      uuid        = "b47af299-0164-489c-8faf-16c2e27e795b"
-      domain      = "nulogorsk.com"
-      server      = "192.168.222.2"
-      port        = 53
-      type        = "query"
-      description = "Site Technitium (192.168.222.2), which holds the cluster's view of this zone"
+      description = "Cluster PowerDNS (dnsdist)"
     }
     "221.168.192.in-addr.arpa" = {
       uuid        = "26f65298-b2f8-47f0-ba27-4831f26857ab"
@@ -43,15 +35,7 @@ locals {
     }
   }
 
-  lga1_unbound_hosts = {
-    "dns-A" = {
-      uuid        = "25cdfff8-e724-42b5-8a1c-11c46ed8ca9f"
-      hostname    = "dns"
-      domain      = "lga1.radoncanyon.com"
-      rr          = "A"
-      server      = "192.168.222.2"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
+  lga1_local_hosts = {
     "gw-A" = {
       uuid        = "9b431324-55d6-44cb-bbba-0805e0ca2e59"
       hostname    = "gw"
@@ -108,14 +92,6 @@ locals {
       server      = "fd54:571b:560a:2::2"
       description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
     }
-    "dns-AAAA" = {
-      uuid        = "c686eec8-7306-4af6-87a5-099d2f303707"
-      hostname    = "dns"
-      domain      = "lga1.radoncanyon.com"
-      rr          = "AAAA"
-      server      = "fd54:571b:560a:2::2"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
     "gw-AAAA" = {
       uuid        = "99a3dd82-91e0-43c6-a6b8-748a2f55ee00"
       hostname    = "gw"
@@ -157,6 +133,17 @@ locals {
       description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
     }
   }
+
+  lga1_unbound_hosts = merge(
+    local.lga1_local_hosts,
+    { for k, v in local.lga2_local_hosts : "lga2-${k}" => {
+      hostname    = v.hostname
+      domain      = v.domain
+      rr          = v.rr
+      server      = v.server
+      description = v.description
+    } }
+  )
 
   lga1_gateways = {
     "WG_LGA2" = {
@@ -269,7 +256,7 @@ import {
 
 import {
   provider = opnsense.lga1
-  for_each = local.lga1_unbound_hosts
+  for_each = local.lga1_local_hosts
   to       = opnsense_unbound_host_override.lga1_unbound_hosts[each.key]
   id       = each.value.uuid
 }

@@ -27,7 +27,7 @@ route between the `internet` and `private` gateways.
 | Radarr | `radarr` | — | `radarr`, `dumud` | |
 | Seafile | `seafile` | — | `seafile` | |
 | Sonarr | `sonarr` | — | `sonarr`, `jolthog` | |
-| Technitium | `technitium` | — | Web `dns`; DNS `10.43.64.53`, `fd54:571b:560a:4364::53`; tailnet `technitium` | |
+| PowerDNS (`dnsdist`) | `pdns` | — | DNS `10.43.64.53`, `fd54:571b:560a:4364::53`; tailnet `100.95.107.254` (`technitium`) | |
 
 Hostnames in the Private column are under `desertbluffs.com` unless written in full. Private DNS
 holds those short names only. Codenames (pick new ones from [CODENAMES.md](CODENAMES.md)) exist
@@ -37,15 +37,14 @@ Unmatched hostnames under `*.desertbluffs.com` (both gateways) get a catch-all `
 
 ## Split-horizon DNS
 
-Short names resolve differently depending on where the client asks; codenames never appear in
-private DNS, so they resolve the same way everywhere. Using `atuin.desertbluffs.com` and its
-codename `pyrin.desertbluffs.com` as the examples. This split applies to clients on the LAN: the
-tailnet uses MagicDNS and the public zones alone.
+Short names resolve to the private gateway from both the LAN and the tailnet; codenames never
+appear in private DNS, so they resolve via Cloudflare everywhere. Using `atuin.desertbluffs.com`
+and its codename `pyrin.desertbluffs.com` as the examples.
 
 ```mermaid
 flowchart LR
-  subgraph inside["LAN clients"]
-    lan["Client at lga1 or lga2"]
+  subgraph inside["LAN + tailnet clients"]
+    lan["Client at lga1, lga2, or tailnet"]
   end
   subgraph outside["Internet clients"]
     web["Browser anywhere"]
@@ -58,20 +57,20 @@ flowchart LR
     priv["private gateway<br/>10.43.64.10<br/>fd54:571b:560a:4364::10"]
     inet["internet gateway<br/>10.43.64.20<br/>2600:4041:5b21:6b64::20"]
     app["atuin"]
+    pdns[("PowerDNS<br/>dnsdist → pdns + recursor<br/>10.43.64.53 / 100.95.107.254")]
   end
 
-  tech[("Technitium<br/>desertbluffs.com<br/>conditional forwarder zone")]
   cfdns[("Cloudflare DNS<br/>desertbluffs.com")]
   edge["Cloudflare proxy"]
   gw["gw.lga1 (OPNsense)<br/>WAN 96.246.156.39"]
 
-  edt -- "A + AAAA for short names" --> tech
+  edt -- "A + AAAA for short names" --> pdns
   wanip -- "Gateway target annotation" --> edc
   edc -- "proxied A + AAAA for internet hostnames" --> cfdns
 
-  lan -- "atuin? (via the site gateway's resolver)" --> tech
-  tech -- "local record: 10.43.64.10 / fd54:…::10" --> lan
-  tech -. "names it does not hold<br/>(MX, SES, lga2, …)" .-> cfdns
+  lan -- "atuin? (LAN: site Unbound → 10.43.64.53;<br/>tailnet: split-DNS → 100.95.107.254)" --> pdns
+  pdns -- "local record: 10.43.64.10 / fd54:…::10" --> lan
+  pdns -. "misses via recursor<br/>(codenames, MX, SES, …)" .-> cfdns
   lan -- "HTTPS" --> priv
 
   web -- "pyrin?" --> cfdns
@@ -85,24 +84,23 @@ flowchart LR
   inet -- "Cloudflare origin-pull mTLS required" --> app
 ```
 
-- **Inside:** Technitium answers from its own records, so a short name goes straight to the private
-  gateway and never leaves the network. Each site's gateway (OPNsense Unbound) forwards
-  `desertbluffs.com` and `nulogorsk.com` to Technitium (`10.43.64.53`) and nothing else; there
-  are no zone copies on the gateways. Names Technitium doesn't hold are forwarded to public DNS.
-- **Site infrastructure** (`*.lga1.radoncanyon.com`, `*.lga2.radoncanyon.com`: gateways, nodes,
-  NAS, odroids) is not in the cluster. The two addresses every device has live in two public
-  zones: `radoncanyon.com` answers the LAN and cluster addresses, `nulogorsk.com` the tailscale
-  addresses, and both are declared in `dns/`. So `gw.lga1.radoncanyon.com` is `192.168.222.1`
-  while `gw.lga1.nulogorsk.com` is `100.83.144.88`. Nothing routes a tailnet client to private
-  DNS: `tailnet/tofu/dns.tf` sets no split-DNS domains, and every site device runs its Tailscale
-  client with `--accept-dns=false`. The gateways' Unbound host overrides, the cluster Technitium
-  and the per-site Technitium records are still in place, unused by the tailnet.
+- **Inside (`desertbluffs.com`):** Cluster PowerDNS (`dnsdist` → `pdns` authoritative + `recursor`,
+  in namespace `pdns`) answers short names with the private gateway's addresses, so traffic stays
+  on the private network. Both site gateways (OPNsense Unbound, managed in `gateway/`) forward
+  `desertbluffs.com` directly to `10.43.64.53` (`gw.lga1` over BGP, `gw.lga2` via `odroid.lga2`).
+  Tailnet clients use split-DNS (`tailnet/tofu/dns.tf`) pointing `desertbluffs.com` to
+  `100.95.107.254`. Names not in `pdns` fall through to `recursor` and public DNS.
+- **Site infrastructure (`*.lga1.radoncanyon.com`, `*.lga2.radoncanyon.com`):** Gateways, nodes,
+  NAS, and odroids live as Unbound host overrides (LAN A + ULA AAAA) on both `gw.lga1` and
+  `gw.lga2` (`gateway/`), so they resolve even when the cluster is down. Tailnet split-DNS routes
+  `lga1.radoncanyon.com` and `lga2.radoncanyon.com` to both gateways (`100.83.144.88`,
+  `100.86.37.97`), and Tailscale MagicDNS (`*.macaroni-pirate.ts.net`) answers tailnet IPs
+  automatically. No private IPs are published in Cloudflare (`dns/`).
 - **Outside:** Cloudflare answers with its own anycast addresses, because every internet record is
   proxied. The A and AAAA contents (the WAN address and the gateway's public IPv6 address) are only
   where Cloudflare connects, and never appear in public answers.
-- Only LAN clients get short names. A codename such as `pyrin.desertbluffs.com` is absent from
-  Technitium, so a LAN client follows the same Cloudflare path as the internet, and a tailnet
-  client follows it too.
+- A codename such as `pyrin.desertbluffs.com` is absent from `pdns`, so LAN and tailnet clients
+  fall through to Cloudflare and follow the same path as internet clients.
 
 ## Paths
 
@@ -134,17 +132,17 @@ With both records published, Cloudflare still reaches the origin over IPv4.
 
 - The `private` gateway at `10.43.64.10` and `fd54:571b:560a:4364::10` is advertised to the LAN
   router (`192.168.222.1`) over BGP from Cilium.
-- `external-dns-technitium` publishes its routes to Technitium for LAN DNS, as A and AAAA records.
-- Technitium serves `desertbluffs.com` as a Conditional Forwarder zone: names it holds resolve to
-  the private gateway, and every other name is forwarded to public DNS (mail records, `lga2`).
-  Every name it holds needs both an A and an AAAA record; an AAAA query for a name with only an A
-  record is forwarded and returns Cloudflare's public address. external-dns can't own the apex, so
-  the apex AAAA is a static record in Technitium.
+- `external-dns-technitium` publishes its routes to PowerDNS (`pdns`) for internal DNS, as A and
+  AAAA records.
+- `dnsdist` routes names present in `pdns` to the authoritative server and forwards every other
+  query to `recursor` (with DNSSEC validation). `routes-sync` refreshes the routed-name list from
+  the `pdns` API every 60 seconds. external-dns can't own the apex, so the `desertbluffs.com` apex
+  A and AAAA records are static records in `pdns`.
 - Pods have global IPv6 addresses from `2600:4041:5b21:6b10::/64`, taken from the delegated
   `2600:4041:5b21:6b00::/56`. Cilium advertises the pod CIDRs to the LAN router over BGP and IPv6
   masquerade is off, so pods egress as themselves. Unsolicited inbound is still blocked at the WAN.
-- The Tailscale operator exposes the private gateway and Technitium DNS on the tailnet through the
-  `heimdall` proxy group.
+- The Tailscale operator exposes the private gateway and `dnsdist` (`100.95.107.254`, hostname
+  `technitium`) on the tailnet through the `heimdall` proxy group.
 
 ## Not tracked here
 
@@ -152,4 +150,3 @@ With both records published, Cloudflare still reaches the origin over IPv4.
   `32400` is forwarded from the WAN.
 - Tailscale Funnel. `tailnet/policy.hujson` grants the `funnel` attribute to `autogroup:member`
   and `tag:admin`, but no Funnel configuration lives in this repo.
-- Hosts outside the cluster, such as the Technitium proxy on `odroid.lga1.radoncanyon.com`.

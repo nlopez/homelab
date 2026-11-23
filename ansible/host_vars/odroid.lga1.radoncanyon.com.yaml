@@ -4,10 +4,6 @@ static_ula_interface: end0
 static_ula_addresses:
   - fd54:571b:560a:2::2/64
 
-technitium_api_token_item_id: hdiuh6avqno64itbsu2h5nea2a
-technitium_proxy_hostname: dns.lga1.radoncanyon.com
-technitium_proxy_site: lga1
-
 tailscale_search_domains:
   - lga1.radoncanyon.com
 
@@ -23,13 +19,3 @@ tailscale_advertise_routes:
 
 snmp_v3_item_id: jrp7q7mbooiagyee5flo2twgcm
 datadog_gateway_address: 192.168.222.1
-
-technitium_forwarders:
-  - zone: 221.168.192.in-addr.arpa
-    forwarder: "{{ datadog_gateway_address }}:5353"
-  - zone: 222.168.192.in-addr.arpa
-    forwarder: "{{ datadog_gateway_address }}:5353"
-  - zone: 223.168.192.in-addr.arpa
-    forwarder: "{{ datadog_gateway_address }}:5353"
-  - zone: desertbluffs.com
-    forwarder: "100.95.107.254:53"

@@ -38,10 +38,9 @@ data:
     mkdir -p "$(dirname "$target")"
     # Busybox wget cannot take host:port, so resolve the service first.
     api=$(nslookup pdns.pdns.svc.cluster.local 2>/dev/null | awk '/^Address: /{print $2; exit}')
-    names=$(for zone in desertbluffs.com nulogorsk.com; do
-      wget -q -O - --header="X-API-Key: $PDNS_API_KEY" \
-        "http://$api:8081/api/v1/servers/localhost/zones/$zone." 2>/dev/null || true
-    done | grep -oE '"name"[[:space:]]*:[[:space:]]*"[^"]*"' | sed -E 's/.*"([^"]*)"$/\1/' | sort -u)
+    names=$(wget -q -O - --header="X-API-Key: $PDNS_API_KEY" \
+      "http://$api:8081/api/v1/servers/localhost/zones/desertbluffs.com." 2>/dev/null \
+      | grep -oE '"name"[[:space:]]*:[[:space:]]*"[^"]*"' | sed -E 's/.*"([^"]*)"$/\1/' | sort -u)
     {
       echo 'local names = newSuffixMatchNode()'
       for n in $names; do echo "names:add(newDNSName(\"$n\"))"; done

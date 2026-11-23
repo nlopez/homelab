@@ -20,7 +20,6 @@ sources:
 - gateway-tcproute
 - gateway-udproute
 domainFilters:
-- nulogorsk.com
 - desertbluffs.com
 extraArgs:
 - --gateway-name=private

@@ -10,33 +10,6 @@ tailscale_nameservers:
   - "{{ datadog_gateway_address }}"
   - 1.1.1.1
   - 2606:4700:4700::1111
-# Both sites hold both zones, so either site can answer for either one. Names
-# not listed here are forwarded to the site gateway and keep their LAN answers.
-technitium_tailnet_zones:
-  - lga1.radoncanyon.com
-  - lga2.radoncanyon.com
-technitium_tailnet_records:
-  - name: gw.lga1.radoncanyon.com
-    address: 100.83.144.88
-  - name: gw.lga2.radoncanyon.com
-    address: 100.86.37.97
-  - name: nas1.lga1.radoncanyon.com
-    address: 100.92.205.106
-  - name: nas2.lga1.radoncanyon.com
-    address: 100.73.101.17
-  - name: odroid.lga1.radoncanyon.com
-    address: 100.127.60.59
-  - name: odroid.lga2.radoncanyon.com
-    address: 100.110.65.2
-  - name: dns.lga1.radoncanyon.com
-    type: CNAME
-    address: odroid.lga1.radoncanyon.com
-  - name: dns.lga2.radoncanyon.com
-    type: CNAME
-    address: odroid.lga2.radoncanyon.com
-
-technitium_proxy_acme_email: letsencrypt@aethertrail.com
-technitium_proxy_upstream: "http://unix:{{ technitium_web_socket }}:"
 
 datadog_api_key: >-
   {{ lookup('ansible.builtin.pipe',
@@ -116,11 +89,3 @@ datadog_checks:
         collect_response_time: true
         tags:
           - "target:internet"
-  dns_check:
-    init_config:
-    instances:
-      - name: technitium
-        hostname: example.com
-        nameserver: 127.0.0.1
-        tags:
-          - "target:technitium"

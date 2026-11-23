@@ -1,5 +1,5 @@
 locals {
-  internal_zones = ["desertbluffs.com", "nulogorsk.com"]
+  internal_zones = ["desertbluffs.com"]
 }
 
 resource "opnsense_unbound_general" "lga1" {
@@ -21,7 +21,7 @@ resource "opnsense_unbound_general" "lga1" {
   forwarding_enabled                    = false
   hide_identity                         = true
   hide_version                          = true
-  insecure_domains                      = ["desertbluffs.com", "nulogorsk.com"]
+  insecure_domains                      = local.internal_zones
   keep_probing_hosts                    = false
   local_zone_type                       = "transparent"
   log_local_actions                     = false
@@ -79,7 +79,7 @@ resource "opnsense_unbound_general" "lga2" {
   forwarding_enabled                    = false
   hide_identity                         = true
   hide_version                          = true
-  insecure_domains                      = ["desertbluffs.com", "nulogorsk.com"]
+  insecure_domains                      = local.internal_zones
   keep_probing_hosts                    = false
   local_zone_type                       = "transparent"
   log_local_actions                     = false

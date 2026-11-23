@@ -33,8 +33,6 @@
     - tailscale
     - static_ula
     - pihole
-    - technitium
-    - technitium_proxy
     - role: unattended_upgrades
       tags: unattended_upgrades
     - role: netflow9_fixup
