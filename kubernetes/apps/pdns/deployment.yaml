@@ -111,8 +111,8 @@ spec:
           containerPort: 8081
           protocol: TCP
         readinessProbe:
-          httpGet:
-            path: /api/v1/servers/localhost
+          # The API rejects unauthenticated requests, so probe the socket.
+          tcpSocket:
             port: api
           periodSeconds: 10
         livenessProbe:
