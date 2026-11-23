@@ -96,7 +96,8 @@ flowchart LR
   zone to the Technitium instance on that site's odroid, which holds those addresses as local
   records in a forwarder zone pointed at its own gateway (`technitium_tailnet_records` in
   `ansible/group_vars/infra`). Names without a tailnet address there are forwarded to the
-  gateway and keep their LAN answer.
+  gateway and keep their LAN answer. The gateways and the odroids run their Tailscale client with
+  `--accept-dns=false`: they are resolvers themselves, so tailnet DNS is only for roaming clients.
   Each gateway also has a floating firewall rule passing `100.64.0.0/10` to port `53`, so Unbound
   can be queried directly if the odroids are down. Other `radoncanyon.com` names resolve publicly.
 - **Outside:** Cloudflare answers with its own anycast addresses, because every internet record is
