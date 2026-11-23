@@ -94,7 +94,8 @@ flowchart LR
   Update both gateways when that list changes. `tailnet/tofu/dns.tf` sends
   `lga1.radoncanyon.com` and `lga2.radoncanyon.com` to both gateways over the tailnet, so a
   tailnet client gets the same answers and these names exist on the LAN and the tailnet only.
-  Other `radoncanyon.com` names resolve publicly.
+  Each gateway has a floating firewall rule passing `100.64.0.0/10` to port `53`, which is what
+  lets those queries reach Unbound. Other `radoncanyon.com` names resolve publicly.
 - **Outside:** Cloudflare answers with its own anycast addresses, because every internet record is
   proxied. The A and AAAA contents (the WAN address and the gateway's public IPv6 address) are only
   where Cloudflare connects, and never appear in public answers.
