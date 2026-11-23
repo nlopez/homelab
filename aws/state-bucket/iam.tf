@@ -1,6 +1,6 @@
-# Lets the Tailnet workflow on main write the tailnet state without long-lived
-# AWS keys. If the account already has a GitHub OIDC provider, import it
-# instead of creating a second one:
+# Lets the Tailnet and DNS workflows on main write their state without
+# long-lived AWS keys. If the account already has a GitHub OIDC provider, import
+# it instead of creating a second one:
 #   tofu import aws_iam_openid_connect_provider.github \
 #     arn:aws:iam::546422192262:oidc-provider/token.actions.githubusercontent.com
 resource "aws_iam_openid_connect_provider" "github" {
@@ -62,4 +62,33 @@ data "aws_iam_policy_document" "tailnet_state" {
 resource "aws_iam_role_policy" "tailnet_state" {
   role   = aws_iam_role.tailnet_apply.id
   policy = data.aws_iam_policy_document.tailnet_state.json
+}
+
+resource "aws_iam_role" "dns_apply" {
+  name               = "homelab-dns-apply"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
+}
+
+data "aws_iam_policy_document" "dns_state" {
+  statement {
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:ListBucket",
+    ]
+    resources = [aws_s3_bucket.state.arn]
+  }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+    ]
+    resources = ["${aws_s3_bucket.state.arn}/dns/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "dns_state" {
+  role   = aws_iam_role.dns_apply.id
+  policy = data.aws_iam_policy_document.dns_state.json
 }

@@ -16,7 +16,8 @@ tofu plan
 tofu apply
 ```
 
-Nothing applies automatically on merge.
+A push to `main` that touches `dns/` runs `tofu apply` in the `DNS` workflow. To apply
+by hand, the commands above still work.
 
 # Layout
 * `main.tf` -- provider, backend, zones, and the record resource.
