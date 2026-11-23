@@ -8,7 +8,7 @@ if [ "$(/usr/bin/dig +short +time=3 +tries=1 @{{ resolver.address }} {{ resolver
 else
   value=0
 fi
-printf 'custom.dns.resolver.up:%s|g#resolver:%s,resolver_host:%s,site:%s\n' \
+printf 'custom.dns.resolver.up:%s|g|#resolver:%s,resolver_host:%s,site:%s\n' \
   "$value" "{{ resolver.address }}" "{{ resolver.handler }}" "{{ technitium_proxy_site | default('unknown') }}" \
   > /dev/udp/{{ technitium_proxy_dogstatsd }}/8125
 {% endfor %}
