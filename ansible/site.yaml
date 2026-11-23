@@ -18,7 +18,8 @@
     - nfs
     - containerd
     - kubernetes
-    - tailscale
+    - role: tailscale
+      tags: tailscale
     - sshd
     - nic_offload
     - role: nm_ipv6_never_default
@@ -30,7 +31,8 @@
   hosts: infra
   roles:
     - armbian_ramlog
-    - tailscale
+    - role: tailscale
+      tags: tailscale
     - static_ula
     - pihole
     - role: unattended_upgrades
