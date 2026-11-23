@@ -4,6 +4,21 @@ tailscale_nameservers:
   - "{{ datadog_gateway_address }}"
   - 1.1.1.1
   - 2606:4700:4700::1111
+# Both sites hold both zones, so either site can answer for either one. Names
+# not listed here are forwarded to the site gateway and keep their LAN answers.
+technitium_tailnet_zones:
+  - lga1.radoncanyon.com
+  - lga2.radoncanyon.com
+technitium_tailnet_records:
+  - name: gw.lga1.radoncanyon.com
+    address: 100.83.144.88
+  - name: gw.lga2.radoncanyon.com
+    address: 100.86.37.97
+  - name: nas1.lga1.radoncanyon.com
+    address: 100.92.205.106
+  - name: nas2.lga1.radoncanyon.com
+    address: 100.73.101.17
+
 technitium_proxy_acme_email: letsencrypt@aethertrail.com
 technitium_proxy_upstream: "http://unix:{{ technitium_web_socket }}:"
 

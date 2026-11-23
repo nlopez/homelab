@@ -215,3 +215,50 @@
   loop: "{{ technitium_forwarders }}"
   when: item.zone not in (technitium_zones.json.response.zones | map(attribute='name') | list)
   no_log: true
+
+# Tailnet clients need the device's tailscale address, not the LAN address the
+# site gateway answers with. Each zone keeps forwarding to that gateway, so names
+# without an override here still resolve.
+- name: Create the tailnet override zones
+  ansible.builtin.uri:
+    url: "{{ technitium_api_url }}/api/zones/create"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      token: "{{ technitium_api_token }}"
+      zone: "{{ item }}"
+      type: Forwarder
+      forwarder: "{{ technitium_tailnet_forwarder }}"
+      protocol: Udp
+      dnssecValidation: "false"
+    return_content: true
+  register: technitium_tailnet_zone
+  failed_when: technitium_tailnet_zone.json.status | default('') != 'ok'
+  changed_when: true
+  loop: "{{ technitium_tailnet_zones }}"
+  when: item not in (technitium_zones.json.response.zones | map(attribute='name') | list)
+  no_log: true
+
+# shortcut: an address change needs the old record deleted by hand, upgrade if
+# these devices start re-registering with new addresses.
+- name: Add the tailnet A records
+  ansible.builtin.uri:
+    url: "{{ technitium_api_url }}/api/zones/records/add"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      token: "{{ technitium_api_token }}"
+      domain: "{{ item.name }}"
+      type: A
+      ipAddress: "{{ item.address }}"
+      ttl: "{{ technitium_tailnet_record_ttl }}"
+    return_content: true
+  register: technitium_tailnet_record
+  failed_when: >-
+    technitium_tailnet_record.json.status | default('') != 'ok'
+    and 'already exists' not in (technitium_tailnet_record.json.errorMessage | default(''))
+  changed_when: technitium_tailnet_record.json.status | default('') == 'ok'
+  loop: "{{ technitium_tailnet_records }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true

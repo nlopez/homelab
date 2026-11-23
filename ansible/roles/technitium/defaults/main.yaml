@@ -21,3 +21,9 @@ technitium_api_token: >-
   'op read op://evjh25ux2mnoufaut6qhvm2pdi/' ~ technitium_api_token_item_id ~ '/credential --account my.1password.com') }}
 
 technitium_forwarders: []
+
+# Zones for tailnet clients are forwarder zones pointed at the site gateway,
+# with the tailnet addresses below as local records.
+technitium_tailnet_forwarder: "{{ datadog_gateway_address }}:53"
+technitium_tailnet_records: []
+technitium_tailnet_record_ttl: 300
