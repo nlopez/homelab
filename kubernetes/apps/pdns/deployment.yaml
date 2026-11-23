@@ -1,0 +1,121 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pdns
+  labels:
+    app: pdns
+    tags.datadoghq.com/env: homelab
+    tags.datadoghq.com/service: pdns
+    tags.datadoghq.com/version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pdns
+  template:
+    metadata:
+      labels:
+        app: pdns
+    spec:
+      initContainers:
+      # The gpgsql schema is applied once; every later start skips it.
+      - name: schema
+        image: docker.io/library/postgres:17
+        command:
+        - sh
+        - -c
+        - |
+          until pg_isready -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE"; do sleep 2; done
+          if [ "$(psql -tAc "select count(*) from pg_tables where tablename = 'domains'")" = "0" ]; then
+            psql -v ON_ERROR_STOP=1 -f /schema/schema.pgsql.sql
+          fi
+        env:
+        - name: PGHOST
+          value: pdns-database-tn-rw
+        - name: PGDATABASE
+          value: pdns
+        - name: PGUSER
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-pdns-database
+              key: username
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-pdns-database
+              key: password
+        volumeMounts:
+        - name: schema
+          mountPath: /schema
+      containers:
+      - name: pdns
+        image: docker.io/powerdns/pdns-auth-49:4.9.18
+        env:
+        - name: PDNS_LAUNCH
+          value: gpgsql
+        - name: PDNS_GPGSQL_HOST
+          value: pdns-database-tn-rw
+        - name: PDNS_GPGSQL_PORT
+          value: "5432"
+        - name: PDNS_GPGSQL_DBNAME
+          value: pdns
+        - name: PDNS_GPGSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-pdns-database
+              key: username
+        - name: PDNS_GPGSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-pdns-database
+              key: password
+        - name: PDNS_GPGSQL_DNSSEC
+          value: "no"
+        - name: PDNS_API
+          value: "yes"
+        - name: PDNS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-pdns-api-key
+              key: password
+        - name: PDNS_WEBSERVER
+          value: "yes"
+        - name: PDNS_WEBSERVER_ADDRESS
+          value: 0.0.0.0
+        - name: PDNS_WEBSERVER_PORT
+          value: "8081"
+        - name: PDNS_LOCAL_ADDRESS
+          value: 0.0.0.0
+        - name: PDNS_DISABLE_AXFR
+          value: "no"
+        ports:
+        - name: dns-udp
+          containerPort: 53
+          protocol: UDP
+        - name: dns-tcp
+          containerPort: 53
+          protocol: TCP
+        - name: api
+          containerPort: 8081
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /api/v1/servers/localhost
+            port: api
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: dns-tcp
+          initialDelaySeconds: 20
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: 20m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
+      volumes:
+      - name: schema
+        configMap:
+          name: pdns-schema
