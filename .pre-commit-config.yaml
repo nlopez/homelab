@@ -46,4 +46,4 @@ repos:
     name: tofu fmt
     entry: tofu fmt -check -diff
     language: system
-    files: ^(aws|dns|gateway|tailnet/tofu)/.*\.tf$
+    files: ^(aws|dns|gateway|github|tailnet/tofu)/.*\.tf$
