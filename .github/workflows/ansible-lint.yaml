@@ -2,9 +2,9 @@ name: ansible-lint
 on:
   push:
     branches: [main]
-    paths: ['ansible/**', '.github/workflows/ansible-lint.yaml']
+    paths: ['ansible/**', 'devenv.nix', 'devenv.lock', 'devenv.yaml', '.github/workflows/ansible-lint.yaml']
   pull_request:
-    paths: ['ansible/**', '.github/workflows/ansible-lint.yaml']
+    paths: ['ansible/**', 'devenv.nix', 'devenv.lock', 'devenv.yaml', '.github/workflows/ansible-lint.yaml']
 
 permissions:
   contents: read
@@ -20,13 +20,16 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+      - uses: cachix/install-nix-action@bb0495a1086c46893eee56f32fd192dfe4a15bb9 # v32
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install dependencies
-        run: uv sync --locked
+      - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
+        with:
+          name: devenv
 
-      - name: Install Ansible collections
-        run: uv run ansible-galaxy collection install -r requirements.yaml
+      - name: Install devenv
+        run: nix profile install nixpkgs#devenv
 
       - name: Run ansible-lint
-        run: uv run ansible-lint
+        run: devenv shell -- bash -c 'ansible-galaxy collection install -r requirements.yaml && ansible-lint'

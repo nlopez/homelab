@@ -2,9 +2,10 @@
 
 {
   packages = [
+    pkgs.ansible
+    pkgs.ansible-lint
     pkgs.go
     pkgs.pre-commit
-    pkgs.uv
   ];
 
   # Keep the worktree after `wt merge` so the agent's shell keeps a valid cwd.

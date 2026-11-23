@@ -3,7 +3,12 @@ My first foray into [ansible](http://www.ansible.com/) for managing a handful of
 
 # Usage
 ```bash
-make # puts you right in a shell ready to run ansible
+direnv allow # or: devenv shell
+```
+
+`ansible` and `ansible-lint` come from the root devenv. Collections still need installing once:
+```bash
+ansible-galaxy collection install -r requirements.yaml
 ```
 
 # TODO
