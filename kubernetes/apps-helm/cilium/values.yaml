@@ -8,6 +8,11 @@ installNoConntrackIptablesRules: true
 bpfClockProbe: true
 bgpControlPlane:
   enabled: true
+# Announces load balancer addresses over ARP/NDP on the LAN, so off-cluster
+# clients reach them by address instead of following a BGP route to a node
+# that does not own the address.
+l2announcements:
+  enabled: true
 ipam:
   mode: "cluster-pool"
   operator:
