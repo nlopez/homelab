@@ -26,4 +26,4 @@ technitium_forwarders: []
 # with the tailnet addresses below as local records.
 technitium_tailnet_forwarder: "{{ datadog_gateway_address }}:53"
 technitium_tailnet_records: []
-technitium_tailnet_record_ttl: 300
+technitium_tailnet_record_ttl: 60

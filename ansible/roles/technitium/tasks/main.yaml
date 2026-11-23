@@ -240,8 +240,8 @@
   when: item not in (technitium_zones.json.response.zones | map(attribute='name') | list)
   no_log: true
 
-# shortcut: an address change needs the old record deleted by hand, upgrade if
-# these devices start re-registering with new addresses.
+# shortcut: this only adds records, so changing an address or the TTL needs the
+# old record deleted first, upgrade if these devices start re-registering.
 - name: Add the tailnet records
   ansible.builtin.uri:
     url: "{{ technitium_api_url }}/api/zones/records/add"
