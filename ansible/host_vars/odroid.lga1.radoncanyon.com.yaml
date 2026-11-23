@@ -6,6 +6,7 @@ static_ula_addresses:
 
 technitium_api_token_item_id: hdiuh6avqno64itbsu2h5nea2a
 technitium_proxy_hostname: dns.lga1.radoncanyon.com
+technitium_proxy_site: lga1
 
 tailscale_search_domains:
   - lga1.radoncanyon.com
@@ -30,3 +31,5 @@ technitium_forwarders:
     forwarder: "{{ datadog_gateway_address }}:5353"
   - zone: 223.168.192.in-addr.arpa
     forwarder: "{{ datadog_gateway_address }}:5353"
+  - zone: desertbluffs.com
+    forwarder: "100.95.107.254:53"

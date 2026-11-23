@@ -82,6 +82,7 @@ resource "tailscale_device_subnet_routes" "odroid_lga2" {
   device_id = data.tailscale_device.odroid_lga2.node_id
 
   routes = [
+    "10.43.64.0/24",
     "192.168.239.0/24",
     "fd72:ce7b:d4a9:9511::/64",
   ]

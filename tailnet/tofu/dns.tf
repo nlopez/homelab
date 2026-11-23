@@ -13,5 +13,5 @@ resource "tailscale_dns_split_nameservers" "internal" {
   for_each = toset(["desertbluffs.com", "nulogorsk.com"])
 
   domain      = each.value
-  nameservers = ["100.95.107.254"]
+  nameservers = ["100.95.107.254", "100.127.60.59", "100.110.65.2"]
 }
