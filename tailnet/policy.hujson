@@ -5,7 +5,7 @@
     ],
     "group:k8s-admins": [
       "nlopez@github"
-    ],
+    ]
   },
   "tagOwners": {
     "tag:k8s-operator": [],
@@ -41,7 +41,7 @@
     ],
     "tag:timekeeper": [
       "autogroup:admin"
-    ],
+    ]
   },
   "autoApprovers": {
     "exitNode": [
@@ -50,7 +50,7 @@
     "services": {
       "tag:k8s": [
         "tag:k8s"
-      ],
+      ]
     },
     "routes": {
       "10.43.64.0/24": [
@@ -83,123 +83,22 @@
       ],
       "fd72:ce7b:d4a9:9511::/64": [
         "tag:lga2"
-      ],
-    },
+      ]
+    }
   },
   "grants": [
     {
       "src": [
-        "tag:admin"
+        "*"
       ],
       "dst": [
         "*"
       ],
       "ip": [
         "*"
-      ],
-    },
-    {
-      "src": [
-        "tag:container",
-        "tag:home"
-      ],
-      "dst": [
-        "10.43.64.0/24",
-        "fd54:571b:560a:4364::/64"
-      ],
-      "ip": [
-        "*"
-      ],
-      "via": [
-        "tag:lga1"
-      ],
-    },
-    {
-      "src": [
-        "*"
-      ],
-      "dst": [
-        "autogroup:internet"
-      ],
-      "ip": [
-        "*"
-      ],
-    },
-    {
-      "src": [
-        "tag:home"
-      ],
-      "dst": [
-        "tag:home"
-      ],
-      "ip": [
-        "*"
-      ],
-    },
-    {
-      "src": [
-        "ipset:lga1",
-        "tag:home"
-      ],
-      "dst": [
-        "10.43.0.0/16",
-        "tag:home"
-      ],
-      "ip": [
-        "*"
-      ],
-    },
-    {
-      "src": [
-        "group:k8s-admins",
-        "tag:admin"
-      ],
-      "dst": [
-        "tag:k8s-operator"
-      ],
-      "app": {
-        "tailscale.com/cap/kubernetes": [
-          {
-            "impersonate": {
-              "groups": [
-                "system:masters"
-              ],
-            },
-          }
-        ],
-      },
-    },
-    {
-      "src": [
-        "group:k8s-readers"
-      ],
-      "dst": [
-        "tag:k8s-operator"
-      ],
-      "app": {
-        "tailscale.com/cap/kubernetes": [
-          {
-            "impersonate": {
-              "groups": [
-                "tailnet-readers"
-              ],
-            },
-          }
-        ],
-      },
-    },
+      ]
+    }
   ],
-  "ipsets": {
-    "ipset:lga1": [
-      "192.168.221.0/24",
-      "192.168.222.0/24",
-      "192.168.223.0/24",
-      "10.43.0.0/16",
-    ],
-    "ipset:k8s-api": [
-      "192.168.222.245",
-    ],
-  },
   "ssh": [
     {
       "action": "accept",
@@ -217,13 +116,13 @@
         "tag:container",
         "tag:exit",
         "tag:timekeeper",
-        "tag:work",
+        "tag:work"
       ],
       "users": [
         "autogroup:nonroot",
         "root"
       ]
-    },
+    }
   ],
   "randomizeClientPort": true,
   "nodeAttrs": [
@@ -233,7 +132,7 @@
       ],
       "attr": [
         "nextdns:37848c",
-        "disable-ipv4",
+        "disable-ipv4"
       ]
     },
     {
@@ -242,7 +141,7 @@
       ],
       "attr": [
         "funnel"
-      ],
+      ]
     },
     {
       "target": [
@@ -250,78 +149,33 @@
       ],
       "attr": [
         "funnel"
-      ],
-    },
+      ]
+    }
   ],
   "tests": [
     {
       "src": "tag:admin",
       "accept": [
-        "tag:k8s-operator:22",
-        "tag:home:22",
+        "10.43.64.10:443",
         "tag:lga1:22",
-        "tag:lga2:22",
-        "tag:admin:22",
-        "tag:container:22",
-        "tag:exit:22",
-        "tag:timekeeper:22",
-        "tag:work:22",
-        "tag:k8s-operator:443",
-        "1.1.1.1:53",
-        "192.168.221.1:22",
-        "192.168.222.1:22",
-        "192.168.223.1:22",
-      ],
+        "1.1.1.1:53"
+      ]
     },
     {
       "src": "tag:lga2",
       "accept": [
-        "1.1.1.1:53",
-      ],
-      "deny": [
         "10.43.64.10:443",
-        "10.43.64.1:443",
-        "192.168.222.1:22",
-        "tag:lga1:22",
         "tag:home:443",
-      ],
+        "tag:lga1:22"
+      ]
     },
     {
       "src": "tag:work",
       "accept": [
-        "1.1.1.1:53",
-      ],
-      "deny": [
-        "10.43.64.10:443",
-        "10.43.64.1:443",
         "tag:home:22",
         "tag:home:443",
-        "tag:admin:22",
-        "tag:k8s-operator:443",
-      ],
-    },
-    {
-      "src": "tag:home",
-      "accept": [
-        "10.43.64.10:443",
-        "tag:home:8080",
-        "tag:home:80",
-        "tag:home:443",
-      ],
-      "deny": [
-        "tag:work:22",
-        "tag:admin:22",
-      ],
-    },
-    {
-      "src": "tag:container",
-      "accept": [
-        "10.43.64.10:443",
-      ],
-      "deny": [
-        "tag:home:22",
-        "tag:admin:22",
-      ],
-    },
-  ],
+        "192.168.222.1:22"
+      ]
+    }
+  ]
 }
