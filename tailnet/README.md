@@ -30,9 +30,10 @@ tofu apply
 
 Pull requests validate the policy file with `tailscale/gitops-acl-action`. A
 push to `main` that touches `tailnet/` runs `tofu apply` in the `Tailnet`
-workflow, which needs these secrets in the `production` environment:
-`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `TS_OAUTH_ID`, `TS_OAUTH_SECRET`
-and `TS_TAILNET`.
+workflow, which needs `TS_OAUTH_ID`, `TS_OAUTH_SECRET` and `TS_TAILNET` in the
+`production` environment. AWS access comes from the `homelab-tailnet-apply`
+role, assumed through GitHub's OIDC provider; both are defined in
+`aws/state-bucket/iam.tf`.
 
 # Layout
 * `policy.hujson` -- the tailnet policy file. Edited by hand, in HuJSON, so
