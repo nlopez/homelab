@@ -42,6 +42,23 @@ role, assumed through GitHub's OIDC provider; both are defined in
 * `tofu/` -- the OpenTofu project. `acl.tf` uploads `policy.hujson`; `dns.tf`
   holds the tailnet-wide DNS configuration; `devices.tf` tags the gateways and
   approves their subnet routes.
+* `admin/` -- the OpenTofu project for admin-scoped objects: the auth key the
+  gateway workflows join with (ephemeral, preauthorized, `tag:ci`) and the
+  tailnet-wide settings. Applied by hand from a workstation with the superuser
+  token in `Tailscale Superuser API Acess Token` (Automation vault), never from
+  CI, because the OAuth client the workflows use has no admin scope.
+
+## Rotating the gateway CI key
+
+The key expires 90 days after it was created (2027-02-21 for the current one).
+The `Gateway` and `Gateway backup` workflows fail at `Join the tailnet` once it
+lapses.
+
+```sh
+cd admin
+tofu apply -replace=tailscale_tailnet_key.github_actions
+tofu output -raw github_actions_key | gh secret set TS_AUTHKEY --env production
+```
 
 # Not managed here
 * The subnet routes a device advertises. The devices advertise their own site
