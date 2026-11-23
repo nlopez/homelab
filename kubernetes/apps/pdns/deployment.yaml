@@ -18,6 +18,8 @@ spec:
       labels:
         app: pdns
     spec:
+      securityContext:
+        runAsNonRoot: true
       initContainers:
       # The gpgsql schema is applied once; every later start skips it.
       - name: schema
@@ -48,47 +50,61 @@ spec:
         volumeMounts:
         - name: schema
           mountPath: /schema
-      containers:
-      - name: pdns
-        image: docker.io/powerdns/pdns-auth-49:4.9.18
+      # The password cannot live in the ConfigMap, so the file is rendered
+      # from the environment before pdns starts.
+      - name: config
+        image: docker.io/library/alpine:3.20
+        command:
+        - sh
+        - -c
+        - |
+          cat > /conf/pdns.conf <<CONF
+          launch=gpgsql
+          gpgsql-host=${PGHOST}
+          gpgsql-port=5432
+          gpgsql-dbname=pdns
+          gpgsql-user=${PGUSER}
+          gpgsql-password=${PGPASSWORD}
+          gpgsql-dnssec=no
+          api=yes
+          api-key=${PDNS_API_KEY}
+          webserver=yes
+          webserver-address=0.0.0.0
+          webserver-port=8081
+          webserver-allow-from=0.0.0.0/0,::/0
+          local-address=0.0.0.0
+          disable-syslog=yes
+          daemon=no
+          CONF
         env:
-        - name: PDNS_LAUNCH
-          value: gpgsql
-        - name: PDNS_GPGSQL_HOST
+        - name: PGHOST
           value: pdns-database-tn-rw
-        - name: PDNS_GPGSQL_PORT
-          value: "5432"
-        - name: PDNS_GPGSQL_DBNAME
-          value: pdns
-        - name: PDNS_GPGSQL_USER
+        - name: PGUSER
           valueFrom:
             secretKeyRef:
               name: onepassword-pdns-database
               key: username
-        - name: PDNS_GPGSQL_PASSWORD
+        - name: PGPASSWORD
           valueFrom:
             secretKeyRef:
               name: onepassword-pdns-database
               key: password
-        - name: PDNS_GPGSQL_DNSSEC
-          value: "no"
-        - name: PDNS_API
-          value: "yes"
         - name: PDNS_API_KEY
           valueFrom:
             secretKeyRef:
               name: onepassword-pdns-api-key
               key: password
-        - name: PDNS_WEBSERVER
-          value: "yes"
-        - name: PDNS_WEBSERVER_ADDRESS
-          value: 0.0.0.0
-        - name: PDNS_WEBSERVER_PORT
-          value: "8081"
-        - name: PDNS_LOCAL_ADDRESS
-          value: 0.0.0.0
-        - name: PDNS_DISABLE_AXFR
-          value: "no"
+        volumeMounts:
+        - name: conf
+          mountPath: /conf
+      containers:
+      - name: pdns
+        image: docker.io/powerdns/pdns-auth-49:4.9.18
+        args: ["--config-dir=/conf"]
+        securityContext:
+          # Unprivileged, but it has to bind port 53.
+          capabilities:
+            add: ["NET_BIND_SERVICE"]
         ports:
         - name: dns-udp
           containerPort: 53
@@ -115,7 +131,12 @@ spec:
             memory: 64Mi
           limits:
             memory: 256Mi
+        volumeMounts:
+        - name: conf
+          mountPath: /conf
       volumes:
       - name: schema
         configMap:
           name: pdns-schema
+      - name: conf
+        emptyDir: {}
