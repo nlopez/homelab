@@ -4,20 +4,49 @@ OPNsense configuration for `gw.lga1` and `gw.lga2`, managed with the
 [`matthew-on-git/opnsense`](https://registry.terraform.io/providers/matthew-on-git/opnsense)
 provider.
 
-Managed here:
+## Managed here
 
-- Unbound query forwards and DNS-over-TLS forwards
-- Unbound host overrides
-- Custom gateways (the interface-generated `WAN_DHCP`/`WAN_DHCP6` ones are not)
-- Static routes
+- Firewall aliases, categories, and filter rules
+- NAT port forwards
+- Dnsmasq DNS hosts, DHCP ranges, options, and tags
+- DHCPv4 subnets and reservations (not imported: the provider targets Kea, the gateways run ISC `dhcpd`)
+- VLANs and virtual IPs
+- Custom gateways and static routes
+- Unbound query forwards, host overrides, and general settings
+- System tunables with a non-default value
+- Cron jobs, traffic shaper pipes, and syslog destinations
+- FRR/Quagga general settings and BGP (prefix lists, route maps, neighbors, redistribution)
+- Monit tests and services
 
-Not covered by the provider, so left to the GUI and `config.xml` snapshots:
-IDS, Squid, BIND, radvd, Tailscale, SNMP, captive portal, TAYGA, and the
-system settings pages.
+## Not managed here
 
-The `enabled` flag on routes and gateways is also left to the GUI: provider
-`~> 0.30` never reads it back, so a route disabled here would show a permanent
-diff and fail the apply that tries to write it.
+The provider has no resource for these, so they stay in the GUI and are covered by the
+`config.xml` backup:
+
+- IDS, Squid, BIND, radvd, captive portal, TAYGA (all disabled or absent)
+- Tailscale (enabled on lga1)
+- SNMP (enabled on lga1)
+- Netflow (enabled on both)
+- HA sync (configured on both)
+- System general settings (hostname, timezone, SSH, webgui, DNS servers): upstream-blocked
+
+`gateway/scripts/backup-config.sh` downloads both `config.xml` files to
+`s3://homelab-tofu-state-546422192262/gateway-backups/` on a daily schedule
+(`.github/workflows/gateway-backup.yaml`).
+
+## Provider limitations
+
+- **Pseudo-interfaces do not round-trip.** `opnsense_firewall_filter_rule` reads the interface
+  of the TAYGA rule (lga2 sequence 71) back as empty.
+- **NAT rules with an empty target.** The provider marks `target`, `local_port`, and
+  `destination.network` required, so pass-through rules cannot be imported.
+- **`ip_protocol` default.** The provider defaults `ip_protocol` to `inet` but reads an empty
+  value back, so every NAT rule shows a permanent diff. Suppressed with
+  `lifecycle { ignore_changes = [ip_protocol] }`.
+- **`update_freq` on `urljson`.** The provider rejects `update_freq` for `urljson` aliases but
+  the live config carries it. Suppressed with `lifecycle { ignore_changes = [update_freq] }`.
+- **`enabled` on routes and gateways.** Provider `~> 0.30` never reads it back, so a route
+  disabled here would show a permanent diff and fail the apply that tries to write it.
 
 ## Running it
 
@@ -34,6 +63,8 @@ tofu init && tofu plan
 ```
 
 State is in the `homelab-tofu-state-546422192262` bucket under `gateway/terraform.tfstate`.
+`.github/workflows/gateway.yaml` plans on pull requests and on a daily schedule, and applies on
+push to `main`.
 
 ## Adding an object
 

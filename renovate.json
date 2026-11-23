@@ -16,7 +16,8 @@
     "custom.regex",
     "helm-values",
     "github-actions",
-    "pre-commit"
+    "pre-commit",
+    "terraform"
   ],
   "pre-commit": {
     "enabled": true

@@ -121,3 +121,35 @@ resource "aws_iam_role_policy" "github_state" {
   role   = aws_iam_role.github_apply.id
   policy = data.aws_iam_policy_document.github_state.json
 }
+
+resource "aws_iam_role" "gateway_apply" {
+  name               = "homelab-gateway-apply"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
+}
+
+data "aws_iam_policy_document" "gateway_state" {
+  statement {
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:ListBucket",
+    ]
+    resources = [aws_s3_bucket.state.arn]
+  }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+    ]
+    resources = [
+      "${aws_s3_bucket.state.arn}/gateway/*",
+      "${aws_s3_bucket.state.arn}/gateway-backups/*",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "gateway_state" {
+  role   = aws_iam_role.gateway_apply.id
+  policy = data.aws_iam_policy_document.gateway_state.json
+}

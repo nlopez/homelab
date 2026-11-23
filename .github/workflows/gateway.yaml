@@ -1,0 +1,90 @@
+name: Gateway
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: ['gateway/**', 'aws/state-bucket/iam.tf', '.github/workflows/gateway.yaml']
+  pull_request:
+    branches: [ "main" ]
+    paths: ['gateway/**', '.github/workflows/gateway.yaml']
+  schedule:
+    - cron: '43 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gateway
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Plan
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule'
+    environment: production
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::546422192262:role/homelab-gateway-apply
+          aws-region: us-east-1
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: 1.13.2
+
+      - name: Plan
+        working-directory: gateway
+        env:
+          TF_VAR_lga1_api_key: ${{ secrets.OPNSENSE_LGA1_API_KEY }}
+          TF_VAR_lga1_api_secret: ${{ secrets.OPNSENSE_LGA1_API_CREDENTIAL }}
+          TF_VAR_lga2_api_key: ${{ secrets.OPNSENSE_LGA2_API_KEY }}
+          TF_VAR_lga2_api_secret: ${{ secrets.OPNSENSE_LGA2_API_CREDENTIAL }}
+        run: |-
+          tofu init -input=false
+          tofu plan -input=false -detailed-exitcode -no-color
+
+  apply:
+    name: Apply
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    environment: production
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::546422192262:role/homelab-gateway-apply
+          aws-region: us-east-1
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: 1.13.2
+
+      - name: Apply
+        working-directory: gateway
+        env:
+          TF_VAR_lga1_api_key: ${{ secrets.OPNSENSE_LGA1_API_KEY }}
+          TF_VAR_lga1_api_secret: ${{ secrets.OPNSENSE_LGA1_API_CREDENTIAL }}
+          TF_VAR_lga2_api_key: ${{ secrets.OPNSENSE_LGA2_API_KEY }}
+          TF_VAR_lga2_api_secret: ${{ secrets.OPNSENSE_LGA2_API_CREDENTIAL }}
+        run: |-
+          tofu init -input=false
+          tofu apply -input=false -auto-approve
