@@ -19,7 +19,6 @@ tailscale_advertise_routes:
   - fd54:571b:560a:2::/64
   - fd54:571b:560a:3::/64
   - fd54:571b:560a:4364::/64
-tailscale_snat_subnet_routes: false
 
 snmp_v3_item_id: jrp7q7mbooiagyee5flo2twgcm
 datadog_gateway_address: 192.168.222.1

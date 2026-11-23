@@ -13,7 +13,7 @@ tailscale_search_domains:
 tailscale_advertise_routes:
   - 192.168.239.0/24
   - fd72:ce7b:d4a9:9511::/64
-tailscale_snat_subnet_routes: false
+tailscale_accept_routes: true
 
 snmp_v3_item_id: htoizttdg3zdajhl26ugujufzu
 datadog_gateway_address: 192.168.239.254

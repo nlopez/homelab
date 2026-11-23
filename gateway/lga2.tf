@@ -79,16 +79,6 @@ locals {
   }
 
   lga2_gateways = {
-    "WG_LGA1" = {
-      uuid            = "4e814120-6930-41df-9ed4-c29dd71052ee"
-      name            = "WG_LGA1"
-      interface       = "opt1"
-      gateway         = "10.23.50.1"
-      ip_protocol     = "inet"
-      description     = "WireGuard to lga1"
-      default_gateway = false
-      monitor_disable = true
-    }
     "ODROID_LGA2" = {
       uuid            = "92610032-6ca6-47d3-9ce5-d77f97e86b96"
       name            = "ODROID_LGA2"
@@ -111,8 +101,8 @@ locals {
     "10.43.64.0/24" = {
       uuid        = "763805ca-4d9b-454b-9236-72fba3e0fde3"
       network     = "10.43.64.0/24"
-      gateway     = "WG_LGA1"
-      description = "To the private gateway (IPv4, WireGuard)"
+      gateway     = "ODROID_LGA2"
+      description = "To the private gateway (IPv4, Tailscale)"
     }
     "192.168.222.0/24" = {
       uuid        = "c30286cd-e2b2-4804-9926-5e6dd90454bc"
