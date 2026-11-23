@@ -1,0 +1,47 @@
+name: GitHub
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: ['github/**', '.github/workflows/github.yaml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: Apply
+    environment: production
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::546422192262:role/homelab-github-apply
+          aws-region: us-east-1
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: 1.13.2
+
+      - name: Apply
+        working-directory: github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_HOOKS_TOKEN }}
+          TF_VAR_webhook_secret: ${{ secrets.ARGOCD_WEBHOOK_SECRET }}
+        run: |-
+          tofu init -input=false
+          tofu apply -input=false -auto-approve

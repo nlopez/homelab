@@ -10,6 +10,7 @@ Argo's poller.
 * [direnv](https://direnv.net)
 * `op` -- 1Password CLI, for the webhook secret
 * `gh` -- authenticated as a user that can administer the repository's hooks
+* AWS credentials for the S3 state bucket (`aws/state-bucket`)
 
 # Usage
 `direnv allow` once, to load the devenv shell, the GitHub token from `gh` and
@@ -17,10 +18,12 @@ the webhook secret from 1Password.
 
 ```sh
 tofu init
-tofu import github_repository_webhook.argocd homelab/<hook id>
 tofu plan
 tofu apply
 ```
 
-List the hook ids with `gh api repos/nlopez/homelab/hooks`. State is local and
-gitignored, so a machine that has never applied needs the import first.
+A push to `main` that touches `github/` runs `tofu apply` in the `GitHub`
+workflow, which authenticates to GitHub with the `GITHUB_HOOKS_TOKEN` secret: a
+fine-grained token with `Webhooks: write` on this repository. The webhook secret
+comes from `ARGOCD_WEBHOOK_SECRET`, the same value argocd-server verifies
+against.
