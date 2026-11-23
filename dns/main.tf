@@ -29,9 +29,9 @@ locals {
   # other systems (external-dns, cert-manager, DDNS) never show up in a plan.
   zones = {
     "desertbluffs.com" = { ttl = 1, records = local.desertbluffs_com_records }
-    "radoncanyon.com"  = { ttl = 1, records = local.radoncanyon_com_records }
+    "radoncanyon.com"  = { ttl = 60, records = local.radoncanyon_com_records }
     "aethertrail.com"  = { ttl = 1, records = local.aethertrail_com_records }
-    "nulogorsk.com"    = { ttl = 300, records = local.nulogorsk_com_records }
+    "nulogorsk.com"    = { ttl = 60, records = local.nulogorsk_com_records }
   }
 
   records = merge([

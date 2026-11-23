@@ -39,12 +39,13 @@ Unmatched hostnames under `*.desertbluffs.com` (both gateways) get a catch-all `
 
 Short names resolve differently depending on where the client asks; codenames never appear in
 private DNS, so they resolve the same way everywhere. Using `atuin.desertbluffs.com` and its
-codename `pyrin.desertbluffs.com` as the examples:
+codename `pyrin.desertbluffs.com` as the examples. This split applies to clients on the LAN: the
+tailnet uses MagicDNS and the public zones alone.
 
 ```mermaid
 flowchart LR
-  subgraph inside["LAN and tailnet clients"]
-    lan["Client at lga1 or lga2,<br/>or on the tailnet"]
+  subgraph inside["LAN clients"]
+    lan["Client at lga1 or lga2"]
   end
   subgraph outside["Internet clients"]
     web["Browser anywhere"]
@@ -89,22 +90,19 @@ flowchart LR
   `desertbluffs.com` and `nulogorsk.com` to Technitium (`10.43.64.53`) and nothing else; there
   are no zone copies on the gateways. Names Technitium doesn't hold are forwarded to public DNS.
 - **Site infrastructure** (`*.lga1.radoncanyon.com`, `*.lga2.radoncanyon.com`: gateways, nodes,
-  NAS, odroids) is not in the cluster. Each gateway answers its own site's names from Unbound
-  host overrides, and nothing else: there is no path between the sites, so `gw.lga1` is only a
-  name at lga1. These names exist on the LAN and the tailnet only. A tailnet client gets the
-  devices' tailscale addresses instead of their LAN addresses: `tailnet/tofu/dns.tf` sends each
-  zone to the Technitium instance on that site's odroid, which holds those addresses as local
-  records in a forwarder zone pointed at its own gateway (`technitium_tailnet_records` in
-  `ansible/group_vars/infra`). Names without a tailnet address there are forwarded to the
-  gateway and keep their LAN answer. The gateways and the odroids run their Tailscale client with
-  `--accept-dns=false`: they are resolvers themselves, so tailnet DNS is only for roaming clients.
-  Each gateway also has a floating firewall rule passing `100.64.0.0/10` to port `53`, so Unbound
-  can be queried directly if the odroids are down. Other `radoncanyon.com` names resolve publicly.
+  NAS, odroids) is not in the cluster. The two addresses every device has live in two public
+  zones: `radoncanyon.com` answers the LAN and cluster addresses, `nulogorsk.com` the tailscale
+  addresses, and both are declared in `dns/`. So `gw.lga1.radoncanyon.com` is `192.168.222.1`
+  while `gw.lga1.nulogorsk.com` is `100.83.144.88`. Nothing routes a tailnet client to private
+  DNS: `tailnet/tofu/dns.tf` sets no split-DNS domains, and every site device runs its Tailscale
+  client with `--accept-dns=false`. The gateways' Unbound host overrides, the cluster Technitium
+  and the per-site Technitium records are still in place, unused by the tailnet.
 - **Outside:** Cloudflare answers with its own anycast addresses, because every internet record is
   proxied. The A and AAAA contents (the WAN address and the gateway's public IPv6 address) are only
   where Cloudflare connects, and never appear in public answers.
-- Only short names resolve both ways. A codename such as `pyrin.desertbluffs.com` is absent from
-  Technitium, so a LAN client follows the same Cloudflare path as the internet.
+- Only LAN clients get short names. A codename such as `pyrin.desertbluffs.com` is absent from
+  Technitium, so a LAN client follows the same Cloudflare path as the internet, and a tailnet
+  client follows it too.
 
 ## Paths
 

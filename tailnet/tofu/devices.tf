@@ -16,14 +16,6 @@ resource "tailscale_device_key" "gw_lga2" {
   key_expiry_disabled = true
 }
 
-data "tailscale_device" "odroid_lga1" {
-  hostname = "odroid-lga1"
-}
-
-data "tailscale_device" "odroid_lga2" {
-  hostname = "odroid-lga2"
-}
-
 data "tailscale_device" "gw_lga1" {
   hostname = "gw-lga1"
 }
