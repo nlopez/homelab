@@ -16,9 +16,10 @@
     state: present
 
 - name: Install tailscale
-  ansible.builtin.package:
+  ansible.builtin.apt:
     name: tailscale
     state: present
+    update_cache: true
 
 - name: Enable and start tailscaled
   ansible.builtin.service:
