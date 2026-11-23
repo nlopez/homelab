@@ -1,6 +1,9 @@
-name: Validate Tailscale ACLs
+name: Tailnet
 
 on:
+  push:
+    branches: [ "main" ]
+    paths: ['tailnet/**', '.github/workflows/tailnet.yaml']
   pull_request:
     branches: [ "main" ]
     paths: ['tailnet/policy.hujson', '.github/workflows/tailnet.yaml']
@@ -9,8 +12,14 @@ permissions:
   contents: read
   actions: read
 
+concurrency:
+  group: tailnet
+  cancel-in-progress: false
+
 jobs:
-  acls:
+  validate:
+    name: Validate ACL
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
 
     steps:
@@ -34,3 +43,31 @@ jobs:
           tailnet: ${{ secrets.TS_TAILNET }}
           policy-file: tailnet/policy.hujson
           action: test
+
+  apply:
+    name: Apply
+    if: github.event_name == 'push'
+    environment: production
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: 1.13.2
+
+      - name: Apply
+        working-directory: tailnet/tofu
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-east-1
+          TAILSCALE_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_ID }}
+          TAILSCALE_OAUTH_CLIENT_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+          TAILSCALE_TAILNET: ${{ secrets.TS_TAILNET }}
+        run: |-
+          tofu init -input=false
+          tofu apply -input=false -auto-approve
