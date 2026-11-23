@@ -18,5 +18,8 @@ terraform {
 }
 
 # Reads TAILSCALE_OAUTH_CLIENT_ID, TAILSCALE_OAUTH_CLIENT_SECRET and
-# TAILSCALE_TAILNET from the environment.
-provider "tailscale" {}
+# TAILSCALE_TAILNET from the environment. The scopes are listed explicitly so
+# device writes (tags) are granted alongside the policy file and DNS.
+provider "tailscale" {
+  scopes = ["devices:core:write", "policy_file:write", "dns:write"]
+}
