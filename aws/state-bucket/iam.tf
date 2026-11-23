@@ -25,10 +25,12 @@ data "aws_iam_policy_document" "github_actions_assume" {
       values   = ["sts.amazonaws.com"]
     }
 
+    # The repository uses immutable subject claims, so the sub carries the
+    # owner and repository IDs instead of their names.
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:nlopez/homelab:environment:production"]
+      values   = ["repo:nlopez@20211302/homelab@1466265485:environment:production"]
     }
   }
 }
