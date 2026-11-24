@@ -5,4 +5,4 @@ set -euo pipefail
 PATH="${PATH#"$(cd "$(dirname "$0")" && pwd):"}"
 # Environments are outside the Automation-vault service account, so use app auth.
 export OP_APP_AUTH=1
-exec op run --account my.1password.com --environment 5535p5q4j6q6x26fwoqdtx665y -- tofu "$@"
+exec op run --no-masking --account my.1password.com --environment 5535p5q4j6q6x26fwoqdtx665y -- tofu "$@"
