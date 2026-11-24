@@ -1,0 +1,26 @@
+---
+- name: Install dns-sync-apply receiver
+  ansible.builtin.template:
+    src: dns-sync-apply.sh.j2
+    dest: "{{ opnsense_dns_sync_apply_script }}"
+    owner: root
+    group: wheel
+    mode: "0755"
+
+- name: Install sudoers drop-in
+  ansible.builtin.template:
+    src: dns-sync-sudoers.j2
+    dest: /usr/local/etc/sudoers.d/dns-sync
+    owner: root
+    group: wheel
+    mode: "0440"
+    validate: /usr/local/sbin/visudo -cf %s
+
+- name: Seed empty include file
+  ansible.builtin.copy:
+    content: "server:\n"
+    dest: "{{ opnsense_dns_sync_include_file }}"
+    owner: "{{ opnsense_dns_sync_unbound_user }}"
+    group: "{{ opnsense_dns_sync_unbound_user }}"
+    mode: "0640"
+    force: false

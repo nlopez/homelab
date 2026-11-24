@@ -6,6 +6,10 @@ kubernetes:
   hosts:
     knode1.lga1.radoncanyon.com:
     knode2.lga1.radoncanyon.com:
+gateways:
+  hosts:
+    gw.lga1.radoncanyon.com:
+    gw.lga2.radoncanyon.com:
 infra:
   hosts:
     odroid.lga1.radoncanyon.com:

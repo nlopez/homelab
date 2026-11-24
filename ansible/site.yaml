@@ -1,6 +1,6 @@
 ---
 - name: Apply common role to all hosts
-  hosts: all
+  hosts: "all:!gateways"
   pre_tasks:
     - name: Group by operating system
       ansible.builtin.group_by:

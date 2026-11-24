@@ -1,0 +1,7 @@
+---
+# OPNsense gateways: local records for split-horizon DNS, applied by the
+# dns-sync receiver invoked over SSH from the Kubernetes sync job.
+- name: Configure OPNsense gateways
+  hosts: gateways
+  roles:
+    - opnsense_dns_sync
