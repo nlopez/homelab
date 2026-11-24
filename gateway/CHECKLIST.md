@@ -22,9 +22,14 @@ Two targets:
 
 - [x] Import firewall aliases (26 on lga1, 10 on lga2).
 - [x] Import firewall categories (none configured).
-- [ ] Import trust CA and certificates. Deferred: private keys are write-only.
-- [ ] Import auth users and groups. Deferred: passwords are write-only.
-- [ ] Import ACME accounts. Deferred: account keys are write-only.
+- [ ] Import trust CA and certificates. Not viable: the ACME client owns them (9 of 10 CAs and
+      both certificates carry an "(ACME Client)" description) and renews them, so an import churns
+      on every renewal. Private keys are write-only as well.
+- [ ] Import auth users. Not viable: `password` is required on every write, so managing a user
+      needs either a committed password or an empty one the provider would push on an unrelated
+      update.
+- [x] Import auth groups (1 per gateway).
+- [x] Import ACME accounts (1 per gateway).
 - [x] Import Kea DHCPv4 subnets and reservations on lga2 (1 subnet, 28 reservations).
 - [x] Import the Kea singletons on lga2 (`ctrl_agent`, `ddns_settings`, `dhcpv4_settings`,
       `dhcpv6_settings`).
