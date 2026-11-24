@@ -4,7 +4,8 @@ FROM alpine:3.22
 # and the push to the gateways is a plain ssh client session.
 RUN apk add --no-cache kubectl jq openssh-client
 
-COPY --chmod=0755 sync.sh /usr/local/bin/dns-sync
+COPY sync.sh /usr/local/bin/dns-sync
+RUN chmod 0755 /usr/local/bin/dns-sync
 
 USER 65532:65532
 ENTRYPOINT ["/usr/local/bin/dns-sync"]
