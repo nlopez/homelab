@@ -207,7 +207,7 @@ locals {
       uuid   = "1e2ab8ae-a853-4c8c-b397-4febb9ef15ff"
       host   = "raphael"
       ip     = ""
-      domain = "lga2.desertbluffs.com"
+      domain = "lga2.radoncanyon.com"
       hwaddr = "c8:7f:54:09:59:f0"
       local  = true
       ignore = false
@@ -216,7 +216,7 @@ locals {
       uuid        = "1409dc01-69b2-4f23-b8a3-e3dd510de0eb"
       host        = "shimmer"
       ip          = ""
-      domain      = "lga2.desertbluffs.com"
+      domain      = "lga2.radoncanyon.com"
       hwaddr      = "14:d4:24:71:3c:07"
       description = "Steam Deck Wireless"
       local       = true
@@ -226,7 +226,7 @@ locals {
       uuid   = "afc6cd16-507b-4b15-be88-d31981bc3d03"
       host   = "harmony-hub"
       ip     = ""
-      domain = "lga2.desertbluffs.com"
+      domain = "lga2.radoncanyon.com"
       hwaddr = "c8:db:26:05:23:15"
       local  = true
       ignore = false
@@ -235,7 +235,7 @@ locals {
       uuid   = "8a3534fa-0457-4d67-a6e8-a0b051b15cfd"
       host   = "homepod-bedroom"
       ip     = ""
-      domain = "lga2.desertbluffs.com"
+      domain = "lga2.radoncanyon.com"
       hwaddr = "ac:bc:b5:e6:dc:af"
       local  = true
       ignore = false
@@ -244,7 +244,7 @@ locals {
       uuid   = "a87261bf-9bdb-487d-ab2d-039ed76e15dc"
       host   = "homepod-living-room"
       ip     = ""
-      domain = "lga2.desertbluffs.com"
+      domain = "lga2.radoncanyon.com"
       hwaddr = "04:99:b9:9d:84:55"
       local  = true
       ignore = false
@@ -253,7 +253,7 @@ locals {
       uuid   = "11b0e15b-ce5b-4041-975c-010cd4386167"
       host   = "homepod-washroom"
       ip     = ""
-      domain = "lga2.desertbluffs.com"
+      domain = "lga2.radoncanyon.com"
       hwaddr = "04:99:b9:97:0f:02"
       local  = true
       ignore = false

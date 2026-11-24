@@ -18,7 +18,7 @@ route between the `internet` and `private` gateways.
 | Shaarli | `shaarli` | `gumoss` | Yes | |
 | Timekeeper (ash) | `timekeeper-ash` | `ash.kamotimestamps.com` | Only | No private route. |
 | Timekeeper (oak) | `timekeeper-oak` | `oak.kamotimestamps.com` | Only | No private route. |
-| Apex redirect | `envoy-gateway-system` | `desertbluffs.com`, `www` | Yes | Redirect only; no backend. |
+| Apex redirect | `envoy-gateway-system` | `desertbluffs.com`, `www` | Yes | Redirect only; no backend. The apex has no private route, so it resolves to the public addresses everywhere; `www` is private inside. |
 | Engram | `engram` | `mau` | No | |
 | Goldpinger | `goldpinger` | `fuack` | No | |
 | Homepage | `homepage` | `bushi` | No | |
@@ -31,7 +31,8 @@ route between the `internet` and `private` gateways.
 
 Hostnames are under `desertbluffs.com` unless written in full. Each app has exactly one hostname,
 a codename picked from [CODENAMES.md](CODENAMES.md). An app reachable from the internet routes the
-same hostname on both gateways; private DNS and public DNS answer it differently.
+same hostname on both gateways; private DNS and public DNS answer it differently. The zone apex
+is the exception: it has no private route and always resolves publicly.
 
 Unmatched hostnames under `*.desertbluffs.com` (both gateways) get a catch-all `418` route (`kubernetes/apps-helm/envoy-gateway/manifests/unmatched-teapot.yaml`).
 
