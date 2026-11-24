@@ -214,6 +214,20 @@ locals {
       enabled     = true
       stats       = false
     }
+    "lga1_site_nets" = {
+      type        = "network"
+      content     = concat(local.wg_lga1_tunnel, local.lga1_site_nets)
+      description = "lga1 networks carried by the site-to-site WireGuard tunnel"
+      enabled     = true
+      stats       = false
+    }
+    "lga2_site_nets" = {
+      type        = "network"
+      content     = concat(local.wg_lga2_tunnel, local.lga2_site_nets)
+      description = "lga2 networks carried by the site-to-site WireGuard tunnel"
+      enabled     = true
+      stats       = false
+    }
   }
 
   lga2_aliases = {
@@ -294,6 +308,20 @@ locals {
       enabled     = true
       stats       = false
     }
+    "lga1_site_nets" = {
+      type        = "network"
+      content     = concat(local.wg_lga1_tunnel, local.lga1_site_nets)
+      description = "lga1 networks carried by the site-to-site WireGuard tunnel"
+      enabled     = true
+      stats       = false
+    }
+    "lga2_site_nets" = {
+      type        = "network"
+      content     = concat(local.wg_lga2_tunnel, local.lga2_site_nets)
+      description = "lga2 networks carried by the site-to-site WireGuard tunnel"
+      enabled     = true
+      stats       = false
+    }
   }
 }
 
@@ -319,7 +347,7 @@ resource "opnsense_firewall_alias" "lga1_aliases" {
 
 import {
   provider = opnsense.lga1
-  for_each = local.lga1_aliases
+  for_each = { for k, v in local.lga1_aliases : k => v if can(v.uuid) }
   to       = opnsense_firewall_alias.lga1_aliases[each.key]
   id       = each.value.uuid
 }
@@ -346,7 +374,7 @@ resource "opnsense_firewall_alias" "lga2_aliases" {
 
 import {
   provider = opnsense.lga2
-  for_each = local.lga2_aliases
+  for_each = { for k, v in local.lga2_aliases : k => v if can(v.uuid) }
   to       = opnsense_firewall_alias.lga2_aliases[each.key]
   id       = each.value.uuid
 }

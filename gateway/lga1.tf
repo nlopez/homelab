@@ -242,6 +242,8 @@ resource "opnsense_system_route" "lga1_routes" {
   provider = opnsense.lga1
   for_each = local.lga1_routes
 
+  depends_on = [opnsense_system_gateway.lga1_gateways]
+
   network     = each.value.network
   gateway     = each.value.gateway
   description = each.value.description

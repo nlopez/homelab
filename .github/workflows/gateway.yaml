@@ -70,6 +70,9 @@ jobs:
           TF_VAR_lga1_api_secret: ${{ secrets.OPNSENSE_LGA1_API_CREDENTIAL }}
           TF_VAR_lga2_api_key: ${{ secrets.OPNSENSE_LGA2_API_KEY }}
           TF_VAR_lga2_api_secret: ${{ secrets.OPNSENSE_LGA2_API_CREDENTIAL }}
+          TF_VAR_lga1_wg_private_key: ${{ secrets.WG_LGA1_PRIVATE_KEY }}
+          TF_VAR_lga2_wg_private_key: ${{ secrets.WG_LGA2_PRIVATE_KEY }}
+          TF_VAR_wg_psk: ${{ secrets.WG_PSK }}
         run: |-
           tofu init -input=false
           tofu plan -input=false -detailed-exitcode -no-color
@@ -125,6 +128,9 @@ jobs:
           TF_VAR_lga1_api_secret: ${{ secrets.OPNSENSE_LGA1_API_CREDENTIAL }}
           TF_VAR_lga2_api_key: ${{ secrets.OPNSENSE_LGA2_API_KEY }}
           TF_VAR_lga2_api_secret: ${{ secrets.OPNSENSE_LGA2_API_CREDENTIAL }}
+          TF_VAR_lga1_wg_private_key: ${{ secrets.WG_LGA1_PRIVATE_KEY }}
+          TF_VAR_lga2_wg_private_key: ${{ secrets.WG_LGA2_PRIVATE_KEY }}
+          TF_VAR_wg_psk: ${{ secrets.WG_PSK }}
         run: |-
           tofu init -input=false
           tofu apply -input=false -auto-approve

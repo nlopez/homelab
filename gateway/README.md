@@ -16,6 +16,7 @@ provider.
 - Unbound query forwards, host overrides, and general settings
 - System tunables with a non-default value
 - Cron jobs, traffic shaper pipes, and syslog destinations
+- Site-to-site WireGuard: instances, peers, and the global enable
 - FRR/Quagga general settings and BGP (prefix lists, route maps, neighbors, redistribution)
 - Monit tests and services
 - Auth users, auth groups, ACME accounts, certificate definitions, and DNS-01 validations
@@ -53,6 +54,10 @@ The provider has no resource for these, so they stay in the GUI and are covered 
   `lifecycle { ignore_changes = [ip_protocol] }`.
 - **`update_freq` on `urljson`.** The provider rejects `update_freq` for `urljson` aliases but
   the live config carries it. Suppressed with `lifecycle { ignore_changes = [update_freq] }`.
+- **WireGuard keys.** `private_key` is required and the API reads it and the peer `psk` back,
+  so both are sensitive variables sourced from 1Password (`WG_LGA1_PRIVATE_KEY`,
+  `WG_LGA2_PRIVATE_KEY`, and `WG_PSK` in CI). The interface assignments (`opt1` on lga2, `opt3` on lga1)
+  stay in the GUI.
 - **`enabled` on routes and gateways.** Provider `~> 0.30` never reads it back, so a route
   disabled here would show a permanent diff and fail the apply that tries to write it.
 
@@ -67,6 +72,9 @@ export TF_VAR_lga1_api_key="$(op read $V/y5eerewvka7h5hn2cbydqyyyli/key --accoun
 export TF_VAR_lga1_api_secret="$(op read $V/y5eerewvka7h5hn2cbydqyyyli/credential --account my.1password.com)"
 export TF_VAR_lga2_api_key="$(op read $V/yojhqgnskyosers54jtgsvjhmu/key --account my.1password.com)"
 export TF_VAR_lga2_api_secret="$(op read $V/yojhqgnskyosers54jtgsvjhmu/credential --account my.1password.com)"
+export TF_VAR_lga1_wg_private_key="$(op read $V/wireguard-gw.lga1.radoncanyon.com/password --account my.1password.com)"
+export TF_VAR_lga2_wg_private_key="$(op read $V/wireguard-gw.lga2.radoncanyon.com/password --account my.1password.com)"
+export TF_VAR_wg_psk="$(op read $V/wireguard-gw.lga1.radoncanyon.com/psk --account my.1password.com)"
 tofu init && tofu plan
 ```
 
@@ -80,6 +88,7 @@ Objects live in `lga1.tf` or `lga2.tf` as `for_each` maps keyed by something
 stable (domain, `hostname-rr`, gateway name, network). Each entry carries the
 `uuid` that its `import` block uses. To adopt an existing object, read its UUID
 from the API, then add both the map entry and the resource attribute if it is a
-new field.
+new field. An entry without a `uuid` is a new object: OpenTofu creates it,
+and the `import` blocks skip it.
 
 Anything the GUI still owns is not imported, so it never shows up as drift.

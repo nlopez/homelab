@@ -59,7 +59,7 @@ The provider cannot round-trip these four objects, so they stay in `config.xml`:
 - [x] Import VIPs (3 on lga1, 1 on lga2).
 - [ ] Import interface assignments. Not needed: the interfaces are already assigned and the
       provider's assignment resource is still gated on acceptance proof.
-- [x] Import the WireGuard server on lga1 (none configured).
+- [x] Import the WireGuard instances and peers on lga1 and lga2.
 - [x] Confirm gateways and static routes still plan clean.
 
 ## Phase 3 — Edge policy

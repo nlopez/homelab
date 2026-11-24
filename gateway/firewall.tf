@@ -589,15 +589,15 @@ locals {
       sequence         = 981
       interface        = ["wan"]
     }
-    "1081-WireGuard: lga2 LAN to the private gateway" = {
+    "1081-WireGuard: lga2 site networks to lga1 site networks" = {
       uuid             = "4573df1c-c67a-4ea3-a27a-cb122482b3db"
       action           = "pass"
-      description      = "WireGuard: lga2 LAN to the private gateway"
-      destination_net  = "fd54:571b:560a:4364::/64"
+      description      = "WireGuard: lga2 site networks to lga1 site networks"
+      destination_net  = "lga1_site_nets"
       direction        = "in"
-      ip_protocol      = "inet6"
+      ip_protocol      = "inet46"
       protocol         = "any"
-      source_net       = "2600:4041:5b37:201::/64"
+      source_net       = "lga2_site_nets"
       state_type       = "keep"
       allow_options    = false
       destination_not  = false
@@ -610,98 +610,6 @@ locals {
       quick            = true
       source_not       = false
       sequence         = 1081
-      interface        = ["wireguard"]
-    }
-    "1181-WireGuard: lga2 LAN ULA to the private gateway" = {
-      uuid             = "ac59bf71-7e21-4a55-b3e5-dedf68951a75"
-      action           = "pass"
-      description      = "WireGuard: lga2 LAN ULA to the private gateway"
-      destination_net  = "fd54:571b:560a:4364::/64"
-      direction        = "in"
-      ip_protocol      = "inet6"
-      protocol         = "any"
-      source_net       = "fd72:ce7b:d4a9:9511::/64"
-      state_type       = "keep"
-      allow_options    = false
-      destination_not  = false
-      disable_reply_to = false
-      enabled          = true
-      interface_not    = false
-      log              = true
-      no_pfsync        = false
-      no_xmlrpc_sync   = false
-      quick            = true
-      source_not       = false
-      sequence         = 1181
-      interface        = ["wireguard"]
-    }
-    "1281-WireGuard: lga2 LAN to the private gateway (IPv4)" = {
-      uuid             = "0c79c3c3-2da5-47ba-94fd-ec540896a083"
-      action           = "pass"
-      description      = "WireGuard: lga2 LAN to the private gateway (IPv4)"
-      destination_net  = "10.43.64.0/24"
-      direction        = "in"
-      ip_protocol      = "inet"
-      protocol         = "any"
-      source_net       = "192.168.239.0/24"
-      state_type       = "keep"
-      allow_options    = false
-      destination_not  = false
-      disable_reply_to = false
-      enabled          = true
-      interface_not    = false
-      log              = true
-      no_pfsync        = false
-      no_xmlrpc_sync   = false
-      quick            = true
-      source_not       = false
-      sequence         = 1281
-      interface        = ["wireguard"]
-    }
-    "1381-WireGuard: lga2 tunnel address to the private gateway" = {
-      uuid             = "cb856729-6f74-42b0-832d-c5017566aa05"
-      action           = "pass"
-      description      = "WireGuard: lga2 tunnel address to the private gateway"
-      destination_net  = "10.43.64.0/24"
-      direction        = "in"
-      ip_protocol      = "inet"
-      protocol         = "any"
-      source_net       = "10.23.50.2/32"
-      state_type       = "keep"
-      allow_options    = false
-      destination_not  = false
-      disable_reply_to = false
-      enabled          = true
-      interface_not    = false
-      log              = true
-      no_pfsync        = false
-      no_xmlrpc_sync   = false
-      quick            = true
-      source_not       = false
-      sequence         = 1381
-      interface        = ["wireguard"]
-    }
-    "1481-WireGuard: lga2 tunnel address to the private gateway (IPv6)" = {
-      uuid             = "6654e510-40f4-4496-ba1b-a33a2f27d8a5"
-      action           = "pass"
-      description      = "WireGuard: lga2 tunnel address to the private gateway (IPv6)"
-      destination_net  = "fd54:571b:560a:4364::/64"
-      direction        = "in"
-      ip_protocol      = "inet6"
-      protocol         = "any"
-      source_net       = "fd77:7a::2/128"
-      state_type       = "keep"
-      allow_options    = false
-      destination_not  = false
-      disable_reply_to = false
-      enabled          = true
-      interface_not    = false
-      log              = true
-      no_pfsync        = false
-      no_xmlrpc_sync   = false
-      quick            = true
-      source_not       = false
-      sequence         = 1481
       interface        = ["wireguard"]
     }
     "1581-Allow tailnet clients to query Unbound over tailscale0" = {
@@ -733,6 +641,8 @@ locals {
 resource "opnsense_firewall_filter_rule" "lga1_firewall_rules" {
   provider = opnsense.lga1
   for_each = local.lga1_firewall_rules
+
+  depends_on = [opnsense_firewall_alias.lga1_aliases]
 
   action                      = each.value.action
   description                 = try(each.value.description, null)
@@ -836,15 +746,15 @@ locals {
       source_not       = false
       sequence         = 471
     }
-    "171-WireGuard: private gateway to lga2 LAN" = {
+    "171-WireGuard: lga1 site networks to lga2 site networks" = {
       uuid             = "d3637741-5496-4b4f-9c46-905099aca688"
       action           = "pass"
-      description      = "WireGuard: private gateway to lga2 LAN"
-      destination_net  = "2600:4041:5b37:201::/64"
+      description      = "WireGuard: lga1 site networks to lga2 site networks"
+      destination_net  = "lga2_site_nets"
       direction        = "in"
-      ip_protocol      = "inet6"
+      ip_protocol      = "inet46"
       protocol         = "any"
-      source_net       = "fd54:571b:560a:4364::/64"
+      source_net       = "lga1_site_nets"
       state_type       = "keep"
       allow_options    = false
       destination_not  = false
@@ -857,52 +767,6 @@ locals {
       quick            = true
       source_not       = false
       sequence         = 171
-      interface        = ["wireguard"]
-    }
-    "271-WireGuard: private gateway to the lga2 LAN ULA" = {
-      uuid             = "2bb0ace3-c0ec-4223-8537-ae66ad7cedfa"
-      action           = "pass"
-      description      = "WireGuard: private gateway to the lga2 LAN ULA"
-      destination_net  = "fd72:ce7b:d4a9:9511::/64"
-      direction        = "in"
-      ip_protocol      = "inet6"
-      protocol         = "any"
-      source_net       = "fd54:571b:560a:4364::/64"
-      state_type       = "keep"
-      allow_options    = false
-      destination_not  = false
-      disable_reply_to = false
-      enabled          = true
-      interface_not    = false
-      log              = true
-      no_pfsync        = false
-      no_xmlrpc_sync   = false
-      quick            = true
-      source_not       = false
-      sequence         = 271
-      interface        = ["wireguard"]
-    }
-    "371-WireGuard: private gateway to the lga2 LAN (IPv4)" = {
-      uuid             = "5d40b4e8-c368-4963-abde-1456cf33f083"
-      action           = "pass"
-      description      = "WireGuard: private gateway to the lga2 LAN (IPv4)"
-      destination_net  = "192.168.239.0/24"
-      direction        = "in"
-      ip_protocol      = "inet"
-      protocol         = "any"
-      source_net       = "10.43.64.0/24"
-      state_type       = "keep"
-      allow_options    = false
-      destination_not  = false
-      disable_reply_to = false
-      enabled          = true
-      interface_not    = false
-      log              = true
-      no_pfsync        = false
-      no_xmlrpc_sync   = false
-      quick            = true
-      source_not       = false
-      sequence         = 371
       interface        = ["wireguard"]
     }
     "10-Block Spamhaus DROP outbound" = {
@@ -1357,6 +1221,8 @@ resource "opnsense_firewall_filter_rule" "lga2_firewall_rules" {
   provider = opnsense.lga2
   for_each = local.lga2_firewall_rules
 
+  depends_on = [opnsense_firewall_alias.lga2_aliases]
+
   action                      = each.value.action
   description                 = try(each.value.description, null)
   destination_net             = try(each.value.destination_net, null)
@@ -1408,4 +1274,14 @@ import {
   for_each = local.lga2_firewall_rules
   to       = opnsense_firewall_filter_rule.lga2_firewall_rules[each.key]
   id       = each.value.uuid
+}
+
+moved {
+  from = opnsense_firewall_filter_rule.lga1_firewall_rules["1081-WireGuard: lga2 LAN to the private gateway"]
+  to   = opnsense_firewall_filter_rule.lga1_firewall_rules["1081-WireGuard: lga2 site networks to lga1 site networks"]
+}
+
+moved {
+  from = opnsense_firewall_filter_rule.lga2_firewall_rules["171-WireGuard: private gateway to lga2 LAN"]
+  to   = opnsense_firewall_filter_rule.lga2_firewall_rules["171-WireGuard: lga1 site networks to lga2 site networks"]
 }
