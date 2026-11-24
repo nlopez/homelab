@@ -22,9 +22,13 @@ Two targets:
 
 - [x] Import firewall aliases (26 on lga1, 10 on lga2).
 - [x] Import firewall categories (none configured).
-- [ ] Import trust CA and certificates. Not viable: the ACME client owns them (9 of 10 CAs and
-      both certificates carry an "(ACME Client)" description) and renews them, so an import churns
-      on every renewal. Private keys are write-only as well.
+- [ ] Import trust CA and certificates. Not viable, and not needed: the issued certificates and
+      their CAs are ACME output that renews itself (9 of 10 CAs and both certificates carry an
+      "(ACME Client)" description), and private keys are write-only. The config that produces them
+      is managed instead, below.
+- [x] Import the ACME certificate definitions and their DNS-01 validations (1 of each per
+      gateway). Together with the ACME account and the renewal cron job, this is the whole
+      certificate pipeline.
 - [x] Import auth users (2 per gateway). The password is left alone: the provider requires the
       argument, `password = ""` is set, and OPNsense only re-hashes a password when the field is
       non-empty.

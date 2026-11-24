@@ -18,7 +18,7 @@ provider.
 - Cron jobs, traffic shaper pipes, and syslog destinations
 - FRR/Quagga general settings and BGP (prefix lists, route maps, neighbors, redistribution)
 - Monit tests and services
-- Auth users, auth groups, and ACME accounts
+- Auth users, auth groups, ACME accounts, certificate definitions, and DNS-01 validations
 
 ## Not managed here
 
@@ -43,7 +43,9 @@ The provider has no resource for these, so they stay in the GUI and are covered 
 - **Auth user passwords.** `password` is required, so it is set to `""` and ignored; OPNsense
   re-hashes only a non-empty password, and the provider never reads one back.
 - **Trust CAs and certificates are ACME-owned.** The ACME client creates and renews them, so an
-  import churns on every renewal; their private keys are write-only.
+  import churns on every renewal; their private keys are write-only. The ACME account,
+  certificate definitions, and DNS-01 validations that produce them are managed here, so the
+  pipeline is covered even though its output is not.
 - **NAT rules with an empty target.** The provider marks `target`, `local_port`, and
   `destination.network` required, so pass-through rules cannot be imported.
 - **`ip_protocol` default.** The provider defaults `ip_protocol` to `inet` but reads an empty
