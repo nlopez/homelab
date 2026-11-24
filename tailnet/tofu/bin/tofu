@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Runs tofu with the homelab-tailnet 1Password Environment loaded. The
+# secrets exist only in tofu's process, never in the shell.
+set -euo pipefail
+PATH="${PATH#"$(cd "$(dirname "$0")" && pwd):"}"
+exec op run --account my.1password.com --environment 5535p5q4j6q6x26fwoqdtx665y -- tofu "$@"
