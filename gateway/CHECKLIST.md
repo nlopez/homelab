@@ -25,9 +25,9 @@ Two targets:
 - [ ] Import trust CA and certificates. Not viable: the ACME client owns them (9 of 10 CAs and
       both certificates carry an "(ACME Client)" description) and renews them, so an import churns
       on every renewal. Private keys are write-only as well.
-- [ ] Import auth users. Not viable: `password` is required on every write, so managing a user
-      needs either a committed password or an empty one the provider would push on an unrelated
-      update.
+- [x] Import auth users (2 per gateway). The password is left alone: the provider requires the
+      argument, `password = ""` is set, and OPNsense only re-hashes a password when the field is
+      non-empty.
 - [x] Import auth groups (1 per gateway).
 - [x] Import ACME accounts (1 per gateway).
 - [x] Import Kea DHCPv4 subnets and reservations on lga2 (1 subnet, 28 reservations).

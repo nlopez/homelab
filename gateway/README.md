@@ -18,7 +18,7 @@ provider.
 - Cron jobs, traffic shaper pipes, and syslog destinations
 - FRR/Quagga general settings and BGP (prefix lists, route maps, neighbors, redistribution)
 - Monit tests and services
-- Auth groups and ACME accounts
+- Auth users, auth groups, and ACME accounts
 
 ## Not managed here
 
@@ -40,8 +40,8 @@ The provider has no resource for these, so they stay in the GUI and are covered 
 
 - **Pseudo-interfaces do not round-trip.** `opnsense_firewall_filter_rule` reads the interface
   of the TAYGA rule (lga2 sequence 71) back as empty.
-- **Auth users cannot be imported.** `password` is required on every write, so a managed user
-  needs either a committed password or an empty one the provider pushes on an unrelated update.
+- **Auth user passwords.** `password` is required, so it is set to `""` and ignored; OPNsense
+  re-hashes only a non-empty password, and the provider never reads one back.
 - **Trust CAs and certificates are ACME-owned.** The ACME client creates and renews them, so an
   import churns on every renewal; their private keys are write-only.
 - **NAT rules with an empty target.** The provider marks `target`, `local_port`, and
