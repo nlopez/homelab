@@ -36,7 +36,7 @@ spec:
         image: ghcr.io/gethomepage/homepage:v2.8.0
         env:
         - name: HOMEPAGE_ALLOWED_HOSTS
-          value: home.desertbluffs.com
+          value: bushi.desertbluffs.com
         - name: HOMEPAGE_VAR_RADARR_API_KEY
           valueFrom:
             secretKeyRef:
@@ -65,7 +65,7 @@ spec:
             port: http
             httpHeaders:
             - name: Host
-              value: home.desertbluffs.com
+              value: bushi.desertbluffs.com
           periodSeconds: 10
         livenessProbe:
           httpGet:
@@ -73,6 +73,6 @@ spec:
             port: http
             httpHeaders:
             - name: Host
-              value: home.desertbluffs.com
+              value: bushi.desertbluffs.com
           initialDelaySeconds: 30
           periodSeconds: 15

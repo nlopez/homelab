@@ -19,7 +19,7 @@ terraform {
 
 # Reads AUTHENTIK_TOKEN from the environment.
 provider "authentik" {
-  url = "https://auth.desertbluffs.com"
+  url = "https://arsox.desertbluffs.com"
 }
 
 locals {

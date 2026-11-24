@@ -3,7 +3,7 @@ locals {
     cluster = "10.43.64.53"
   }
 
-  internal_name   = "home.desertbluffs.com"
+  internal_name   = "bushi.desertbluffs.com"
   internal_answer = "10.43.64.10"
 }
 

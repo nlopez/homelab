@@ -1,11 +1,9 @@
 # Unused codenames
 
-Public hostnames use a single-word Palworld pal name as a codename (see [EXPOSURE.md](EXPOSURE.md)).
+Every app hostname, public or private, uses a single-word Palworld pal name as a codename (see [EXPOSURE.md](EXPOSURE.md)).
 These names are not used by any hostname in this repo yet, shortest first. When you take one,
 delete it from this list.
 
-- bushi
-- dogen
 - dupin
 - kikit
 - lullu

@@ -54,7 +54,7 @@ gitea:
     server:
       DOMAIN: dazzi.desertbluffs.com
       ROOT_URL: https://dazzi.desertbluffs.com/
-      SSH_DOMAIN: git.desertbluffs.com
+      SSH_DOMAIN: dazzi.desertbluffs.com
       SSH_PORT: 22
       SSH_LISTEN_PORT: 2222
     database:

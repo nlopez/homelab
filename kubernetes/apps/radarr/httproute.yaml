@@ -20,7 +20,6 @@ spec:
     group: gateway.networking.k8s.io
     kind: Gateway
   hostnames:
-  - radarr.desertbluffs.com
   - dumud.desertbluffs.com
   rules:
   - backendRefs:

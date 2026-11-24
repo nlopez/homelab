@@ -5,42 +5,42 @@ route between the `internet` and `private` gateways.
 
 ## Services
 
-| Service | Namespace | Internet | Private (LAN + tailnet) | Notes |
+| Service | Namespace | Hostname | Internet | Notes |
 | --- | --- | --- | --- | --- |
-| Argo CD | `argocd` | `flopie.desertbluffs.com` | `argocd` | HTTP and gRPC routes on the private gateway; HTTP only on the internet gateway. |
-| authentik | `authentik` | `arsox.desertbluffs.com` | `auth` | |
-| Atuin | `atuin` | `pyrin.desertbluffs.com` | `atuin` | |
-| Forgejo | `forgejo` | `dazzi.desertbluffs.com` | `git`; SSH `git.desertbluffs.com:22` | Git SSH runs only on the private gateway's TCP listener; Cloudflare can't proxy it. HTTPS pushes over the internet are subject to Cloudflare's request body limit (100 MB on Free and Pro). |
-| Immich | `immich` | `nox.desertbluffs.com` | `immich` | |
-| Jellyfin | `jellyfin` | `wixen.desertbluffs.com` | `jellyfin` | |
-| Obsidian LiveSync | `obsidian-livesync` | `lifmunk.desertbluffs.com` | `livesync` | |
-| Plex | `pms` | `vixy.desertbluffs.com` | `plex`; LoadBalancer `10.43.64.2:32400` | |
-| Shaarli | `shaarli` | `gumoss.desertbluffs.com` | `shaarli` | |
-| Timekeeper (ash) | `timekeeper-ash` | `ash.kamotimestamps.com` | — | Internet only. |
-| Timekeeper (oak) | `timekeeper-oak` | `oak.kamotimestamps.com` | — | Internet only. |
-| Apex redirect | `envoy-gateway-system` | `desertbluffs.com`, `www` | `desertbluffs.com`, `www` | Redirect only; no backend. |
-| Engram | `engram` | — | `engram`, `mau` | |
-| Goldpinger | `goldpinger` | — | `goldpinger`, `fuack` | |
-| Homepage | `homepage` | — | `home` | |
-| httpbin | `httpbin` | — | `httpbin`, `swee` | |
-| Palworld | `palworld` | — | Live map `palmap`, `rooby`; game UDP `10.43.64.10:8211` | |
-| Palworld (modded) | `palworld-modded` | — | Game UDP `10.43.64.10:8311` | |
-| Radarr | `radarr` | — | `radarr`, `dumud` | |
-| Seafile | `seafile` | — | `seafile` | |
-| Sonarr | `sonarr` | — | `sonarr`, `jolthog` | |
-| PowerDNS (`dnsdist`) | `pdns` | — | DNS `10.43.64.53`, `fd54:571b:560a:4364::53`; tailnet `100.95.107.254` (`technitium`) | |
+| Argo CD | `argocd` | `flopie` | Yes | HTTP and gRPC routes on the private gateway; HTTP only on the internet gateway. |
+| authentik | `authentik` | `arsox` | Yes | |
+| Atuin | `atuin` | `pyrin` | Yes | |
+| Forgejo | `forgejo` | `dazzi`; SSH `dazzi.desertbluffs.com:22` | Yes | Git SSH runs only on the private gateway's TCP listener; Cloudflare can't proxy it. HTTPS pushes over the internet are subject to Cloudflare's request body limit (100 MB on Free and Pro). |
+| Immich | `immich` | `nox` | Yes | |
+| Jellyfin | `jellyfin` | `wixen` | Yes | |
+| Obsidian LiveSync | `obsidian-livesync` | `lifmunk` | Yes | |
+| Plex | `pms` | `vixy`; LoadBalancer `10.43.64.2:32400` | Yes | |
+| Shaarli | `shaarli` | `gumoss` | Yes | |
+| Timekeeper (ash) | `timekeeper-ash` | `ash.kamotimestamps.com` | Only | No private route. |
+| Timekeeper (oak) | `timekeeper-oak` | `oak.kamotimestamps.com` | Only | No private route. |
+| Apex redirect | `envoy-gateway-system` | `desertbluffs.com`, `www` | Yes | Redirect only; no backend. |
+| Engram | `engram` | `mau` | No | |
+| Goldpinger | `goldpinger` | `fuack` | No | |
+| Homepage | `homepage` | `bushi` | No | |
+| httpbin | `httpbin` | `swee` | No | |
+| Palworld | `palworld` | Live map `rooby`; game UDP `10.43.64.10:8211` | No | |
+| Palworld (modded) | `palworld-modded` | Game UDP `10.43.64.10:8311` | No | |
+| Radarr | `radarr` | `dumud` | No | |
+| Seafile | `seafile` | `dogen` | No | |
+| Sonarr | `sonarr` | `jolthog` | No | |
+| PowerDNS (`dnsdist`) | `pdns` | DNS `10.43.64.53`, `fd54:571b:560a:4364::53`; tailnet `100.95.107.254` (`technitium`) | No | |
 
-Hostnames in the Private column are under `desertbluffs.com` unless written in full. Private DNS
-holds those short names only. Codenames (pick new ones from [CODENAMES.md](CODENAMES.md)) exist
-only in public DNS, so they resolve to Cloudflare from the LAN and the tailnet too.
+Hostnames are under `desertbluffs.com` unless written in full. Each app has exactly one hostname,
+a codename picked from [CODENAMES.md](CODENAMES.md). An app reachable from the internet routes the
+same hostname on both gateways; private DNS and public DNS answer it differently.
 
 Unmatched hostnames under `*.desertbluffs.com` (both gateways) get a catch-all `418` route (`kubernetes/apps-helm/envoy-gateway/manifests/unmatched-teapot.yaml`).
 
 ## Split-horizon DNS
 
-Short names resolve to the private gateway from both the LAN and the tailnet; codenames never
-appear in private DNS, so they resolve via Cloudflare everywhere. Using `atuin.desertbluffs.com`
-and its codename `pyrin.desertbluffs.com` as the examples.
+One hostname per app, answered differently inside and outside. LAN and tailnet clients get the
+private gateway; internet clients get Cloudflare. Using `pyrin.desertbluffs.com` (Atuin) as the
+example.
 
 ```mermaid
 flowchart LR
@@ -65,13 +65,13 @@ flowchart LR
   edge["Cloudflare proxy"]
   gw["gw.lga1 (OPNsense)<br/>WAN 96.246.156.39"]
 
-  edt -- "A + AAAA for short names" --> pdns
+  edt -- "A + AAAA for private-gateway hostnames" --> pdns
   wanip -- "Gateway target annotation" --> edc
   edc -- "proxied A + AAAA for internet hostnames" --> cfdns
 
-  lan -- "atuin? (LAN: site Unbound → 10.43.64.53;<br/>tailnet: split-DNS → 100.95.107.254)" --> pdns
+  lan -- "pyrin? (LAN: site Unbound → 10.43.64.53;<br/>tailnet: split-DNS → 100.95.107.254)" --> pdns
   pdns -- "local record: 10.43.64.10 / fd54:…::10" --> lan
-  pdns -. "misses via recursor<br/>(codenames, MX, SES, …)" .-> cfdns
+  pdns -. "misses via recursor<br/>(internet-only names, MX, SES, …)" .-> cfdns
   lan -- "HTTPS" --> priv
 
   web -- "pyrin?" --> cfdns
@@ -86,7 +86,8 @@ flowchart LR
 ```
 
 - **Inside (`desertbluffs.com`):** Cluster PowerDNS (`dnsdist` → `pdns` authoritative + `recursor`,
-  in namespace `pdns`) answers short names with the private gateway's addresses, so traffic stays
+  in namespace `pdns`) answers every hostname routed on the private gateway with that gateway's
+  addresses, including names that also have public records, so traffic stays
   on the private network. Both site gateways (OPNsense Unbound, managed in `gateway/`) forward
   `desertbluffs.com` directly to `10.43.64.53` (`gw.lga1` over BGP, `gw.lga2` via `odroid.lga2`).
   Tailnet clients use split-DNS (`tailnet/tofu/dns.tf`) pointing `desertbluffs.com` to
@@ -99,8 +100,10 @@ flowchart LR
 - **Outside:** Cloudflare answers with its own anycast addresses, because every internet record is
   proxied. The A and AAAA contents (the WAN address and the gateway's public IPv6 address) are only
   where Cloudflare connects, and never appear in public answers.
-- A codename such as `pyrin.desertbluffs.com` is absent from `pdns`, so LAN and tailnet clients
-  fall through to Cloudflare and follow the same path as internet clients.
+- A hostname routed only on the internet gateway is absent from `pdns`, so LAN and tailnet
+  clients fall through to Cloudflare and follow the same path as internet clients.
+- Apps that use SSO (OIDC or SAML) see one hostname everywhere, so redirect URIs, issuers, and
+  session cookies match whether the browser is inside or outside.
 
 ## Paths
 

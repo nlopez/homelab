@@ -33,7 +33,7 @@ spec:
         - name: TIME_ZONE
           value: America/New_York
         - name: SEAFILE_SERVER_HOSTNAME
-          value: seafile.desertbluffs.com
+          value: dogen.desertbluffs.com
         - name: SEAFILE_SERVER_PROTOCOL
           value: https
         - name: SEAFILE_MYSQL_DB_HOST
