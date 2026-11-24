@@ -13,7 +13,6 @@ Two targets:
 ## Phase 0 — Safety net
 
 - [x] Back up both `config.xml` files nightly to Google Drive (`os-gdrive-backup`, GUI-managed).
-- [x] Add `homelab-gateway-apply` IAM role in `aws/state-bucket/iam.tf`.
 
 ## Phase 1 — Independent primitives
 

@@ -41,9 +41,6 @@
     ],
     "tag:timekeeper": [
       "autogroup:admin"
-    ],
-    "tag:ci": [
-      "autogroup:admin"
     ]
   },
   "autoApprovers": {
