@@ -125,6 +125,19 @@
         "autogroup:nonroot",
         "root"
       ]
+    },
+    {
+      "action": "accept",
+      "src": [
+        "tag:home"
+      ],
+      "dst": [
+        "tag:lga1",
+        "tag:lga2"
+      ],
+      "users": [
+        "dns-sync"
+      ]
     }
   ],
   "randomizeClientPort": true,

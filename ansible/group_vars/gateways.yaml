@@ -1,0 +1,2 @@
+# OPNsense ships Python outside the default search path.
+ansible_python_interpreter: /usr/local/bin/python3
