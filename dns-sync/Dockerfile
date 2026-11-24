@@ -1,5 +1,7 @@
 FROM alpine:3.22
 
+RUN adduser -D -H -u 65532 dns-sync
+
 # kubectl talks to the in-cluster API, jq renders the record snapshot,
 # and the push to the gateways is a plain ssh client session.
 RUN apk add --no-cache kubectl jq openssh-client
