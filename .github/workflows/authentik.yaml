@@ -28,7 +28,7 @@ jobs:
 
       - name: Get GitHub OIDC token
         id: oidc
-        uses: actions/github-script@ed597411d8c9245e2c3cf9a0d2f39b8b1e0d0a5a # v8
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: core.setOutput('token', await core.getIDToken())
 
