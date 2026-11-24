@@ -15,8 +15,6 @@ Two targets:
 - [x] Add `gateway/scripts/backup-config.sh` to download both `config.xml` files to S3.
 - [x] Add `.github/workflows/gateway-backup.yaml` on a daily schedule.
 - [x] Add `homelab-gateway-apply` IAM role in `aws/state-bucket/iam.tf`.
-- [x] Add `.github/workflows/gateway.yaml` to plan on pull requests. Operators apply.
-- [x] Add a scheduled `tofu plan -detailed-exitcode` drift check.
 
 ## Phase 1 — Independent primitives
 

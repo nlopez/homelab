@@ -55,8 +55,7 @@ The provider has no resource for these, so they stay in the GUI and are covered 
 - **`update_freq` on `urljson`.** The provider rejects `update_freq` for `urljson` aliases but
   the live config carries it. Suppressed with `lifecycle { ignore_changes = [update_freq] }`.
 - **WireGuard keys.** `private_key` is required and the API reads it and the peer `psk` back,
-  so both are sensitive variables sourced from 1Password (`WG_LGA1_PRIVATE_KEY`,
-  `WG_LGA2_PRIVATE_KEY`, and `WG_PSK` in CI). The interface assignments (`opt1` on lga2, `opt3` on lga1)
+  so both are sensitive variables sourced from 1Password. The interface assignments (`opt1` on lga2, `opt3` on lga1)
   stay in the GUI.
 - **`enabled` on routes and gateways.** Provider `~> 0.30` never reads it back, so a route
   disabled here would show a permanent diff and fail the apply that tries to write it.
@@ -79,8 +78,8 @@ tofu init && tofu plan
 ```
 
 State is in the `homelab-tofu-state-546422192262` bucket under `gateway/terraform.tfstate`.
-`.github/workflows/gateway.yaml` plans on pull requests and on a daily schedule. CI never
-applies: an operator runs `tofu apply` with the exports above after a change merges.
+No CI plans or applies this stack: an operator runs `tofu plan` and `tofu apply` with the
+exports above after a change merges.
 
 ## Adding an object
 
