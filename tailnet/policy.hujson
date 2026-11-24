@@ -42,9 +42,9 @@
     "tag:timekeeper": [
       "autogroup:admin"
     ],
-    // The federated identity in tailnet/admin tags the runner devices
-    // itself, so nothing has to own this tag.
-    "tag:ci": []
+    "tag:ci": [
+      "autogroup:admin"
+    ]
   },
   "autoApprovers": {
     "exitNode": [
@@ -109,8 +109,8 @@
         "tag:ci"
       ],
       "dst": [
-        "tag:lga1:443",
-        "tag:lga2:443"
+        "tag:lga1",
+        "tag:lga2"
       ],
       "ip": [
         "*"
