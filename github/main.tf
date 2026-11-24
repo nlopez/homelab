@@ -1,7 +1,7 @@
 # Makes a push to main refresh the Argo CD Applications instead of waiting for
 # the poller. argocd-server verifies the signature with the same secret.
 resource "github_repository_webhook" "argocd" {
-  repository = "homelab"
+  repository = github_repository.homelab.name
   events     = ["push"]
 
   configuration {
