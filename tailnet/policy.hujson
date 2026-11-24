@@ -44,6 +44,9 @@
     ],
     "tag:ci": [
       "autogroup:admin"
+    ],
+    "tag:ansible": [
+      "autogroup:admin"
     ]
   },
   "autoApprovers": {
@@ -108,7 +111,8 @@
         "tag:container",
         "tag:k8s-readers",
         "tag:exit",
-        "tag:timekeeper"
+        "tag:timekeeper",
+        "tag:ansible"
       ],
       "dst": [
         "*"
@@ -130,6 +134,19 @@
       ],
       "ip": [
         "443"
+      ]
+    },
+    // The Ansible workflow needs the packet filter to allow 22 as well as the
+    // ssh rule below, which is what authorises the login as nlopez.
+    {
+      "src": [
+        "tag:ci"
+      ],
+      "dst": [
+        "tag:ansible"
+      ],
+      "ip": [
+        "22"
       ]
     }
   ],
@@ -168,6 +185,22 @@
       ],
       "users": [
         "dns-sync"
+      ]
+    },
+    // The Ansible workflow logs in as nlopez and escalates with sudo, so
+    // root login is not needed. tag:ansible is carried only by the four
+    // hosts the playbooks configure: knode1 and knode2 also carry tag:lga1,
+    // which would include every other lga1 device in an SSH rule.
+    {
+      "action": "accept",
+      "src": [
+        "tag:ci"
+      ],
+      "dst": [
+        "tag:ansible"
+      ],
+      "users": [
+        "nlopez"
       ]
     }
   ],
@@ -229,6 +262,12 @@
       "accept": [
         "192.168.222.1:443",
         "192.168.239.254:443"
+      ]
+    },
+    {
+      "src": "tag:ci",
+      "accept": [
+        "tag:ansible:22"
       ]
     }
   ]

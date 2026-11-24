@@ -18,3 +18,7 @@ tailscale_ssh: true
 tailscale_advertise_tags:
   - tag:home
   - tag:lga1
+  # tag:ansible is what the Ansible workflow uses to reach these hosts over
+  # Tailscale SSH. tailnet/tofu sets it too, because a tagged device can only
+  # be given a new tag from the admin console or the API.
+  - tag:ansible

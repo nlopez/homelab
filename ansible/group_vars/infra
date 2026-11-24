@@ -10,8 +10,12 @@ tailscale_nameservers:
   - 1.1.1.1
   - 2606:4700:4700::1111
 
+# The Ansible workflow sets these from the items in the ci vault (see
+# secrets.env); a local run falls back to the operator vault through the
+# 1Password CLI.
 datadog_api_key: >-
-  {{ lookup('ansible.builtin.pipe',
+  {{ lookup('ansible.builtin.env', 'DD_API_KEY') or
+  lookup('ansible.builtin.pipe',
   'op read op://eirjdyavzyx7tegpglsc2udq3a/4iqpxi5uzyzlkjq5br5fxt5glu/credential --account my.1password.com') }}
 datadog_site: datadoghq.com
 datadog_additional_groups: systemd-journal
@@ -64,11 +68,13 @@ datadog_checks:
         user: datadog
         authProtocol: SHA
         authKey: >-
-          {{ lookup('ansible.builtin.pipe',
+          {{ lookup('ansible.builtin.env', 'SNMP_AUTHKEY_' ~ (inventory_hostname.split('.')[1] | upper)) or
+          lookup('ansible.builtin.pipe',
           'op read op://eirjdyavzyx7tegpglsc2udq3a/' ~ snmp_v3_item_id ~ '/password --account my.1password.com') }}
         privProtocol: AES
         privKey: >-
-          {{ lookup('ansible.builtin.pipe',
+          {{ lookup('ansible.builtin.env', 'SNMP_PRIVKEY_' ~ (inventory_hostname.split('.')[1] | upper)) or
+          lookup('ansible.builtin.pipe',
           'op read op://eirjdyavzyx7tegpglsc2udq3a/' ~ snmp_v3_item_id ~ '/privkey --account my.1password.com') }}
         tags:
           - "target:gateway"

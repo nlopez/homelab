@@ -79,3 +79,49 @@ resource "tailscale_device_subnet_routes" "odroid_lga2" {
     "fd72:ce7b:d4a9:9511::/64",
   ]
 }
+
+# The Ansible workflow reaches these four hosts over Tailscale SSH. Their
+# login advertises tag:home plus a site tag, which every other device at that
+# site also carries, so an SSH rule scoped to those tags would reach nas1,
+# nas2 and the k8s nodes' neighbours as well. tag:ansible names the hosts the
+# playbooks configure and nothing else.
+#
+# shortcut: creating this for a device that does not already carry the tag
+# fails with "cannot remove current tags", although the same request through
+# the API succeeds. Set the tag once from the admin console or the API, then
+# apply; upgrade when the provider's create path handles a new tag.
+data "tailscale_device" "knode1" {
+  hostname = "knode1"
+}
+
+resource "tailscale_device_tags" "knode1" {
+  device_id = data.tailscale_device.knode1.node_id
+  tags      = ["tag:home", "tag:lga1", "tag:ansible"]
+}
+
+data "tailscale_device" "knode2" {
+  hostname = "knode2"
+}
+
+resource "tailscale_device_tags" "knode2" {
+  device_id = data.tailscale_device.knode2.node_id
+  tags      = ["tag:home", "tag:lga1", "tag:ansible"]
+}
+
+data "tailscale_device" "odroid_lga1_ansible" {
+  hostname = "odroid-lga1"
+}
+
+resource "tailscale_device_tags" "odroid_lga1_ansible" {
+  device_id = data.tailscale_device.odroid_lga1_ansible.node_id
+  tags      = ["tag:exit", "tag:home", "tag:lga1", "tag:ansible"]
+}
+
+data "tailscale_device" "odroid_lga2_ansible" {
+  hostname = "odroid-lga2"
+}
+
+resource "tailscale_device_tags" "odroid_lga2_ansible" {
+  device_id = data.tailscale_device.odroid_lga2_ansible.node_id
+  tags      = ["tag:exit", "tag:home", "tag:lga2", "tag:ansible"]
+}

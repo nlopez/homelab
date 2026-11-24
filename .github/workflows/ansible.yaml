@@ -1,0 +1,104 @@
+name: Ansible
+
+on:
+  schedule:
+    # Nightly drift check. Applying is always an explicit decision.
+    - cron: '27 6 * * *'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Apply the playbooks instead of only reporting drift
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ansible
+  cancel-in-progress: false
+
+jobs:
+  ansible:
+    name: ${{ inputs.apply && 'Apply' || 'Drift check' }}
+    environment: production
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The client id and audience come from tailscale_federated_identity
+      # .github_actions in tailnet/admin; the action requests a GitHub OIDC
+      # token for that audience itself. The runner authenticates to the hosts
+      # through Tailscale SSH, so no SSH key is stored anywhere.
+      - name: Join the tailnet
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: TX3ajrU7JY71CNTRL-kQaJB6AVyQ11CNTRL
+          audience: api.tailscale.com/TX3ajrU7JY71CNTRL-kQaJB6AVyQ11CNTRL
+          tags: tag:ci
+
+      # The inventory is keyed by the sites' names, which only resolve through
+      # the tailnet's split DNS. Point them at the nodes' tailnet addresses.
+      - name: Map the inventory names to tailnet addresses
+        run: |
+          while read -r fqdn peer; do
+            ip=$(tailscale ip -4 "$peer")
+            echo "$ip $fqdn" | sudo tee -a /etc/hosts
+          done <<'EOF'
+          knode1.lga1.radoncanyon.com knode1
+          knode2.lga1.radoncanyon.com knode2
+          odroid.lga1.radoncanyon.com odroid-lga1
+          odroid.lga2.radoncanyon.com odroid-lga2
+          EOF
+
+      - uses: cachix/install-nix-action@382a9ed9481c7c1f94f68b72ef105b3417c73877 # v32.1.0
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
+        with:
+          name: devenv
+
+      - name: Install devenv
+        run: nix profile install nixpkgs#devenv
+
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
+
+      - name: Check for drift
+        if: ${{ !inputs.apply }}
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: |
+          set +e
+          op run --env-file ansible/secrets.env -- devenv shell -- \
+            bash -c 'cd ansible && ansible-galaxy collection install -r requirements.yaml && ansible-playbook site.yaml --check --diff' 2>&1 | tee check.log
+          rc=${PIPESTATUS[0]}
+          drift=$(grep -cE 'changed=[1-9][0-9]*' check.log)
+          {
+            echo "## Ansible drift check"
+            echo
+            echo "playbook exit code: $rc, hosts reporting changes: $drift"
+            echo
+            echo '```'
+            tail -c 60000 check.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$drift" -gt 0 ]; then
+            echo "::error::the hosts do not match the playbooks; see the run summary"
+            exit 1
+          fi
+          exit "$rc"
+
+      - name: Apply
+        if: ${{ inputs.apply }}
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: |
+          op run --env-file ansible/secrets.env -- devenv shell -- \
+            bash -c 'cd ansible && ansible-galaxy collection install -r requirements.yaml && ansible-playbook site.yaml'
