@@ -13,6 +13,17 @@ let
     fi
     exec ${pkgs.opentofu}/bin/tofu "$@"
   '';
+
+  # credential_process for the profiles in aws/config. Prints short-lived
+  # credentials for an SSO profile, opening the browser to sign in first when
+  # the SSO session has expired. stdout carries only the credentials JSON.
+  aws-sso-creds = pkgs.writeShellScriptBin "aws-sso-creds" ''
+    set -euo pipefail
+    if ! aws configure export-credentials --profile "$1" --format process 2>/dev/null; then
+      aws sso login --profile "$1" >&2
+      aws configure export-credentials --profile "$1" --format process
+    fi
+  '';
 in
 {
   packages = [
@@ -21,6 +32,7 @@ in
     pkgs.go
     pkgs.pre-commit
     tofu
+    aws-sso-creds
   ];
 
   # Keep the worktree after `wt merge` so the agent's shell keeps a valid cwd.
