@@ -17,9 +17,10 @@ Several agents and people work in this repo at the same time. Every rule below e
 ## Merge to main before you push
 
 1. Commit in your worktree. The pre-commit hooks run on each commit.
-2. Run `wt merge`. It squashes, rebases onto the latest `main`, and fast-forwards `main`. The worktree stays, so your shell keeps a valid directory.
+2. Run `wt merge` as the last command of the task. It squashes, rebases onto the latest `main`, fast-forwards `main`, and removes the worktree and its branch.
 3. The post-merge hook pushes `main` for you. Check the result with `wt config state logs`.
-4. Run `wt remove` as the last command. Removing the worktree you are standing in ends your shell.
+
+Do not pass `--no-remove`. If you abandon a task without merging, run `wt remove` before you finish. Never leave a worktree behind.
 
 Never push a feature branch's work to `main` without rebasing onto current `main` first.
 
