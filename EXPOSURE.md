@@ -28,7 +28,6 @@ route between the `internet` and `private` gateways.
 | Radarr | `radarr` | `dumud` | No | |
 | Seafile | `seafile` | `dogen` | No | |
 | Sonarr | `sonarr` | `jolthog` | No | |
-| PowerDNS (`dnsdist`) | `pdns` | DNS `10.43.64.53`, `fd54:571b:560a:4364::53`; tailnet `100.95.107.254` (`technitium`) | No | |
 
 Hostnames are under `desertbluffs.com` unless written in full. Each app has exactly one hostname,
 a codename picked from [CODENAMES.md](CODENAMES.md). An app reachable from the internet routes the
@@ -52,26 +51,26 @@ flowchart LR
   end
 
   subgraph k8s["Kubernetes"]
-    edt["external-dns-technitium<br/>(routes on the private gateway)"]
+    edp["external-dns-lga1 + lga2<br/>(OPNsense webhook, routes on the private gateway)"]
     edc["external-dns<br/>(routes on the internet gateway)"]
     wanip["wan-ip CronJob<br/>(WAN IPv4 + gateway IPv6)"]
     priv["private gateway<br/>10.43.64.10<br/>fd54:571b:560a:4364::10"]
     inet["internet gateway<br/>10.43.64.20<br/>2600:4041:5b21:6b64::20"]
     app["atuin"]
-    pdns[("PowerDNS<br/>dnsdist → pdns + recursor<br/>10.43.64.53 / 100.95.107.254")]
   end
 
   cfdns[("Cloudflare DNS<br/>desertbluffs.com")]
   edge["Cloudflare proxy"]
   gw["gw.lga1 (OPNsense)<br/>WAN 96.246.156.39"]
+  unbound["gw.lga1 / gw.lga2 Unbound<br/>(host overrides)"]
 
-  edt -- "A + AAAA for private-gateway hostnames" --> pdns
+  edp -- "A + AAAA as host overrides (OPNsense API)" --> unbound
   wanip -- "Gateway target annotation" --> edc
   edc -- "proxied A + AAAA for internet hostnames" --> cfdns
 
-  lan -- "pyrin? (LAN: site Unbound → 10.43.64.53;<br/>tailnet: split-DNS → 100.95.107.254)" --> pdns
-  pdns -- "local record: 10.43.64.10 / fd54:…::10" --> lan
-  pdns -. "misses via recursor<br/>(internet-only names, MX, SES, …)" .-> cfdns
+  lan -- "pyrin? (LAN: site Unbound;<br/>tailnet: split-DNS → 100.83.144.88 / 100.86.37.97)" --> unbound
+  unbound -- "local record: 10.43.64.10 / fd54:…::10" --> lan
+  unbound -. "misses via public recursion<br/>(internet-only names, MX, SES, …)" .-> cfdns
   lan -- "HTTPS" --> priv
 
   web -- "pyrin?" --> cfdns
@@ -85,13 +84,13 @@ flowchart LR
   inet -- "Cloudflare origin-pull mTLS required" --> app
 ```
 
-- **Inside (`desertbluffs.com`):** Cluster PowerDNS (`dnsdist` → `pdns` authoritative + `recursor`,
-  in namespace `pdns`) answers every hostname routed on the private gateway with that gateway's
-  addresses, including names that also have public records, so traffic stays
-  on the private network. Both site gateways (OPNsense Unbound, managed in `gateway/`) forward
-  `desertbluffs.com` directly to `10.43.64.53` (`gw.lga1` over BGP, `gw.lga2` via `odroid.lga2`).
-  Tailnet clients use split-DNS (`tailnet/tofu/dns.tf`) pointing `desertbluffs.com` to
-  `100.95.107.254`. Names not in `pdns` fall through to `recursor` and public DNS.
+- **Inside (`desertbluffs.com`):** Each site gateway's Unbound answers every hostname routed on
+  the private gateway with that gateway's addresses, including names that also have public
+  records, so traffic stays on the private network. Two `external-dns` releases
+  (`external-dns-lga1` and `external-dns-lga2`) publish those routes as Unbound host overrides
+  through the OPNsense API, one per gateway. Tailnet clients use split-DNS
+  (`tailnet/tofu/dns.tf`) pointing `desertbluffs.com` to both gateways (`100.83.144.88`,
+  `100.86.37.97`). Names without a host override fall through to public recursion.
 - **Site infrastructure (`*.lga1.radoncanyon.com`, `*.lga2.radoncanyon.com`):** Gateways, nodes,
   NAS, and odroids live as Unbound host overrides (LAN A + ULA AAAA) on both `gw.lga1` and
   `gw.lga2` (`gateway/`), so they resolve even when the cluster is down. Tailnet split-DNS routes
@@ -100,7 +99,7 @@ flowchart LR
 - **Outside:** Cloudflare answers with its own anycast addresses, because every internet record is
   proxied. The A and AAAA contents (the WAN address and the gateway's public IPv6 address) are only
   where Cloudflare connects, and never appear in public answers.
-- A hostname routed only on the internet gateway is absent from `pdns`, so LAN and tailnet
+- A hostname routed only on the internet gateway has no host override, so LAN and tailnet
   clients fall through to Cloudflare and follow the same path as internet clients.
 - Apps that use SSO (OIDC or SAML) see one hostname everywhere, so redirect URIs, issuers, and
   session cookies match whether the browser is inside or outside.
@@ -135,17 +134,14 @@ With both records published, Cloudflare still reaches the origin over IPv4.
 
 - The `private` gateway at `10.43.64.10` and `fd54:571b:560a:4364::10` is advertised to the LAN
   router (`192.168.222.1`) over BGP from Cilium.
-- `external-dns-technitium` publishes its routes to PowerDNS (`pdns`) for internal DNS, as A and
-  AAAA records.
-- `dnsdist` routes names present in `pdns` to the authoritative server and forwards every other
-  query to `recursor` (with DNSSEC validation). `routes-sync` refreshes the routed-name list from
-  the `pdns` API every 60 seconds. external-dns can't own the apex, so the `desertbluffs.com` apex
-  A and AAAA records are static records in `pdns`.
+- `external-dns-lga1` and `external-dns-lga2` publish the private gateway's routes as Unbound
+  host overrides (A + AAAA) on the two OPNsense gateways, one release per site, through the
+  `crutonjohn/external-dns-opnsense-webhook` provider.
 - Pods have global IPv6 addresses from `2600:4041:5b21:6b10::/64`, taken from the delegated
   `2600:4041:5b21:6b00::/56`. Cilium advertises the pod CIDRs to the LAN router over BGP and IPv6
   masquerade is off, so pods egress as themselves. Unsolicited inbound is still blocked at the WAN.
-- The Tailscale operator exposes the private gateway and `dnsdist` (`100.95.107.254`, hostname
-  `technitium`) on the tailnet through the `heimdall` proxy group.
+- The Tailscale operator exposes the private gateway on the tailnet through the `heimdall` proxy
+  group.
 
 ## Not tracked here
 

@@ -195,7 +195,6 @@ schedules:
       - recyclarr
       - seadexarr
       - sonarr
-      - technitium
       - timekeeper-ash
       - timekeeper-oak
       - warp

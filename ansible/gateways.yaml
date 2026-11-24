@@ -1,6 +1,7 @@
 ---
-# OPNsense gateways: local records for split-horizon DNS, applied by the
-# dns-sync receiver invoked over SSH from the Kubernetes sync job.
+# OPNsense gateways: host overrides for split-horizon DNS are published by
+# external-dns through the OPNsense API. The role only removes leftovers from
+# the retired SSH-based dns-sync receiver.
 - name: Configure OPNsense gateways
   hosts: gateways
   roles:
