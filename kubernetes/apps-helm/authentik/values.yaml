@@ -28,22 +28,6 @@ global:
       secretKeyRef:
         name: onepassword-authentik-smtp
         key: password
-  # Read only on first startup, to create akadmin and its API token.
-  - name: AUTHENTIK_BOOTSTRAP_EMAIL
-    valueFrom:
-      secretKeyRef:
-        name: onepassword-authentik-admin
-        key: email
-  - name: AUTHENTIK_BOOTSTRAP_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: onepassword-authentik-admin
-        key: password
-  - name: AUTHENTIK_BOOTSTRAP_TOKEN
-    valueFrom:
-      secretKeyRef:
-        name: onepassword-authentik-admin
-        key: token
 authentik:
   postgresql:
     host: authentik-database-tn-rw.authentik.svc.cluster.local

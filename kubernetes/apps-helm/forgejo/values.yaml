@@ -25,6 +25,14 @@ gitea:
     existingSecret: onepassword-forgejo-admin
     email: forgejo-admin@desertbluffs.com
     passwordMode: initialOnlyNoReset
+  # The authentik side lives in authentik/forgejo.tf. The name sets the
+  # callback path registered there.
+  oauth:
+  - name: authentik
+    provider: openidConnect
+    existingSecret: onepassword-forgejo-oauth
+    autoDiscoverUrl: https://arsox.desertbluffs.com/application/o/forgejo/.well-known/openid-configuration
+    scopes: email profile
   additionalConfigFromEnvs:
   - name: FORGEJO__DATABASE__PASSWD
     valueFrom:
