@@ -160,6 +160,12 @@ spec:
         repoURL: oci://code.forgejo.org/forgejo-helm/forgejo
         targetRevision: "17.3.3"
         namespace: forgejo
+      - name: authentik
+        tier: platform
+        repoURL: https://charts.goauthentik.io
+        chart: authentik
+        targetRevision: "2026.8.6"
+        namespace: authentik
       - name: spegel
         tier: platform
         repoURL: oci://ghcr.io/spegel-org/helm-charts/spegel

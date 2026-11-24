@@ -8,6 +8,7 @@ route between the `internet` and `private` gateways.
 | Service | Namespace | Internet | Private (LAN + tailnet) | Notes |
 | --- | --- | --- | --- | --- |
 | Argo CD | `argocd` | `flopie.desertbluffs.com` | `argocd` | HTTP and gRPC routes on the private gateway; HTTP only on the internet gateway. |
+| authentik | `authentik` | `arsox.desertbluffs.com` | `auth` | |
 | Atuin | `atuin` | `pyrin.desertbluffs.com` | `atuin` | |
 | Forgejo | `forgejo` | `dazzi.desertbluffs.com` | `git`; SSH `git.desertbluffs.com:22` | Git SSH runs only on the private gateway's TCP listener; Cloudflare can't proxy it. HTTPS pushes over the internet are subject to Cloudflare's request body limit (100 MB on Free and Pro). |
 | Immich | `immich` | `nox.desertbluffs.com` | `immich` | |

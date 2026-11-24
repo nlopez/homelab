@@ -4,7 +4,6 @@ Public hostnames use a single-word Palworld pal name as a codename (see [EXPOSUR
 These names are not used by any hostname in this repo yet, shortest first. When you take one,
 delete it from this list.
 
-- arsox
 - bushi
 - dogen
 - dupin

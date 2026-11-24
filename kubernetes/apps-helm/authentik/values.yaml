@@ -1,0 +1,72 @@
+global:
+  podLabels:
+    tags.datadoghq.com/env: homelab
+    tags.datadoghq.com/service: authentik
+    tags.datadoghq.com/version: v1
+  deploymentAnnotations:
+    reloader.stakater.com/auto: "true"
+  env:
+  - name: AUTHENTIK_SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        name: onepassword-authentik-secret-key
+        key: password
+  - name: AUTHENTIK_POSTGRESQL__PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: onepassword-authentik-database
+        key: password
+  - name: AUTHENTIK_POSTGRESQL__SSLMODE
+    value: require
+  - name: AUTHENTIK_EMAIL__USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: onepassword-authentik-smtp
+        key: username
+  - name: AUTHENTIK_EMAIL__PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: onepassword-authentik-smtp
+        key: password
+  # Read only on first startup, to create akadmin and its API token.
+  - name: AUTHENTIK_BOOTSTRAP_EMAIL
+    valueFrom:
+      secretKeyRef:
+        name: onepassword-authentik-admin
+        key: email
+  - name: AUTHENTIK_BOOTSTRAP_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: onepassword-authentik-admin
+        key: password
+  - name: AUTHENTIK_BOOTSTRAP_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: onepassword-authentik-admin
+        key: token
+authentik:
+  postgresql:
+    host: authentik-database-tn-rw.authentik.svc.cluster.local
+    name: authentik
+    user: authentik
+  email:
+    host: email-smtp.us-east-1.amazonaws.com
+    port: 587
+    use_tls: true
+    from: authentik <authentik@desertbluffs.com>
+  error_reporting:
+    enabled: false
+server:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+worker:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
