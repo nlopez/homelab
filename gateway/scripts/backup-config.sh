@@ -6,7 +6,7 @@
 set -euo pipefail
 
 BUCKET="${BUCKET:-homelab-tofu-state-546422192262}"
-VAULT="evjh25ux2mnoufaut6qhvm2pdi"
+VAULT="eirjdyavzyx7tegpglsc2udq3a"
 ACCOUNT="my.1password.com"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 
@@ -35,5 +35,5 @@ backup() {
   echo "${site}: s3://${BUCKET}/${dest}"
 }
 
-backup lga1 bf3fyn3ojaajnozdbobkhtboli
-backup lga2 whuw4bp5c3lbzv2hmq4nja7qvq
+backup lga1 y5eerewvka7h5hn2cbydqyyyli
+backup lga2 yojhqgnskyosers54jtgsvjhmu

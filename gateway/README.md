@@ -62,11 +62,11 @@ Credentials come from the two 1Password items that `ansible/scripts/device_inven
 uses:
 
 ```sh
-V=op://evjh25ux2mnoufaut6qhvm2pdi
-export TF_VAR_lga1_api_key="$(op read $V/bf3fyn3ojaajnozdbobkhtboli/key --account my.1password.com)"
-export TF_VAR_lga1_api_secret="$(op read $V/bf3fyn3ojaajnozdbobkhtboli/credential --account my.1password.com)"
-export TF_VAR_lga2_api_key="$(op read $V/whuw4bp5c3lbzv2hmq4nja7qvq/key --account my.1password.com)"
-export TF_VAR_lga2_api_secret="$(op read $V/whuw4bp5c3lbzv2hmq4nja7qvq/credential --account my.1password.com)"
+V=op://eirjdyavzyx7tegpglsc2udq3a
+export TF_VAR_lga1_api_key="$(op read $V/y5eerewvka7h5hn2cbydqyyyli/key --account my.1password.com)"
+export TF_VAR_lga1_api_secret="$(op read $V/y5eerewvka7h5hn2cbydqyyyli/credential --account my.1password.com)"
+export TF_VAR_lga2_api_key="$(op read $V/yojhqgnskyosers54jtgsvjhmu/key --account my.1password.com)"
+export TF_VAR_lga2_api_secret="$(op read $V/yojhqgnskyosers54jtgsvjhmu/credential --account my.1password.com)"
 tofu init && tofu plan
 ```
 

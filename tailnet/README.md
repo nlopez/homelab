@@ -15,7 +15,7 @@ tailnet-wide DNS settings, using the
   the `dns` and `devices:routes` scopes. It has the `dns`, `policy_file`,
   `devices:core:write` and `devices:routes:write` scopes. Its ID and secret are
   stored in 1Password
-  as `Tailscale GitOps` in the `Automation` vault. The pull-request validation
+  as `Tailscale GitOps` in the `operator` vault. The pull-request validation
   workflow uses the same client.
 
 # Usage
@@ -45,7 +45,7 @@ role, assumed through GitHub's OIDC provider; both are defined in
 * `admin/` -- the OpenTofu project for admin-scoped objects: the auth key the
   gateway workflows join with (ephemeral, preauthorized, `tag:ci`) and the
   tailnet-wide settings. Applied by hand from a workstation with the superuser
-  token in `Tailscale Superuser API Acess Token` (Automation vault), never from
+  token in `Tailscale Superuser API Acess Token` (operator vault), never from
   CI, because the OAuth client the workflows use has no admin scope.
 
 ## Rotating the gateway CI key

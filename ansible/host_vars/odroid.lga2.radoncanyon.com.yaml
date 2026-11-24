@@ -12,5 +12,5 @@ tailscale_advertise_routes:
   - 192.168.239.0/24
   - fd72:ce7b:d4a9:9511::/64
 
-snmp_v3_item_id: htoizttdg3zdajhl26ugujufzu
+snmp_v3_item_id: glsbj3uksl5afis3g6xhmmoiqa
 datadog_gateway_address: 192.168.239.254

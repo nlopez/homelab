@@ -26,11 +26,11 @@ import dns.resolver
 import dns.reversename
 import requests
 
-VAULT = "evjh25ux2mnoufaut6qhvm2pdi"
+VAULT = "eirjdyavzyx7tegpglsc2udq3a"
 ACCOUNT = "my.1password.com"
 SITES = {
-    "lga1": {"gateway": "gw.lga1.radoncanyon.com", "api_item": "bf3fyn3ojaajnozdbobkhtboli"},
-    "lga2": {"gateway": "gw.lga2.radoncanyon.com", "api_item": "whuw4bp5c3lbzv2hmq4nja7qvq"},
+    "lga1": {"gateway": "gw.lga1.radoncanyon.com", "api_item": "y5eerewvka7h5hn2cbydqyyyli"},
+    "lga2": {"gateway": "gw.lga2.radoncanyon.com", "api_item": "yojhqgnskyosers54jtgsvjhmu"},
 }
 OUI_URL = "https://standards-oui.ieee.org/oui/oui.csv"
 OUI_CACHE = Path.home() / ".cache" / "ieee-oui.csv"
