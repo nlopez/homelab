@@ -9,8 +9,7 @@ tailnet-wide DNS settings, using the
 * [direnv](https://direnv.net)
 * `op` -- 1Password CLI
 * AWS CLI credentials with access to the S3 state bucket (`aws/state-bucket`).
-  The backend reads them from the AWS CLI, so there is nothing to set in
-  `.envrc`.
+  The backend reads them from the AWS CLI.
 * The Tailscale OAuth client the ACL apply workflow already used, expanded with
   the `dns` and `devices:routes` scopes. It has the `dns`, `policy_file`,
   `devices:core:write` and `devices:routes:write` scopes. Its ID and secret are
@@ -19,8 +18,9 @@ tailnet-wide DNS settings, using the
   workflow uses the same client.
 
 # Usage
-`direnv allow` once, in `tofu/`, to load the devenv shell and the OAuth client
-credentials from 1Password.
+`direnv allow` once at the repo root to load the devenv shell. Its `tofu` wrapper
+resolves the OAuth client credentials in `tofu/secrets.env` from 1Password for
+each run.
 
 ```sh
 cd tofu

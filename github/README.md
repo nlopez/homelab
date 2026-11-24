@@ -13,10 +13,12 @@ Argo's poller.
 * AWS credentials for the S3 state bucket (`aws/state-bucket`)
 
 # Usage
-`direnv allow` once, to load the devenv shell, the GitHub token from `gh` and
-the webhook secret from 1Password.
+`direnv allow` once at the repo root to load the devenv shell. Its `tofu` wrapper
+resolves the webhook secret in `secrets.env` from 1Password for each run. The
+GitHub token comes from `gh`:
 
 ```sh
+export GITHUB_TOKEN="$(gh auth token)"
 tofu init
 tofu plan
 tofu apply

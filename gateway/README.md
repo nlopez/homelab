@@ -62,24 +62,17 @@ has no resource for that setting either, so it is set in the GUI.
 
 ## Running it
 
-Credentials come from the two 1Password items that `ansible/scripts/device_inventory.py`
-uses:
+Credentials are 1Password references in `secrets.env`: the API keys from the two items
+that `ansible/scripts/device_inventory.py` uses, the WireGuard keys, and the dns-webhook
+user passwords. The root devenv's `tofu` wrapper resolves them for each run:
 
 ```sh
-V=op://eirjdyavzyx7tegpglsc2udq3a
-export TF_VAR_lga1_api_key="$(op read $V/y5eerewvka7h5hn2cbydqyyyli/key --account my.1password.com)"
-export TF_VAR_lga1_api_secret="$(op read $V/y5eerewvka7h5hn2cbydqyyyli/credential --account my.1password.com)"
-export TF_VAR_lga2_api_key="$(op read $V/yojhqgnskyosers54jtgsvjhmu/key --account my.1password.com)"
-export TF_VAR_lga2_api_secret="$(op read $V/yojhqgnskyosers54jtgsvjhmu/credential --account my.1password.com)"
-export TF_VAR_lga1_wg_private_key="$(op read $V/wireguard-gw.lga1.radoncanyon.com/password --account my.1password.com)"
-export TF_VAR_lga2_wg_private_key="$(op read $V/wireguard-gw.lga2.radoncanyon.com/password --account my.1password.com)"
-export TF_VAR_wg_psk="$(op read $V/wireguard-gw.lga1.radoncanyon.com/psk --account my.1password.com)"
 tofu init && tofu plan
 ```
 
 State is in the `homelab-tofu-state-546422192262` bucket under `gateway/terraform.tfstate`.
-No CI plans or applies this stack: an operator runs `tofu plan` and `tofu apply` with the
-exports above after a change merges.
+No CI plans or applies this stack: an operator runs `tofu plan` and `tofu apply`
+after a change merges.
 
 ## Adding an object
 

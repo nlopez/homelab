@@ -8,7 +8,8 @@
 * AWS credentials for the S3 state bucket (`aws/state-bucket`)
 
 # Usage
-`direnv allow` once, to load the devenv shell and the Cloudflare credentials from 1Password.
+`direnv allow` once at the repo root to load the devenv shell. Its `tofu` wrapper
+resolves the Cloudflare credentials in `secrets.env` from 1Password for each run.
 
 ```sh
 tofu init

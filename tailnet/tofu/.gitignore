@@ -1,7 +1,4 @@
 .env
-.devenv/
-.direnv/
-devenv.local.nix
 .terraform/
 *.tfstate
 *.tfstate.*

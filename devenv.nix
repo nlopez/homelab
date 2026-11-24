@@ -1,11 +1,26 @@
 { pkgs, ... }:
 
+let
+  # In a directory with a secrets.env, runs tofu under `op run` so the op://
+  # references resolve only inside tofu's process. Most references point at
+  # the operator vault, which the default read-only service account cannot
+  # read, hence app auth.
+  tofu = pkgs.writeShellScriptBin "tofu" ''
+    if [ -f secrets.env ]; then
+      export OP_APP_AUTH=1
+      exec op run --no-masking --account my.1password.com \
+        --env-file secrets.env -- ${pkgs.opentofu}/bin/tofu "$@"
+    fi
+    exec ${pkgs.opentofu}/bin/tofu "$@"
+  '';
+in
 {
   packages = [
     (pkgs.python3.withPackages (ps: [ ps.ansible ps.mitogen ]))
     pkgs.ansible-lint
     pkgs.go
     pkgs.pre-commit
+    tofu
   ];
 
   # Keep the worktree after `wt merge` so the agent's shell keeps a valid cwd.
