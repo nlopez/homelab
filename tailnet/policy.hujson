@@ -41,7 +41,10 @@
     ],
     "tag:timekeeper": [
       "autogroup:admin"
-    ]
+    ],
+    // The federated identity in tailnet/admin tags the runner devices
+    // itself, so nothing has to own this tag.
+    "tag:ci": []
   },
   "autoApprovers": {
     "exitNode": [
@@ -93,6 +96,21 @@
       ],
       "dst": [
         "*"
+      ],
+      "ip": [
+        "*"
+      ]
+    },
+    // The apply-on-main runners join the tailnet with tag:ci. The src:*
+    // grant above already gives them the full mesh, so until it no longer
+    // does, this grant only documents what CI is meant to reach.
+    {
+      "src": [
+        "tag:ci"
+      ],
+      "dst": [
+        "tag:lga1:443",
+        "tag:lga2:443"
       ],
       "ip": [
         "*"
@@ -188,6 +206,13 @@
         "tag:home:22",
         "tag:home:443",
         "192.168.222.1:22"
+      ]
+    },
+    {
+      "src": "tag:ci",
+      "accept": [
+        "tag:lga1:443",
+        "tag:lga2:443"
       ]
     }
   ]

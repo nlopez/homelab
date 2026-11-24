@@ -1,0 +1,77 @@
+name: Gateway
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: ['gateway/**', '.github/workflows/gateway.yaml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gateway
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: Apply
+    environment: production
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Get GitHub OIDC token
+        id: oidc
+        uses: actions/github-script@ed597411d8c9245e2c3cf9a0d2f39b8b1e0d0a5a # v8
+        with:
+          script: core.setOutput('token', await core.getIDToken())
+
+      - name: Exchange for a Tailscale client id
+        id: ts
+        env:
+          OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+        run: |-
+          resp=$(curl -fsS https://api.tailscale.com/api/v2/tailnet/-/identity-token \
+            -H "Authorization: Bearer $OIDC_TOKEN")
+          echo "client_id=$(jq -r .client_id <<<"$resp")" >> "$GITHUB_OUTPUT"
+          echo "audience=$(jq -r .audience <<<"$resp")" >> "$GITHUB_OUTPUT"
+
+      - name: Join the tailnet
+        uses: tailscale/github-action@6cae46e2d796f265265cfcf628b72a32b4d7cade # v4.4.0
+        with:
+          oauth-client-id: ${{ steps.ts.outputs.client_id }}
+          audience: ${{ steps.ts.outputs.audience }}
+          tags: tag:ci
+
+      - name: Resolve the gateways
+        run: |
+          echo "192.168.222.1 gw.lga1.radoncanyon.com" | sudo tee -a /etc/hosts
+          echo "192.168.239.254 gw.lga2.radoncanyon.com" | sudo tee -a /etc/hosts
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::546422192262:role/homelab-gateway-apply
+          aws-region: us-east-1
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: 1.13.2
+
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
+
+      - name: Apply
+        working-directory: gateway
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: |-
+          tofu init -input=false
+          op run --env-file secrets.env -- tofu apply -input=false -auto-approve
