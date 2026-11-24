@@ -1,14 +1,6 @@
 
 locals {
   lga2_unbound_forwards = {
-    "desertbluffs.com" = {
-      uuid        = "8f76533f-cd8a-4f8f-8d63-dee6b5d46c4d"
-      domain      = "desertbluffs.com"
-      server      = "10.43.64.53"
-      port        = 53
-      type        = "query"
-      description = "Cluster PowerDNS (dnsdist)"
-    }
     "239.168.192.in-addr.arpa" = {
       uuid        = "ff45439a-69d9-4322-9eb4-554c30ba2914"
       domain      = "239.168.192.in-addr.arpa"
