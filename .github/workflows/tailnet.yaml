@@ -94,7 +94,7 @@ jobs:
           {
             echo "### Tailnet plan ($OUTCOME)"
             echo
-            echo '```'
+            echo '```hcl'
             tail -c 60000 "$out"
             echo '```'
           } > comment.md
