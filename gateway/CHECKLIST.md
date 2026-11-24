@@ -12,8 +12,7 @@ Two targets:
 
 ## Phase 0 — Safety net
 
-- [x] Add `gateway/scripts/backup-config.sh` to download both `config.xml` files to S3.
-- [x] Add `.github/workflows/gateway-backup.yaml` on a daily schedule.
+- [x] Back up both `config.xml` files nightly to Google Drive (`os-gdrive-backup`, GUI-managed).
 - [x] Add `homelab-gateway-apply` IAM role in `aws/state-bucket/iam.tf`.
 
 ## Phase 1 — Independent primitives

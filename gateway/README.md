@@ -33,9 +33,9 @@ The provider has no resource for these, so they stay in the GUI and are covered 
 - HA sync (configured on both)
 - System general settings (hostname, timezone, SSH, webgui, DNS servers): upstream-blocked
 
-`gateway/scripts/backup-config.sh` downloads both `config.xml` files to
-`s3://homelab-tofu-state-546422192262/gateway-backups/` on a daily schedule
-(`.github/workflows/gateway-backup.yaml`).
+Each gateway uploads its own `config.xml` to Google Drive nightly at 01:00 through the
+`os-gdrive-backup` plugin (System > Configuration > Backups), keeping 60 copies. The provider
+has no resource for that setting either, so it is set in the GUI.
 
 ## Provider limitations
 
