@@ -1,6 +1,8 @@
-# Kea DHCPv4 on lga2, imported from the live gateway.
+# Kea DHCPv4 configuration on lga2, imported from the live gateway.
 # Generated from the Kea API; keep in sync with the appliance.
-# lga1 still runs ISC dhcpd, which the provider has no resources for.
+# Kea is stopped on both sites: dnsmasq serves DHCP and DNS, and its hosts and
+# ranges are managed in dnsmasq.tf. These objects are dormant configuration, so
+# a GUI edit shows up as a plan diff.
 
 locals {
   lga2_kea_subnets = {

@@ -9,7 +9,8 @@ provider.
 - Firewall aliases, categories, and filter rules
 - NAT port forwards
 - Dnsmasq DNS hosts, DHCP ranges, options, and tags
-- Kea DHCPv4 subnets and reservations (lga2; lga1 still runs ISC `dhcpd`)
+- Kea DHCPv4 subnets, reservations, and singleton settings (lga2, dormant: Kea is stopped and
+  dnsmasq serves DHCP)
 - VLANs and virtual IPs
 - Custom gateways and static routes
 - Unbound query forwards, host overrides, and general settings

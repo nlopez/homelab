@@ -26,10 +26,12 @@ Two targets:
 - [ ] Import auth users and groups. Deferred: passwords are write-only.
 - [ ] Import ACME accounts. Deferred: account keys are write-only.
 - [x] Import Kea DHCPv4 subnets and reservations on lga2 (1 subnet, 28 reservations).
-- [ ] Import DHCPv4 subnets and reservations on lga1. **Provider gap:** lga1 still runs ISC
-      `dhcpd`, which the provider has no resources for. Needs a Kea migration or `config.xml`
-      coverage.
-- [ ] Import the Kea singleton settings (`dhcpv4_settings`, `ctrl_agent`, `ddns_settings`).
+- [x] Import the Kea singletons on lga2 (`ctrl_agent`, `ddns_settings`, `dhcpv4_settings`,
+      `dhcpv6_settings`).
+
+Kea is stopped on both gateways; dnsmasq serves DHCP and DNS, and its objects are imported in
+`dnsmasq.tf`. The Kea objects above are dormant configuration, imported so that a GUI edit to
+them shows up as drift. lga1's ISC `dhcpd` sections are inactive for the same reason.
 - [x] Import Dnsmasq settings, hosts, ranges, options, tags.
 - [x] Import system tunables (4 on lga1, 3 on lga2 have non-default values).
 
