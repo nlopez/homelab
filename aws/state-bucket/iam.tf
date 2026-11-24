@@ -1,4 +1,4 @@
-# Lets the Tailnet and DNS workflows on main write their state without
+# Lets the Tailnet, DNS, and Datadog workflows on main write their state without
 # long-lived AWS keys. If the account already has a GitHub OIDC provider, import
 # it instead of creating a second one:
 #   tofu import aws_iam_openid_connect_provider.github \
@@ -141,4 +141,33 @@ data "aws_iam_policy_document" "tailnet_state_read" {
 resource "aws_iam_role_policy" "tailnet_state_read" {
   role   = aws_iam_role.tailnet_plan.id
   policy = data.aws_iam_policy_document.tailnet_state_read.json
+}
+
+resource "aws_iam_role" "datadog_apply" {
+  name               = "homelab-datadog-apply"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
+}
+
+data "aws_iam_policy_document" "datadog_state" {
+  statement {
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:ListBucket",
+    ]
+    resources = [aws_s3_bucket.state.arn]
+  }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+    ]
+    resources = ["${aws_s3_bucket.state.arn}/datadog/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "datadog_state" {
+  role   = aws_iam_role.datadog_apply.id
+  policy = data.aws_iam_policy_document.datadog_state.json
 }
