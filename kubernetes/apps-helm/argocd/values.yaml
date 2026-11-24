@@ -44,6 +44,13 @@ configs:
     resource.customizations.ignoreDifferences.snapshot.storage.k8s.io_VolumeSnapshotContent: |
       jsonPointers:
       - /spec/volumeSnapshotRef/uid
+    # The API server fills these list-item defaults in, and client-side diff
+    # cannot see CRD defaults inside lists (argoproj/argo-cd#28724).
+    resource.customizations.ignoreDifferences.postgresql.cnpg.io_Cluster: |
+      jqPathExpressions:
+      - .spec.managed.roles[]?.connectionLimit
+      - .spec.managed.roles[]?.inherit
+      - .spec.plugins[]?.enabled
     resource.customizations.health.argoproj.io_Application: |
       hs = {}
       hs.status = "Progressing"
