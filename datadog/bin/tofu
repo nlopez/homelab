@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-# Runs tofu with the homelab-datadog 1Password Environment loaded. The
-# secrets exist only in tofu's process, never in the shell. REAL_TOFU is set
-# by .envrc before this directory joins PATH.
-set -euo pipefail
-# Environments are outside the Automation-vault service account, so use app auth.
-export OP_APP_AUTH=1
-exec op run --no-masking --account my.1password.com --environment 4sirub7i26qlewsosiw4as3rbe -- "${REAL_TOFU:?run inside direnv}" "$@"
