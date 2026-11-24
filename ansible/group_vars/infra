@@ -1,10 +1,9 @@
 ---
 tailscale_accept_dns: false
-# Each site's odroid is the only advertiser for that site's networks, so
-# accepting routes cannot install a route for the LAN the box sits on. It has
-# to accept them to forward the gateway's 10.43.64.0/24 traffic into the
-# tailnet; the gateways accept no tailnet routes at all.
-tailscale_accept_routes: true
+# The sites reach each other over the gateways' WireGuard tunnel. Accepting
+# the other site's subnet routes here would send this box's replies to
+# cross-site clients through the tailnet instead of back through the tunnel.
+tailscale_accept_routes: false
 tailscale_ssh: true
 tailscale_nameservers:
   - "{{ datadog_gateway_address }}"
