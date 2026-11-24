@@ -229,3 +229,70 @@ resource "aws_iam_role_policy" "authentik_state" {
   role   = aws_iam_role.authentik_apply.id
   policy = data.aws_iam_policy_document.authentik_state.json
 }
+
+resource "aws_iam_role" "aws_apply" {
+  name               = "homelab-aws-apply"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
+}
+
+# State access for the four apply-on-push AWS stacks plus the SES and SMTP
+# IAM resources each one manages.
+data "aws_iam_policy_document" "aws_state" {
+  statement {
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:ListBucket",
+    ]
+    resources = [aws_s3_bucket.state.arn]
+  }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+    ]
+    resources = [
+      "${aws_s3_bucket.state.arn}/ses/*",
+      "${aws_s3_bucket.state.arn}/authentik-smtp/*",
+      "${aws_s3_bucket.state.arn}/forgejo-smtp/*",
+      "${aws_s3_bucket.state.arn}/seafile-smtp/*",
+    ]
+  }
+
+  statement {
+    actions = [
+      "ses:CreateEmailIdentity",
+      "ses:GetEmailIdentity",
+      "ses:DeleteEmailIdentity",
+      "ses:PutEmailIdentityMailFromAttributes",
+      "ses:GetEmailIdentityMailFromAttributes",
+      "ses:DeleteEmailIdentity",
+    ]
+    resources = ["arn:aws:ses:us-east-1:546422192262:identity/desertbluffs.com"]
+  }
+
+  statement {
+    actions = [
+      "iam:CreateUser",
+      "iam:GetUser",
+      "iam:DeleteUser",
+      "iam:PutUserPolicy",
+      "iam:GetUserPolicy",
+      "iam:DeleteUserPolicy",
+      "iam:CreateAccessKey",
+      "iam:DeleteAccessKey",
+      "iam:ListAccessKeys",
+    ]
+    resources = [
+      "arn:aws:iam::546422192262:user/authentik-smtp",
+      "arn:aws:iam::546422192262:user/forgejo-smtp",
+      "arn:aws:iam::546422192262:user/seafile-smtp",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "aws_state" {
+  role   = aws_iam_role.aws_apply.id
+  policy = data.aws_iam_policy_document.aws_state.json
+}
