@@ -1,4 +1,5 @@
 {
+  // Test change to exercise the pull-request ACL check. Not for merge.
   "groups": {
     "group:k8s-readers": [
       "nlopez@github"
