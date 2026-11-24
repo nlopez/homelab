@@ -40,8 +40,10 @@ spec:
     namespace: envoy-gateway-system
     group: gateway.networking.k8s.io
     kind: Gateway
+  # The apex is deliberately absent: the OPNsense webhook cannot be kept from
+  # publishing it privately, and the apex is meant to resolve publicly
+  # everywhere. www stays private.
   hostnames:
-  - desertbluffs.com
   - www.desertbluffs.com
   rules:
   - matches:
