@@ -24,9 +24,10 @@ fi
 # Hostnames from routes attached to the private gateway, private zone
 # only; wildcards stay out of the local data.
 kubectl get httproute,grpcroute,tcproute,udproute -A -o json |
-  jq -r --arg gw "$GATEWAY_NAME" --arg zone "$ZONE" '
+  jq -r --arg gw "$GATEWAY_NAME" --arg gw_ns "$GATEWAY_NAMESPACE" --arg zone "$ZONE" '
     .items[]
-    | select(.spec.parentRefs[]? | .name == $gw and .namespace == null)
+    | select(.spec.parentRefs[]? |
+      .name == $gw and (.namespace // $gw_ns) == $gw_ns)
     | [.spec.hostnames[]?]
     | map(select(. == $zone or endswith("." + $zone)))
     | unique[]
