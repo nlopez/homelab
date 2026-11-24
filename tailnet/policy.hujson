@@ -90,9 +90,25 @@
     }
   },
   "grants": [
+    // Full mesh for every tagged source and user device except tag:ci. The
+    // apply-on-main runners are the one tag that must not inherit reach to
+    // the whole tailnet, so the sources are listed instead of "*". Tags left
+    // declared but unused (container, k8s-readers, timekeeper) keep their
+    // mesh access in case a device picks one up later.
     {
       "src": [
-        "*"
+        "autogroup:member",
+        "tag:k8s-operator",
+        "tag:k8s",
+        "tag:work",
+        "tag:home",
+        "tag:lga1",
+        "tag:lga2",
+        "tag:admin",
+        "tag:container",
+        "tag:k8s-readers",
+        "tag:exit",
+        "tag:timekeeper"
       ],
       "dst": [
         "*"
@@ -101,19 +117,19 @@
         "*"
       ]
     },
-    // The apply-on-main runners join the tailnet with tag:ci. The src:*
-    // grant above already gives them the full mesh, so until it no longer
-    // does, this grant only documents what CI is meant to reach.
+    // CI reaches only the two OPNsense APIs, over the subnet routers. The
+    // authentik and datadog/dns stacks go over the public internet and need
+    // nothing from the tailnet.
     {
       "src": [
         "tag:ci"
       ],
       "dst": [
-        "tag:lga1",
-        "tag:lga2"
+        "192.168.222.1",
+        "192.168.239.254"
       ],
       "ip": [
-        "*"
+        "443"
       ]
     }
   ],
@@ -211,8 +227,8 @@
     {
       "src": "tag:ci",
       "accept": [
-        "tag:lga1:443",
-        "tag:lga2:443"
+        "192.168.222.1:443",
+        "192.168.239.254:443"
       ]
     }
   ]
