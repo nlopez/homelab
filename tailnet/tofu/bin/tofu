@@ -2,7 +2,18 @@
 # Runs tofu with the homelab-tailnet 1Password Environment loaded. The
 # secrets exist only in tofu's process, never in the shell.
 set -euo pipefail
-PATH="${PATH#"$(cd "$(dirname "$0")" && pwd):"}"
+
+# Drop this directory from PATH wherever it sits, so `tofu` below resolves to
+# the real binary even when something has been prepended ahead of it.
+dir=$(cd "$(dirname "$0")" && pwd -P)
+new=
+IFS=:
+for d in $PATH; do
+  [ "$(cd "$d" 2>/dev/null && pwd -P)" = "$dir" ] || new=${new:+$new:}$d
+done
+unset IFS
+PATH=$new
+
 # Environments are outside the Automation-vault service account, so use app auth.
 export OP_APP_AUTH=1
 exec op run --no-masking --account my.1password.com --environment 5535p5q4j6q6x26fwoqdtx665y -- tofu "$@"
