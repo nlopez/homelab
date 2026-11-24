@@ -1,0 +1,26 @@
+# AWS CLI and SDK profiles for this repo. The dev shell points
+# AWS_CONFIG_FILE here. Sign in with `aws sso login`.
+
+[sso-session homelab]
+sso_start_url = https://d-90678179f2.awsapps.com/start
+sso_region = us-east-1
+sso_registration_scopes = sso:account:access
+
+# Read-only, for agents and plans.
+[default]
+sso_session = homelab
+sso_account_id = 546422192262
+sso_role_name = ReadOnlyAccess
+region = us-east-1
+
+# Applies: AWS_PROFILE=admin tofu apply
+[profile admin]
+sso_session = homelab
+sso_account_id = 546422192262
+sso_role_name = AdministratorAccess
+region = us-east-1
+
+# Break-glass only.
+[profile root]
+login_session = arn:aws:iam::546422192262:root
+region = us-east-1

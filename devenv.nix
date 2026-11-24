@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
 let
   # In a directory with a secrets.env, runs tofu under `op run` so the op://
@@ -25,6 +25,8 @@ in
 
   # Keep the worktree after `wt merge` so the agent's shell keeps a valid cwd.
   env.WORKTRUNK_MERGE__REMOVE = "false";
+
+  env.AWS_CONFIG_FILE = "${config.devenv.root}/aws/config";
 
   # MITOGEN: fork+file-descriptor broker so each task skips a fresh Python
   # startup on the ARM nodes; the strategy plugin path is a store path, so it
