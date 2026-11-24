@@ -7,8 +7,8 @@
 resource "tailscale_federated_identity" "github_actions" {
   description = "homelab apply-on-main workflows"
   issuer      = "https://token.actions.githubusercontent.com"
-  subject     = "repo:nlopez/homelab:environment:production"
-  scopes      = ["devices:core"]
+  subject     = "repo:nlopez@20211302/homelab@1466265485:environment:production"
+  scopes      = ["auth_keys", "devices:core"]
   tags        = ["tag:ci"]
 }
 
