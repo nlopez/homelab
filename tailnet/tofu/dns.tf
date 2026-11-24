@@ -5,11 +5,11 @@
 # provider documents it as conflicting with tailscale_dns_split_nameservers,
 # which would otherwise fight it over the same entries on every apply.
 #
-# Cluster services resolve through cluster PowerDNS (dnsdist), and site
-# infrastructure resolves through the two gateways' Unbound resolvers.
+# Private names for both domains are Unbound host overrides on the two
+# gateways, so tailnet clients use the same resolvers as the sites' LANs.
 locals {
   split_dns = {
-    "desertbluffs.com" = ["100.95.107.254"]
+    "desertbluffs.com" = ["100.83.144.88", "100.86.37.97"]
     "radoncanyon.com"  = ["100.83.144.88", "100.86.37.97"]
   }
 }
