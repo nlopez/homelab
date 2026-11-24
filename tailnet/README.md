@@ -15,7 +15,8 @@ tailnet-wide DNS settings, using the
   `devices:core:write` and `devices:routes:write` scopes. Its ID and secret are
   stored in 1Password
   as `Tailscale GitOps` in the `ci` vault. Pull-request validation uses a
-  separate read-only client (`policy_file:read`), managed in `admin/oauth.tf`
+  separate read-only client (the `:read` form of the same scopes), managed in
+  `admin/oauth.tf`
   and stored as `Tailscale ACL test` in the `ci-pr` vault.
 
 # Usage
@@ -30,15 +31,18 @@ tofu plan
 tofu apply
 ```
 
-Pull requests validate the policy file with `tailscale/gitops-acl-action`. A
-push to `main` that touches `tailnet/` runs `tofu apply` in the `Tailnet`
+A pull request that touches `tailnet/` runs the policy file's tests with
+`tailscale/gitops-acl-action`, then `tofu plan` with read-only credentials, and
+posts the plan as a PR comment (updated on each push). The admin console's
+policy editor is locked (`acls_externally_managed_on` in `admin/settings.tf`).
+A push to `main` that touches `tailnet/` runs `tofu apply` in the `Tailnet`
 workflow. It resolves `tofu/secrets.env` with `op run`, using the
 `homelab-ci` service account token (`OP_SERVICE_ACCOUNT_TOKEN` in the
 `production` environment). The pull-request job reads the `ci-pr` vault with
 the `homelab-ci-pr` token (`OP_CI_PR_SERVICE_ACCOUNT_TOKEN`, a repository
-secret). AWS access comes from the `homelab-tailnet-apply`
-role, assumed through GitHub's OIDC provider; both are defined in
-`aws/state-bucket/iam.tf`.
+secret). AWS access comes from the `homelab-tailnet-apply` role on `main` and
+the read-only `homelab-tailnet-plan` role on pull requests, assumed through
+GitHub's OIDC provider; all are defined in `aws/state-bucket/iam.tf`.
 
 # Layout
 * `policy.hujson` -- the tailnet policy file. Edited by hand, in HuJSON, so

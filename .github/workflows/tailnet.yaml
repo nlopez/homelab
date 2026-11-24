@@ -6,7 +6,7 @@ on:
     paths: ['tailnet/**', '.github/workflows/tailnet.yaml']
   pull_request:
     branches: [ "main" ]
-    paths: ['tailnet/policy.hujson', '.github/workflows/tailnet.yaml']
+    paths: ['tailnet/**', '.github/workflows/tailnet.yaml']
 
 permissions:
   contents: read
@@ -18,9 +18,13 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate ACL
+    name: Validate and plan
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
 
     steps:
       - name: Checkout
@@ -41,6 +45,7 @@ jobs:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_CI_PR_SERVICE_ACCOUNT_TOKEN }}
           TS_OAUTH_ID: op://6foq5pqns6uslgstwbfoyyyftu/rsblijwagdjew33ufwj2f5vyte/username
           TS_OAUTH_SECRET: op://6foq5pqns6uslgstwbfoyyyftu/rsblijwagdjew33ufwj2f5vyte/credential
+          TS_TAILNET: op://6foq5pqns6uslgstwbfoyyyftu/rsblijwagdjew33ufwj2f5vyte/tailnet_id
 
       - name: Test ACL
         id: test-acl
@@ -48,9 +53,53 @@ jobs:
         with:
           oauth-client-id: ${{ steps.op.outputs.TS_OAUTH_ID }}
           oauth-secret: ${{ steps.op.outputs.TS_OAUTH_SECRET }}
-          tailnet: '-'
+          tailnet: ${{ steps.op.outputs.TS_TAILNET }}
           policy-file: tailnet/policy.hujson
           action: test
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::546422192262:role/homelab-tailnet-plan
+          aws-region: us-east-1
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: 1.13.2
+          tofu_wrapper: false
+
+      - name: Plan
+        id: plan
+        working-directory: tailnet/tofu
+        env:
+          TAILSCALE_OAUTH_CLIENT_ID: ${{ steps.op.outputs.TS_OAUTH_ID }}
+          TAILSCALE_OAUTH_CLIENT_SECRET: ${{ steps.op.outputs.TS_OAUTH_SECRET }}
+          TAILSCALE_TAILNET: ${{ steps.op.outputs.TS_TAILNET }}
+          TF_VAR_oauth_scopes: '["devices:core:read", "devices:routes:read", "policy_file:read", "dns:read"]'
+        run: |-
+          tofu init -input=false
+          # The state lock needs write access, which pull requests don't get.
+          tofu plan -input=false -lock=false -no-color -out=tfplan 2>&1 | tee plan.log
+          tofu show -no-color tfplan > plan.txt
+
+      - name: Comment plan
+        if: always() && steps.plan.outcome != 'skipped'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.plan.outcome }}
+        run: |-
+          cd tailnet/tofu
+          if [ "$OUTCOME" = success ]; then out=plan.txt; else out=plan.log; fi
+          {
+            echo "### Tailnet plan ($OUTCOME)"
+            echo
+            echo '```'
+            tail -c 60000 "$out"
+            echo '```'
+          } > comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file comment.md \
+            --edit-last --create-if-none
 
   apply:
     name: Apply

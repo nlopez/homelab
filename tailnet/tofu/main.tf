@@ -20,7 +20,12 @@ terraform {
 # Reads TAILSCALE_OAUTH_CLIENT_ID, TAILSCALE_OAUTH_CLIENT_SECRET and
 # TAILSCALE_TAILNET from the environment. The scopes are listed explicitly so
 # device writes (tags and subnet route approvals) are granted alongside the
-# policy file and DNS.
+# policy file and DNS. Pull-request plans pass the read-only equivalents.
+variable "oauth_scopes" {
+  type    = list(string)
+  default = ["devices:core:write", "devices:routes:write", "policy_file:write", "dns:write"]
+}
+
 provider "tailscale" {
-  scopes = ["devices:core:write", "devices:routes:write", "policy_file:write", "dns:write"]
+  scopes = var.oauth_scopes
 }
