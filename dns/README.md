@@ -17,8 +17,9 @@ tofu plan
 tofu apply
 ```
 
-A push to `main` that touches `dns/` runs `tofu apply` in the `DNS` workflow. To apply
-by hand, the commands above still work.
+A push to `main` that touches `dns/` runs `tofu apply` in the `DNS` workflow, which
+resolves the same `secrets.env` with the `homelab-ci` service account. The Cloudflare
+token lives in the `ci` vault so both can read it.
 
 # Layout
 * `main.tf` -- provider, backend, zones, and the record resource.

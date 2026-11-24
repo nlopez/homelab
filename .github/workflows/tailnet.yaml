@@ -34,13 +34,21 @@ jobs:
           restore-keys: |
             version-cache.json-
 
+      - name: Load the read-only Tailscale client
+        id: op
+        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_CI_PR_SERVICE_ACCOUNT_TOKEN }}
+          TS_OAUTH_ID: op://6foq5pqns6uslgstwbfoyyyftu/rsblijwagdjew33ufwj2f5vyte/username
+          TS_OAUTH_SECRET: op://6foq5pqns6uslgstwbfoyyyftu/rsblijwagdjew33ufwj2f5vyte/credential
+
       - name: Test ACL
         id: test-acl
         uses: tailscale/gitops-acl-action@5a4a17f5708e9bf96f4ee915a95e9f83c2eebe1a # v1
         with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tailnet: ${{ secrets.TS_TAILNET }}
+          oauth-client-id: ${{ steps.op.outputs.TS_OAUTH_ID }}
+          oauth-secret: ${{ steps.op.outputs.TS_OAUTH_SECRET }}
+          tailnet: '-'
           policy-file: tailnet/policy.hujson
           action: test
 
@@ -68,12 +76,13 @@ jobs:
         with:
           tofu_version: 1.13.2
 
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
+
       - name: Apply
         working-directory: tailnet/tofu
         env:
-          TAILSCALE_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_ID }}
-          TAILSCALE_OAUTH_CLIENT_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
-          TAILSCALE_TAILNET: ${{ secrets.TS_TAILNET }}
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
         run: |-
           tofu init -input=false
-          tofu apply -input=false -auto-approve
+          op run --env-file secrets.env -- tofu apply -input=false -auto-approve

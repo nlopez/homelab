@@ -24,8 +24,6 @@ tofu plan
 tofu apply
 ```
 
-A push to `main` that touches `github/` runs `tofu apply` in the `GitHub`
-workflow, which authenticates to GitHub with the `GITHUB_HOOKS_TOKEN` secret: a
-fine-grained token with `Webhooks: write` on this repository. The webhook secret
-comes from `ARGOCD_WEBHOOK_SECRET`, the same value argocd-server verifies
+No CI applies this stack: an operator runs `tofu plan` and `tofu apply` after a
+change merges. The webhook secret is the 1Password item argocd-server verifies
 against.

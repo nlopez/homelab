@@ -37,11 +37,13 @@ jobs:
         with:
           tofu_version: 1.13.2
 
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
+
       - name: Apply
         working-directory: dns
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
         run: |-
           tofu init -input=false
-          tofu apply -input=false -auto-approve
+          op run --env-file secrets.env -- tofu apply -input=false -auto-approve
