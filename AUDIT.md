@@ -69,8 +69,10 @@ Fix: add `terraform`, `ansible`, and `nix` to `enabledManagers`.
 
 ## Security notes
 
-- Local OpenTofu applies use AWS root credentials (`arn:aws:iam::546422192262:root`). CI uses the
-  OIDC roles in `aws/state-bucket/iam.tf`. Create a local admin role and switch the profile.
+- Local OpenTofu applies use the Identity Center `AdministratorAccess` permission set
+  (`AWS_PROFILE=admin`); the default profile is `ReadOnlyAccess`. Both live in
+  `aws/state-bucket/sso.tf`. Root is break-glass only. CI uses the OIDC roles in
+  `aws/state-bucket/iam.tf`.
 - The tailnet `grants` block allows `*` to `*` on all ports. May be intentional.
 - `nas2` rejects Tailscale SSH as root with `operation not permitted` despite matching the ACL.
   `nas1` works. Likely a stale `tailscaled` on `nas2`.
