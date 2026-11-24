@@ -264,6 +264,7 @@ data "aws_iam_policy_document" "aws_state" {
     actions = [
       "ses:CreateEmailIdentity",
       "ses:GetEmailIdentity",
+      "ses:ListTagsForResource",
       "ses:DeleteEmailIdentity",
       "ses:PutEmailIdentityMailFromAttributes",
       "ses:GetEmailIdentityMailFromAttributes",
