@@ -25,9 +25,11 @@ Two targets:
 - [ ] Import trust CA and certificates. Deferred: private keys are write-only.
 - [ ] Import auth users and groups. Deferred: passwords are write-only.
 - [ ] Import ACME accounts. Deferred: account keys are write-only.
-- [ ] Import DHCPv4 subnets and reservations. **Provider gap:** the provider's `dhcpv4_*`
-      resources target Kea, but both gateways run ISC `dhcpd`. Needs a Kea migration or
-      `config.xml` coverage.
+- [x] Import Kea DHCPv4 subnets and reservations on lga2 (1 subnet, 28 reservations).
+- [ ] Import DHCPv4 subnets and reservations on lga1. **Provider gap:** lga1 still runs ISC
+      `dhcpd`, which the provider has no resources for. Needs a Kea migration or `config.xml`
+      coverage.
+- [ ] Import the Kea singleton settings (`dhcpv4_settings`, `ctrl_agent`, `ddns_settings`).
 - [x] Import Dnsmasq settings, hosts, ranges, options, tags.
 - [x] Import system tunables (4 on lga1, 3 on lga2 have non-default values).
 

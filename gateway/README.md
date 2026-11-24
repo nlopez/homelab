@@ -9,7 +9,7 @@ provider.
 - Firewall aliases, categories, and filter rules
 - NAT port forwards
 - Dnsmasq DNS hosts, DHCP ranges, options, and tags
-- DHCPv4 subnets and reservations (not imported: the provider targets Kea, the gateways run ISC `dhcpd`)
+- Kea DHCPv4 subnets and reservations (lga2; lga1 still runs ISC `dhcpd`)
 - VLANs and virtual IPs
 - Custom gateways and static routes
 - Unbound query forwards, host overrides, and general settings
