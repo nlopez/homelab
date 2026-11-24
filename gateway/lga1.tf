@@ -258,7 +258,7 @@ import {
 
 import {
   provider = opnsense.lga1
-  for_each = local.lga1_local_hosts
+  for_each = { for k, v in local.lga1_local_hosts : k => v if can(v.uuid) }
   to       = opnsense_unbound_host_override.lga1_unbound_hosts[each.key]
   id       = each.value.uuid
 }

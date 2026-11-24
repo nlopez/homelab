@@ -1,8 +1,3 @@
 ---
 opnsense_dns_sync_zone: desertbluffs.com
-opnsense_dns_sync_apply_script: /usr/local/sbin/dns-sync-apply
-opnsense_dns_sync_include_file: /var/unbound/etc/dns-sync.conf
-opnsense_dns_sync_unbound_user: unbound
-opnsense_dns_sync_unbound_conf: /var/unbound/unbound.conf
-opnsense_dns_sync_control_cmd: /usr/local/sbin/unbound-control
-opnsense_dns_sync_max_records: 500
+opnsense_dns_sync_template_dir: /usr/local/opnsense/service/templates/OPNsense/Unbound/core

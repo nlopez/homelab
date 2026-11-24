@@ -1,42 +1,32 @@
 ---
-- name: Create the dns-sync account
-  ansible.builtin.group:
-    name: dns-sync
-    gid: 2001
+# The retired SSH-based DNS sync receiver and its split-horizon template
+# experiments, removed now that the external-dns OPNsense webhook writes the
+# private records as Unbound host overrides.
+- name: Remove the retired dns-sync receiver and templates
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /usr/local/sbin/dns-sync-apply
+    - /usr/local/etc/sudoers.d/dns-sync
+    - /var/unbound/etc/dns-sync.conf
+    - /var/unbound/etc/homelab.conf
+    - "{{ opnsense_dns_sync_template_dir }}/homelab.conf"
+    - /usr/local/etc/unbound.opnsense.d/homelab.conf
 
-- name: Configure the dns-sync account
+- name: Unregister the split-horizon template from +TARGETS
+  ansible.builtin.lineinfile:
+    path: "{{ opnsense_dns_sync_template_dir }}/+TARGETS"
+    line: homelab.conf:/var/unbound/etc/homelab.conf
+    state: absent
+  notify: render unbound templates
+
+- name: Remove the retired dns-sync account
   ansible.builtin.user:
     name: dns-sync
-    uid: 2001
-    group: dns-sync
-    groups: []
-    comment: Private DNS sync
-    shell: /bin/sh
-    home: /var/empty
-    create_home: false
+    state: absent
 
-- name: Install dns-sync-apply receiver
-  ansible.builtin.template:
-    src: dns-sync-apply.sh.j2
-    dest: "{{ opnsense_dns_sync_apply_script }}"
-    owner: root
-    group: wheel
-    mode: "0755"
-
-- name: Install sudoers drop-in
-  ansible.builtin.template:
-    src: dns-sync-sudoers.j2
-    dest: /usr/local/etc/sudoers.d/dns-sync
-    owner: root
-    group: wheel
-    mode: "0440"
-    validate: /usr/local/sbin/visudo -cf %s
-
-- name: Seed empty include file
-  ansible.builtin.copy:
-    content: "server:\n"
-    dest: "{{ opnsense_dns_sync_include_file }}"
-    owner: "{{ opnsense_dns_sync_unbound_user }}"
-    group: "{{ opnsense_dns_sync_unbound_user }}"
-    mode: "0640"
-    force: false
+- name: Remove the retired dns-sync group
+  ansible.builtin.group:
+    name: dns-sync
+    state: absent

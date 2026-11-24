@@ -1,0 +1,6 @@
+---
+# Re-render the Unbound templates after touching +TARGETS, then bounce
+# unbound; it has no config reload.
+- name: Render unbound templates
+  ansible.builtin.command: configctl unbound restart
+  changed_when: true
