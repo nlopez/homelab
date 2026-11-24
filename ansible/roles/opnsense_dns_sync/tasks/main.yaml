@@ -1,4 +1,20 @@
 ---
+- name: Create the dns-sync account
+  ansible.builtin.group:
+    name: dns-sync
+    gid: 2001
+
+- name: Configure the dns-sync account
+  ansible.builtin.user:
+    name: dns-sync
+    uid: 2001
+    group: dns-sync
+    groups: []
+    comment: Private DNS sync
+    shell: /bin/sh
+    home: /var/empty
+    create_home: false
+
 - name: Install dns-sync-apply receiver
   ansible.builtin.template:
     src: dns-sync-apply.sh.j2

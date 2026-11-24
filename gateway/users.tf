@@ -3,16 +3,7 @@
 # is non-empty, so an empty value leaves the existing one alone.
 
 locals {
-  dns_sync_user = {
-    uid               = 2001
-    full_name         = "Private DNS sync"
-    shell             = "/bin/sh"
-    group_memberships = []
-    privileges        = []
-  }
-
   lga1_users = {
-    dns-sync = local.dns_sync_user
     root = {
       uuid              = "c30a3fc2-6d75-4ad9-a164-04e1160ffa84"
       uid               = 0
@@ -37,7 +28,6 @@ locals {
     }
   }
   lga2_users = {
-    dns-sync = local.dns_sync_user
     root = {
       uuid              = "4a0425de-7790-4778-aa31-d4e8b19a818e"
       uid               = 0
@@ -76,7 +66,7 @@ resource "opnsense_auth_user" "lga1" {
 
 import {
   provider = opnsense.lga1
-  for_each = { for name, user in local.lga1_users : name => user if can(user.uuid) }
+  for_each = local.lga1_users
   to       = opnsense_auth_user.lga1[each.key]
   id       = each.value.uuid
 }
@@ -101,7 +91,7 @@ resource "opnsense_auth_user" "lga2" {
 
 import {
   provider = opnsense.lga2
-  for_each = { for name, user in local.lga2_users : name => user if can(user.uuid) }
+  for_each = local.lga2_users
   to       = opnsense_auth_user.lga2[each.key]
   id       = each.value.uuid
 }
