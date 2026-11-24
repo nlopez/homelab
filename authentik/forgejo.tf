@@ -20,8 +20,9 @@ resource "authentik_provider_oauth2" "forgejo" {
 
   # The source name in the forgejo chart values sets the callback path.
   allowed_redirect_uris = [{
-    matching_mode = "strict"
-    url           = "https://dazzi.desertbluffs.com/user/oauth2/authentik/callback"
+    matching_mode     = "strict"
+    redirect_uri_type = "authorization"
+    url               = "https://dazzi.desertbluffs.com/user/oauth2/authentik/callback"
   }]
 }
 
