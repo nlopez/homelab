@@ -79,8 +79,8 @@ tofu init && tofu plan
 ```
 
 State is in the `homelab-tofu-state-546422192262` bucket under `gateway/terraform.tfstate`.
-`.github/workflows/gateway.yaml` plans on pull requests and on a daily schedule, and applies on
-push to `main`.
+`.github/workflows/gateway.yaml` plans on pull requests and on a daily schedule. CI never
+applies: an operator runs `tofu apply` with the exports above after a change merges.
 
 ## Adding an object
 
