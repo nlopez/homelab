@@ -24,7 +24,7 @@ Read the root [AGENTS.md](../AGENTS.md) first. This covers what is specific to t
   `envoy-gateway-system` (`apps/httpbin/httproute.yaml` is the smallest example). Add a second route
   on the `internet` gateway only if the app should be reachable from the internet.
 - external-dns creates the DNS records from the routes. Don't add them in `dns/`.
-- Update [EXPOSURE.md](../EXPOSURE.md) whenever you add, remove, or move a route between gateways.
+- Update [EXPOSURE.md](../EXPOSURE.md) whenever you add, remove, or move a route between gateways. `check-hostnames` fails while its table and the routes disagree.
 
 ## Secrets and SSO
 

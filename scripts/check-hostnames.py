@@ -10,6 +10,10 @@ work in parallel from taking the same one:
 2. No codename still listed as unused in CODENAMES.md is used as a
    desertbluffs.com hostname anywhere in the repo. Taking a codename means
    deleting it from that list in the same change.
+3. EXPOSURE.md's table lists every routed hostname and nothing else, and its
+   Internet column matches the gateways each hostname is routed on: "No" means
+   no route on the internet gateway, "Yes" means one, and "Only" means one and
+   no route on the private gateway.
 """
 import pathlib
 import re
@@ -33,6 +37,49 @@ def hostnames(node):
     elif isinstance(node, list):
         for item in node:
             yield from hostnames(item)
+
+
+ROUTE_KINDS = {"HTTPRoute", "GRPCRoute", "TLSRoute", "TCPRoute", "UDPRoute"}
+GATEWAYS = {"private", "internet"}
+
+
+def route_gateways():
+    """Map each routed hostname to the set of gateways that route it."""
+    gateways = {}
+    for base in APP_DIRS:
+        for path in sorted(base.rglob("*.y*ml")):
+            try:
+                docs = list(yaml.safe_load_all(path.read_text()))
+            except yaml.YAMLError:
+                continue
+            for doc in docs:
+                if not isinstance(doc, dict) or doc.get("kind") not in ROUTE_KINDS:
+                    continue
+                spec = doc.get("spec") or {}
+                parents = {
+                    ref.get("name")
+                    for ref in spec.get("parentRefs") or []
+                    if ref.get("name") in GATEWAYS
+                }
+                for host in spec.get("hostnames") or []:
+                    gateways.setdefault(host, set()).update(parents)
+    return gateways
+
+
+def exposure_table():
+    """Map each hostname in EXPOSURE.md's table to its Internet column."""
+    rows = {}
+    for line in (ROOT / "EXPOSURE.md").read_text().splitlines():
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 4 or cells[0] in ("Service", "---") or not line.startswith("|"):
+            continue
+        internet = cells[3]
+        for token in re.findall(r"`([^`]+)`", cells[2]):
+            if ":" in token or re.fullmatch(r"[0-9.]+", token):
+                continue  # A port or an address, not a hostname.
+            host = token if "." in token else f"{token}.desertbluffs.com"
+            rows[host] = internet
+    return rows
 
 
 def route_owners():
@@ -81,6 +128,21 @@ def main():
                     f"{name}: {match.group(0)} uses a codename CODENAMES.md still lists as unused; "
                     "delete it from that list"
                 )
+
+    routed = {h: g for h, g in route_gateways().items() if not h.startswith("*.")}
+    listed = exposure_table()
+    for host in sorted(routed.keys() - listed.keys()):
+        errors.append(f"EXPOSURE.md: {host} is routed but not in the table; add a row")
+    for host in sorted(listed.keys() - routed.keys()):
+        errors.append(f"EXPOSURE.md: {host} is in the table but no route serves it")
+    for host in sorted(routed.keys() & listed.keys()):
+        internet, gws = listed[host], routed[host]
+        if internet == "No" and "internet" in gws:
+            errors.append(f"EXPOSURE.md: {host} says Internet: No, but the internet gateway routes it")
+        elif internet in ("Yes", "Only") and "internet" not in gws:
+            errors.append(f"EXPOSURE.md: {host} says Internet: {internet}, but only the private gateway routes it")
+        if internet == "Only" and "private" in gws:
+            errors.append(f"EXPOSURE.md: {host} says Internet: Only, but the private gateway routes it too")
 
     for error in errors:
         print(error, file=sys.stderr)

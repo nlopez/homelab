@@ -1,7 +1,8 @@
 # Internet exposure
 
 What each homelab service exposes, and where. Update this table when you add, remove, or move a
-route between the `internet` and `private` gateways.
+route between the `internet` and `private` gateways; the `check-hostnames` pre-commit hook fails
+while the table and the routes disagree.
 
 ## Services
 
@@ -13,6 +14,7 @@ route between the `internet` and `private` gateways.
 | Forgejo | `forgejo` | `dazzi`; SSH `dazzi.desertbluffs.com:22` | Yes | Git SSH runs only on the private gateway's TCP listener. |
 | Immich | `immich` | `nox` | Yes | |
 | Jellyfin | `jellyfin` | `wixen` | Yes | |
+| Karakeep | `karakeep` | `spheal` | Yes | |
 | Obsidian LiveSync | `obsidian-livesync` | `lifmunk` | Yes | |
 | PixivFE | `pixivfe` | `dupin` | Yes | Authentik protects every path on both gateways. |
 | Plex | `pms` | `vixy`; LoadBalancer `10.43.64.2:32400` | Yes | |
