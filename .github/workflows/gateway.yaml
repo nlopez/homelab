@@ -64,9 +64,9 @@ jobs:
           role-to-assume: arn:aws:iam::546422192262:role/homelab-gateway-plan
           aws-region: us-east-1
 
-      # The WireGuard keys are deliberately kept out of pull requests, so the
-      # plan excludes the resources that use them and WireGuard changes aren't
-      # planned before merge. The dns-webhook passwords are ignore_changes, so
+      # The WireGuard keys are deliberately kept out of pull requests: the plan
+      # user has no WireGuard page privilege, so the plan excludes every
+      # WireGuard resource and WireGuard changes aren't planned before merge. The dns-webhook passwords are ignore_changes, so
       # placeholders plan the same as the real values.
       - name: Plan
         uses: ./.github/actions/tofu-plan
@@ -80,6 +80,8 @@ jobs:
           working-directory: gateway
           title: Gateway
           plan-args: >-
+            -exclude=opnsense_wireguard_settings.lga1
+            -exclude=opnsense_wireguard_settings.lga2
             -exclude=opnsense_wireguard_server.lga1
             -exclude=opnsense_wireguard_server.lga2
             -exclude=opnsense_wireguard_peer.lga1_lga2
