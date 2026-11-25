@@ -58,6 +58,10 @@ jobs:
         with:
           working-directory: authentik
           title: Authentik
+          # The read-only token can't see OAuth2 client secrets, so a refresh
+          # would show every provider's secret changing. The plan compares
+          # against state instead; applies refresh.
+          plan-args: -refresh=false
 
   apply:
     name: Apply
