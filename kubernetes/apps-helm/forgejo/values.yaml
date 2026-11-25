@@ -82,8 +82,8 @@ gitea:
     oauth2_client:
       # Copies the authentik picture claim into the avatar on each sign-in.
       UPDATE_AVATAR: true
-      # The authentik groups claim maps the admins group to site admin.
-      ADMIN_GROUP: admins
+      # The authentik groups claim maps the admin group to site admin.
+      ADMIN_GROUP: admin
     service:
       DISABLE_REGISTRATION: true
       REQUIRE_SIGNIN_VIEW: true

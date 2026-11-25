@@ -1,11 +1,11 @@
 # By default authentik lets any active user authorize into any application.
 # Two groups flip that default:
 #   users  - can sign in to every app, nothing more
-#   admins - everything users can, plus admin carry-through where the app
-#            supports it (Forgejo maps the admins group to site admin via
+#   admin  - everything users can, plus admin carry-through where the app
+#            supports it (Forgejo maps the admin group to site admin via
 #            ADMIN_GROUP; Immich has no group claim support, so its admin is
 #            set in its own UI).
-# akadmin is an admins member but not a users member, so a future users-only
+# akadmin is an admin member but not a users member, so a future users-only
 # addition (e.g. a household member) never picks up admin rights by accident.
 # Argo CD keeps its own argocd-admins group for the rbac role mapping.
 
@@ -20,10 +20,9 @@ resource "authentik_group" "users" {
   ]
 }
 
-resource "authentik_group" "admins" {
-  name = "admins"
+resource "authentik_group" "admin" {
+  name = "admin"
   users = [
-    authentik_user.nlopez.id,
     data.authentik_user.akadmin.id,
   ]
 }
@@ -49,10 +48,10 @@ resource "authentik_policy_binding" "app_access_users" {
   order  = 0
 }
 
-resource "authentik_policy_binding" "app_access_admins" {
+resource "authentik_policy_binding" "app_access_admin" {
   for_each = local.all_applications
 
   target = each.value.uuid
-  group  = authentik_group.admins.id
+  group  = authentik_group.admin.id
   order  = 0
 }
