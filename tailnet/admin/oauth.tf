@@ -17,7 +17,7 @@ output "ci_pr_oauth_client_key" {
 }
 
 # Read-only client for the pull-request plan of this project. Its ID and key
-# live in the 1Password vault ci-pr, item "tailnet-admin-read-only".
+# live in the 1Password vault ci-pr, item "tailnet-admin-api-key".
 resource "tailscale_oauth_client" "ci_pr_admin" {
   description = "homelab-ci-pr-tailnet-admin-plan"
   scopes      = ["all:read"]

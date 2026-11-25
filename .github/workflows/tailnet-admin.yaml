@@ -33,11 +33,13 @@ jobs:
       # tailscale_oauth_client.ci_pr_admin, scoped to all:read.
       - name: Load read-only credentials
         uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
+        with:
+          export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_CI_PR_SERVICE_ACCOUNT_TOKEN }}
-          TAILSCALE_OAUTH_CLIENT_ID: op://6foq5pqns6uslgstwbfoyyyftu/tailnet-admin-read-only/username
-          TAILSCALE_OAUTH_CLIENT_SECRET: op://6foq5pqns6uslgstwbfoyyyftu/tailnet-admin-read-only/credential
-          TAILSCALE_TAILNET: op://6foq5pqns6uslgstwbfoyyyftu/tailnet-admin-read-only/tailnet_id
+          TAILSCALE_OAUTH_CLIENT_ID: op://6foq5pqns6uslgstwbfoyyyftu/tailnet-admin-api-key/username
+          TAILSCALE_OAUTH_CLIENT_SECRET: op://6foq5pqns6uslgstwbfoyyyftu/tailnet-admin-api-key/credential
+          TAILSCALE_TAILNET: op://6foq5pqns6uslgstwbfoyyyftu/tailnet-admin-api-key/tailnet_id
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0

@@ -50,6 +50,8 @@ jobs:
       # compares real values. Rotate them together with the production items.
       - name: Load credentials
         uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
+        with:
+          export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_CI_PR_SERVICE_ACCOUNT_TOKEN }}
           TF_VAR_lga1_api_key: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga1-api-key
