@@ -88,7 +88,7 @@ spec:
           periodSeconds: 15
           failureThreshold: 3
       - name: chrome
-        image: ghcr.io/karakeep-app/karakeep-chrome:0.35.0
+        image: ghcr.io/karakeep-app/karakeep-chrome:release
         resources:
           requests:
             cpu: 50m
