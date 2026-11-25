@@ -38,8 +38,8 @@ vulnerability reporting, and the Actions secrets (`OP_CI_PR_SERVICE_ACCOUNT_TOKE
 on the repository, `OP_SERVICE_ACCOUNT_TOKEN` on `production`).
 
 # Protecting main
-The `main` ruleset requires a pull request whose `ci-ok` check passed, a linear
-history, and signed commits, with no bypass for admins. It exists only when
+The `main` ruleset requires a pull request that is up to date with `main` and whose
+`ci-ok` check passed, a linear history, and signed commits, with no bypass for admins. It exists only when
 `public = true` or `rulesets = true`. Set `rulesets = true` to keep the
 repository private on a plan that offers rulesets there. Until one of them is
 set, nothing enforces the pull request flow in `AGENTS.md`.

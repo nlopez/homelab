@@ -23,7 +23,7 @@ Several agents and people work in this repo at the same time. Every change lands
 3. Wait for the checks: `gh pr checks --watch`. The `ci-ok` check (`.github/workflows/ci-gate.yaml`) runs on every PR, waits for all the others, and fails if any of them failed. If you re-run a failed check, re-run `ci-ok` too.
 4. Read every plan comment on the PR (`gh pr view --comments`). Each stack posts its own comment and updates it on every push.
 5. Compare each plan with what the description says it should show.
-   - It matches and `ci-ok` passed: merge with `gh pr merge --squash --delete-branch`.
+   - It matches and `ci-ok` passed: merge with `gh pr merge --squash --delete-branch`. To merge as soon as `ci-ok` passes, add `--auto` right after opening the PR instead of waiting.
    - It shows anything you did not intend (an extra replace, a destroy, drift from someone else's change): do not merge. Fix the change, or describe the unexpected diff in a PR comment and leave it for a human.
    - A plan that destroys or replaces a stateful resource (a DNS zone, an IAM user, a WireGuard server, an authentik flow) needs a human's approval in the PR, even when intended.
 6. After the merge, the stack's workflow applies on `main`. Confirm it passed: `gh run list --branch main --limit 5`. If the apply fails, open a follow-up PR; do not retry by hand.
@@ -35,7 +35,7 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 
 ## When something goes wrong
 
-- `main` moved and touches the same stack: rebase (`git fetch origin && git rebase origin/main`), push with `git push --force-with-lease`, and wait for a fresh plan. A plan made before someone else's merge to the same stack is stale.
+- `main` moved: `main` only accepts a PR that contains its latest commit, so rebase (`git fetch origin && git rebase origin/main`), push with `git push --force-with-lease`, and wait for a fresh `ci-ok`. If the move touched the same stack, re-read the new plan: a plan made before someone else's merge to the same stack is stale.
 - Rebase conflict: resolve it in your worktree, re-run the hooks, and continue. If another agent's change is involved, keep both intents.
 - A hook fails: fix the cause and commit again. Do not bypass it.
 - A plan job fails before it plans (credentials, network): say so in the PR and leave it for a human. Do not merge without a plan.
