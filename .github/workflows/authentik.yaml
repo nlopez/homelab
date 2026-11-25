@@ -45,6 +45,7 @@ jobs:
           TF_VAR_pixivfe_client_secret: op://6foq5pqns6uslgstwbfoyyyftu/czockr5sqqjzdgzlmy7nwnip6y/client-secret
           TF_VAR_shaarli_client_secret: op://6foq5pqns6uslgstwbfoyyyftu/7sjfe5z7j5fk33at5t3eymvbpm/client-secret
           TF_VAR_karakeep_client_secret: op://6foq5pqns6uslgstwbfoyyyftu/ih3qcxa6ihzyypajyx7llhyb4u/client-secret
+          TF_VAR_seafile_client_secret: op://6foq5pqns6uslgstwbfoyyyftu/nmqdkmk7mmxzyocfobmvoedwfm/client-secret
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
