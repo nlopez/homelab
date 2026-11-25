@@ -6,6 +6,8 @@ global:
     tags.datadoghq.com/version: v1
 controllers:
   main:
+    annotations:
+      reloader.stakater.com/auto: "true"
     containers:
       main:
         image:

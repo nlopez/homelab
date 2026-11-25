@@ -4,6 +4,8 @@ image:
 strategy:
   type: Recreate
 deployment:
+  annotations:
+    reloader.stakater.com/auto: "true"
   labels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: forgejo

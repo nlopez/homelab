@@ -39,6 +39,8 @@ extraArgs:
 - --exclude-target-net=10.0.0.0/8
 - --exclude-target-net=fd00::/8
 logLevel: debug
+deploymentAnnotations:
+  reloader.stakater.com/auto: "true"
 podLabels:
   tags.datadoghq.com/env: homelab
   tags.datadoghq.com/service: external-dns
