@@ -46,10 +46,12 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 | `ansible/` | `ansible-lint`, check-mode drift run | nothing; apply is a manual `Ansible` dispatch |
 | `authentik/` | `tofu plan` comment | `tofu apply` |
 | `aws/` (SES and SMTP stacks) | `tofu plan` comment per stack | `tofu apply` |
+| `aws/state-bucket` | `tofu plan` comment | `tofu apply` |
 | `datadog/` | `tofu plan` comment | `tofu apply` |
 | `dns/` | `tofu plan` comment | `tofu apply` |
 | `gateway/` | `tofu plan` comment | `tofu apply` |
 | `kubernetes/` | yamlfmt, schema, kubeconform hooks; rendered manifest diff comment | Argo CD syncs |
 | `tailnet/` | ACL tests, `tofu plan` comment | `tofu apply` |
+| `tailnet/admin` | `tofu plan` comment | `tofu apply` |
 
-`aws/state-bucket`, `tailnet/admin`, `github`, `truenas`, and `arr` have no CI. A human applies them; open the PR anyway and say in it that it needs a local apply.
+`github`, `truenas`, and `arr` have no CI. A human applies them; open the PR anyway and say in it that it needs a local apply.
