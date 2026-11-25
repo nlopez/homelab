@@ -100,15 +100,6 @@ resource "github_repository_ruleset" "main" {
     }
   }
 
-  # The GitHub Actions app, for the media-toolbox workflow's nightly version
-  # bump, which pushes an unsigned commit straight to main. Any workflow with
-  # contents: write can use this, so drop it once that bump opens a PR instead.
-  bypass_actors {
-    actor_id    = 15368
-    actor_type  = "Integration"
-    bypass_mode = "always"
-  }
-
   rules {
     deletion                = true
     non_fast_forward        = true

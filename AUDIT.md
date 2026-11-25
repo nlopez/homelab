@@ -60,10 +60,11 @@ Enabled managers: `custom.regex`, `helm-values`, `github-actions`, `pre-commit`,
 Not covered: the collections in `ansible/requirements.yaml`, and `devenv.lock`.
 
 Renovate is not running on this repository yet (as of 2026-11-25), so none of these managers open
-updates today, and the media-toolbox version bump still pushes to `main` itself.
+updates today. The media-toolbox schedule builds new yt-dlp and bgutil releases but no longer
+commits the new pins to `main`, so `media-toolbox/Makefile` falls behind the published image.
 
-Fix: run Renovate, then add `ansible-galaxy` and `nix` to `enabledManagers` and move the
-media-toolbox bump to a Renovate regex manager so its GitHub Actions bypass of the `main` ruleset can go.
+Fix: run Renovate, then add `ansible-galaxy` and `nix` to `enabledManagers` and add a regex manager
+for the two versions in `media-toolbox/Makefile`.
 
 ### 5. Repo hygiene
 
