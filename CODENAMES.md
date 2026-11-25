@@ -2,7 +2,9 @@
 
 Every app hostname, public or private, uses a single-word Palworld pal name as a codename (see [EXPOSURE.md](EXPOSURE.md)).
 These names are not used by any hostname in this repo yet, shortest first. When you take one,
-delete it from this list.
+delete it from this list in the same change: the `check-hostnames` pre-commit hook
+(`scripts/check-hostnames.py`) fails while a listed name is in use, or while two apps route the
+same hostname.
 
 - kikit
 - lullu

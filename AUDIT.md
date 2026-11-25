@@ -63,8 +63,6 @@ media-toolbox bump to a Renovate regex manager so its GitHub Actions bypass of t
 
 ### 5. Repo hygiene
 
-- `kubernetes/apps-helm/cdi/` holds one `values.yaml`. It is not in `bootstrap/apps-helm.yaml` and
-  not in Argo CD. Delete it.
 - `ansible/group_vars/os_Archlinux` and `os_FreeBSD` have no matching hosts, because the gateways
   are not in the inventory.
 - There is no machine list beyond the four-host Ansible inventory and a CSV on the desktop. The
