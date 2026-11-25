@@ -37,7 +37,6 @@
     - armbian_ramlog
     - role: tailscale
       tags: tailscale
-    - pihole
     - role: unattended_upgrades
       tags: unattended_upgrades
     - role: netflow9_fixup

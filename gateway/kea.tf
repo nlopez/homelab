@@ -32,7 +32,7 @@ locals {
       ip_address  = "192.168.239.2"
       hw_address  = "00:1e:06:33:da:2c"
       hostname    = "odroid"
-      description = "pi-hole"
+      description = "odroid.lga2"
     }
     "192.168.239.47" = {
       uuid        = "3ebe0f69-3188-43ab-bb37-09e197699642"
