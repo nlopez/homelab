@@ -1,15 +1,15 @@
-resource "truenas_certificate" "ui_nas1" {
-  provider             = truenas.nas1
-  add_to_trusted_store = false
-  create_type          = "CERTIFICATE_CREATE_ACME"
-  key_type             = "EC"
-  name                 = "nas1-acme"
+# TrueNAS issues and renews the ACME UI certificates itself. Tofu tracking
+# them only copied their private keys into state, so they are left unmanaged.
+removed {
+  from = truenas_certificate.ui_nas1
+  lifecycle {
+    destroy = false
+  }
 }
 
-resource "truenas_certificate" "ui_nas2" {
-  provider             = truenas.nas2
-  add_to_trusted_store = false
-  create_type          = "CERTIFICATE_CREATE_ACME"
-  key_type             = "EC"
-  name                 = "nas2-acme"
+removed {
+  from = truenas_certificate.ui_nas2
+  lifecycle {
+    destroy = false
+  }
 }
