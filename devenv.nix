@@ -35,7 +35,8 @@ in
     aws-sso-creds
   ];
 
-  # Keep the worktree after `wt merge` so the agent's shell keeps a valid cwd.
+  # Changes land through pull requests (AGENTS.md), not `wt merge`. If someone
+  # runs it anyway, keep the worktree so the shell keeps a valid cwd.
   env.WORKTRUNK_MERGE__REMOVE = "false";
 
   env.AWS_CONFIG_FILE = "${config.devenv.root}/aws/config";

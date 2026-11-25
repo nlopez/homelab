@@ -55,7 +55,11 @@ Enabled managers: `custom.regex`, `helm-values`, `github-actions`, `pre-commit`,
 
 Not covered: the collections in `ansible/requirements.yaml`, and `devenv.lock`.
 
-Fix: add `ansible-galaxy` and `nix` to `enabledManagers`.
+Renovate is not running on this repository yet (as of 2026-11-25), so none of these managers open
+updates today, and the media-toolbox version bump still pushes to `main` itself.
+
+Fix: run Renovate, then add `ansible-galaxy` and `nix` to `enabledManagers` and move the
+media-toolbox bump to a Renovate regex manager so its GitHub Actions bypass of the `main` ruleset can go.
 
 ### 5. Repo hygiene
 

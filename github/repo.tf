@@ -126,6 +126,10 @@ resource "github_repository_ruleset" "main" {
         context        = "ci-ok"
         integration_id = 15368 # GitHub Actions
       }
+
+      # A PR must contain the latest main before it merges, so its plans
+      # reflect every change merged before it.
+      strict_required_status_checks_policy = true
     }
   }
 }
