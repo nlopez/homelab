@@ -40,7 +40,7 @@ GitHub API (or the GitHub tools your agent has):
 1. Commit in your worktree. The pre-commit hooks run on each commit.
 2. Push the branch and open a PR: `git push -u origin HEAD`, then `gh pr create --fill`. Say in the description what the plan should show, for example "adds one A record, changes nothing else".
 3. Wait for the checks: `gh pr checks --watch`. The `ci-ok` check (`.github/workflows/ci-gate.yaml`) runs on every PR, waits for all the others, and fails if any of them failed. If you re-run a failed check, re-run `ci-ok` too.
-4. Read every plan comment on the PR (`gh pr view --comments`). Each stack posts its own comment and updates it on every push.
+4. Read the `ci-ok` summary comment on the PR (`gh pr view --comments`). It has one row per stack: its plan result on the current commit, and whether it destroys anything, plus failing checks and the Kubernetes manifest diff result. Open the stack's own plan comment, which it updates on every push, for any row that isn't `No changes`.
 5. Compare each plan with what the description says it should show.
    - It matches and `ci-ok` passed: merge with `gh pr merge --squash --delete-branch`. To merge as soon as `ci-ok` passes, add `--auto` right after opening the PR instead of waiting.
    - It shows anything you did not intend (an extra replace, a destroy, drift from someone else's change): do not merge. Fix the change, or describe the unexpected diff in a PR comment and leave it for a human.

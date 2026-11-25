@@ -74,6 +74,7 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
         OUTCOME: ${{ steps.plan.outcome }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         TITLE: ${{ inputs.title }}
         PR: ${{ github.event.pull_request.number }}
         REPO: ${{ github.repository }}
@@ -83,6 +84,8 @@ runs:
         summary="$(grep -E '^(Plan:|No changes\.)' plan.log | tail -n 1 || true)"
         {
           echo "$marker"
+          # ci-ok's summary matches this to tell this push's plans from older ones.
+          echo "<!-- head: ${HEAD_SHA} -->"
           echo "### ${TITLE} plan (${OUTCOME})"
           echo
           echo "${summary:-See the run log.} Commit \`${GITHUB_SHA:0:8}\`, [run](${GITHUB_SERVER_URL}/${REPO}/actions/runs/${GITHUB_RUN_ID})."
