@@ -1,0 +1,89 @@
+name: Tailnet admin
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: ['tailnet/admin/**', '.github/workflows/tailnet-admin.yaml']
+  pull_request:
+    branches: [ "main" ]
+    paths: ['tailnet/admin/**', '.github/workflows/tailnet-admin.yaml', '.github/actions/tofu-plan/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('tailnet-admin-pr-{0}', github.event.pull_request.number) || 'tailnet-admin' }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Plan
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # tailscale_oauth_client.ci_pr_admin, scoped to all:read.
+      - name: Load read-only credentials
+        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_CI_PR_SERVICE_ACCOUNT_TOKEN }}
+          TAILSCALE_OAUTH_CLIENT_ID: op://6foq5pqns6uslgstwbfoyyyftu/tailnet-admin-api-key/username
+          TAILSCALE_OAUTH_CLIENT_SECRET: op://6foq5pqns6uslgstwbfoyyyftu/tailnet-admin-api-key/credential
+          TAILSCALE_TAILNET: op://6foq5pqns6uslgstwbfoyyyftu/tailnet-admin-api-key/tailnet_id
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::546422192262:role/homelab-tailnet-admin-plan
+          aws-region: us-east-1
+
+      - name: Plan
+        uses: ./.github/actions/tofu-plan
+        with:
+          working-directory: tailnet/admin
+          title: Tailnet admin
+
+  apply:
+    name: Apply
+    if: github.event_name != 'pull_request'
+    environment: production
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::546422192262:role/homelab-tailnet-admin-apply
+          aws-region: us-east-1
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: 1.13.2
+
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
+
+      - name: Apply
+        working-directory: tailnet/admin
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: |-
+          tofu init -input=false
+          op run --env-file secrets.env -- tofu apply -input=false -auto-approve
