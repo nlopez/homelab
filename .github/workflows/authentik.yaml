@@ -26,15 +26,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # The client id and audience come from tailscale_federated_identity
-      # .github_actions in tailnet/admin; the action requests a GitHub OIDC
-      # token for that audience itself.
-      - name: Join the tailnet
-        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
-        with:
-          oauth-client-id: TX3ajrU7JY71CNTRL-kQaJB6AVyQ11CNTRL
-          audience: api.tailscale.com/TX3ajrU7JY71CNTRL-kQaJB6AVyQ11CNTRL
-          tags: tag:ci
+      # The authentik API is reached through its public route, so the runner
+      # stays off the tailnet. Joining it would send desertbluffs.com lookups
+      # to the gateway resolvers through split DNS, which tag:ci cannot reach.
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
