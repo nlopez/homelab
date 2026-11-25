@@ -26,7 +26,7 @@ Several agents and people work in this repo at the same time. Every change lands
 5. Compare each plan with what the description says it should show.
    - It matches and `ci-ok` passed: merge with `gh pr merge --squash --delete-branch`. To merge as soon as `ci-ok` passes, add `--auto` right after opening the PR instead of waiting.
    - It shows anything you did not intend (an extra replace, a destroy, drift from someone else's change): do not merge. Fix the change, or describe the unexpected diff in a PR comment and leave it for a human.
-   - A plan that destroys or replaces a stateful resource (a DNS zone, an IAM user, a WireGuard server, an authentik flow) needs a human's approval in the PR, even when intended.
+   - A plan that destroys or replaces anything needs a human's approval, even when intended. The plan comment lists what goes, and `ci-ok` fails until a code owner adds the `destroy-approved` label by hand. Never add that label yourself. Say in the PR what is destroyed and why, and leave it for a human. A later push whose plan still destroys something removes the label, so the approval always covers the current plan.
 6. After the merge, the stack's workflow applies on `main`. Confirm it passed: `gh run list --branch main --limit 5`. If the apply fails, open a follow-up PR; do not retry by hand.
 7. Remove the worktree once `gh pr view --json state -q .state` prints `MERGED`: `wt remove -D`. The squash merge gives `main` a new commit ID, so the local branch looks unmerged and needs `-D`.
 

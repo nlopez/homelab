@@ -4,9 +4,18 @@ name: CI gate
 # be a required check. This workflow runs on every pull request and is the one
 # required check: `ci-ok` waits for every other check run on the PR's head
 # commit and fails if any of them failed.
+#
+# It also enforces the AGENTS.md rule that a destroy or replace needs a human:
+# when a tofu plan on this commit reports one (a plan-destroys annotation from
+# .github/actions/tofu-plan), ci-ok fails until a code owner adds the
+# destroy-approved label by hand. A label added through a GitHub App (an agent)
+# doesn't count. An agent using the owner's own token could still add it, so
+# this guards against mistakes, not against an agent set on bypassing it.
 on:
   pull_request:
     branches: [ "main" ]
+    # labeled and unlabeled re-run ci-ok when destroy-approved changes.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   contents: read
@@ -22,6 +31,9 @@ jobs:
     timeout-minutes: 90
     permissions:
       checks: read
+      contents: read
+      issues: read
+      pull-requests: read
 
     steps:
       - name: Wait for the other checks on this commit
@@ -29,6 +41,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           SHA: ${{ github.event.pull_request.head.sha }}
+          PR: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |-
           set -euo pipefail
           # Give the other workflows of this push time to register their runs.
@@ -57,3 +71,37 @@ jobs:
           done
           echo "All other checks passed on ${SHA:0:8}:"
           jq -r '.[] | "\(.name): \(.conclusion)"' <<<"${runs}"
+
+          destroys="$(gh api --paginate "repos/${REPO}/commits/${SHA}/check-runs?per_page=100" \
+            --jq '.check_runs[] | select(.name != "ci-ok" and .output.annotations_count > 0) | .id' |
+            while read -r id; do
+              gh api --paginate "repos/${REPO}/check-runs/${id}/annotations?per_page=100" \
+                --jq '.[] | select(.title == "plan-destroys") | .message'
+            done)"
+          if [ -z "${destroys}" ]; then
+            echo "No plan destroys or replaces anything."
+            exit 0
+          fi
+          echo "Plans that destroy or replace resources:"
+          echo "${destroys}"
+
+          owners="$(gh api "repos/${REPO}/contents/.github/CODEOWNERS?ref=${BASE_REF}" --jq .content | base64 -d |
+            awk '$1 == "*" { for (i = 2; i <= NF; i++) { sub(/^@/, "", $i); print $i } }')"
+          if ! gh api "repos/${REPO}/issues/${PR}/labels" --jq '.[].name' | grep -qx destroy-approved; then
+            echo "::error::A plan destroys or replaces resources. A code owner (${owners//$'\n'/, }) must review the plan comments and add the destroy-approved label."
+            exit 1
+          fi
+          approval="$(gh api --paginate "repos/${REPO}/issues/${PR}/events?per_page=100" \
+            --jq '.[] | select(.event == "labeled" and .label.name == "destroy-approved")
+              | {actor: .actor.login, app: (.performed_via_github_app.slug // "")}' | jq -s 'last')"
+          actor="$(jq -r .actor <<<"${approval}")"
+          app="$(jq -r .app <<<"${approval}")"
+          if [ -n "${app}" ]; then
+            echo "::error::destroy-approved was added through the ${app} app, not by a person. A code owner must add it by hand."
+            exit 1
+          fi
+          if ! grep -qx "${actor}" <<<"${owners}"; then
+            echo "::error::destroy-approved was added by ${actor}, who is not a code owner (${owners//$'\n'/, })."
+            exit 1
+          fi
+          echo "${actor} approved the destroys and replaces."

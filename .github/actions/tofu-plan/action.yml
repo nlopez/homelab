@@ -42,6 +42,31 @@ runs:
         tofu plan -input=false -lock=false -no-color ${PLAN_ARGS} -out=tfplan 2>&1 | tee -a plan.log
         tofu show -no-color tfplan > plan.txt
 
+    # ci-ok reads the plan-destroys annotation and fails until a code owner
+    # adds the destroy-approved label (.github/workflows/ci-gate.yaml).
+    - name: Check for destroys and replaces
+      if: steps.plan.outcome == 'success'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        TITLE: ${{ inputs.title }}
+        PR: ${{ github.event.pull_request.number }}
+        REPO: ${{ github.repository }}
+      run: |-
+        set -euo pipefail
+        # Only addresses and actions leave the JSON plan, which can hold secrets.
+        tofu show -json tfplan | jq -r '.resource_changes[]?
+          | select(.change.actions | index("delete"))
+          | "\(.address) (\(.change.actions | join(" then ")))"' > destroys.txt
+        if [ -s destroys.txt ]; then
+          echo "::warning title=plan-destroys::${TITLE}: $(paste -sd ',' destroys.txt)"
+          gh label create destroy-approved --repo "${REPO}" --color B60205 \
+            --description "A code owner approved the destroys and replaces in this PR's plans" 2>/dev/null || true
+          # Each push whose plan destroys something needs a fresh approval.
+          gh api -X DELETE "repos/${REPO}/issues/${PR}/labels/destroy-approved" >/dev/null 2>&1 || true
+        fi
+
     - name: Comment plan
       if: always()
       shell: bash
@@ -62,6 +87,12 @@ runs:
           echo
           echo "${summary:-See the run log.} Commit \`${GITHUB_SHA:0:8}\`, [run](${GITHUB_SERVER_URL}/${REPO}/actions/runs/${GITHUB_RUN_ID})."
           echo
+          if [ -s destroys.txt ]; then
+            echo "**Destroys or replaces:** \`ci-ok\` fails until a code owner adds the \`destroy-approved\` label."
+            echo
+            sed 's/^/- `/; s/ (/` (/' destroys.txt
+            echo
+          fi
           echo '```hcl'
           tail -c 60000 "$out" 2>/dev/null
           echo '```'
