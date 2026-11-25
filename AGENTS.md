@@ -19,6 +19,22 @@ Several agents and people work in this repo at the same time. Every change lands
 - Do not reformat or reorganize files you are not otherwise changing.
 - Before you start, check open PRs for the same stack: `gh pr list --search '<dir>'`. If another PR changes the same resources, coordinate in that PR instead of opening a competing one.
 
+### Without `wt` or `gh`
+
+Claude Code cloud sessions, and other agents, may have neither tool. The same steps in plain git and the
+GitHub API (or the GitHub tools your agent has):
+
+| Step | With the tools | Without them |
+| --- | --- | --- |
+| Start a task | `wt switch --create <branch>` | `git fetch origin main && git worktree add -b <branch> ../<branch> origin/main`, then work in `../<branch>` |
+| Find PRs on a stack | `gh pr list --search '<dir>'` | List open PRs and their changed files (`GET /repos/{owner}/{repo}/pulls`, then `/pulls/{n}/files`) |
+| Open a PR | `gh pr create --fill` | Create a pull request against `main` with the description step 2 asks for |
+| Wait for checks | `gh pr checks --watch` | Poll the head commit's check runs (`GET /repos/{owner}/{repo}/commits/{sha}/check-runs`) until `ci-ok` completes; it takes 2–6 minutes when stacks plan |
+| Read the plans | `gh pr view --comments` | Read the PR's issue comments; each plan comment starts with `<!-- tofu-plan: <stack> -->` |
+| Merge | `gh pr merge --squash --delete-branch` | Squash-merge with the head commit's SHA as the expected head; the repository deletes the branch |
+| Check the apply | `gh run list --branch main --limit 5` | List workflow runs for the merge commit (`GET /repos/{owner}/{repo}/actions/runs?head_sha=<sha>`) |
+| Clean up | `wt remove -D` | `git worktree remove ../<branch> && git branch -D <branch>` |
+
 ## Open a PR and wait for the plan
 
 1. Commit in your worktree. The pre-commit hooks run on each commit.
