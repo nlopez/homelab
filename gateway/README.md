@@ -71,8 +71,14 @@ tofu init && tofu plan
 ```
 
 State is in the `homelab-tofu-state-546422192262` bucket under `gateway/terraform.tfstate`.
-No CI plans or applies this stack: an operator runs `tofu plan` and `tofu apply`
-after a change merges.
+A push to `main` that touches `gateway/` runs `tofu apply` in the `Gateway` workflow
+(`.github/workflows/gateway.yaml`), as the `homelab-gateway-apply` AWS role. Nothing plans
+a change before it merges, so run `tofu plan` locally first. A local plan or apply holds
+the state lock, and a workflow run that starts during it fails; re-run it from the
+Actions tab.
+
+Local runs need write access to the state bucket: the default SSO profile is read-only,
+so set `AWS_PROFILE=admin` for `tofu apply`.
 
 ## Adding an object
 
