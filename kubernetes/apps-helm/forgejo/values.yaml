@@ -34,6 +34,8 @@ gitea:
     autoDiscoverUrl: https://arsox.desertbluffs.com/application/o/forgejo/.well-known/openid-configuration
     scopes: email profile
     # authentik enforces MFA, so SSO sign-ins skip Forgejo's own 2FA prompt.
+    # Only add-oauth applies this flag; update-oauth ignores it, so an
+    # existing source needs "Skip local 2FA" set in the admin panel.
     skip-local-2fa: true
   additionalConfigFromEnvs:
   - name: FORGEJO__DATABASE__PASSWD
