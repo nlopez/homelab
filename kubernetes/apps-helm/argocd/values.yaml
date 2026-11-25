@@ -7,7 +7,18 @@ global:
 configs:
   secret:
     githubSecret: $argocd-webhook-github:password
+  # The authentik side lives in authentik/argocd.tf. The local admin account
+  # stays enabled for when authentik is down.
+  rbac:
+    policy.csv: |
+      g, argocd-admins, role:admin
   cm:
+    oidc.config: |
+      name: authentik
+      issuer: https://arsox.desertbluffs.com/application/o/argocd/
+      clientID: argocd
+      enablePKCEAuthentication: true
+      requestedScopes: ["openid", "profile", "email"]
     resource.exclusions: |
       - apiGroups:
           - velero.io
