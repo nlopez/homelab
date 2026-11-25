@@ -68,6 +68,8 @@ spec:
               key: meili-master-key
         - name: BROWSER_WEB_URL
           value: http://localhost:9222
+        - name: BROWSER_COOKIE_PATH
+          value: /config/browser-cookies.json
         - name: CRAWLER_HTTP_PROXY
           value: http://warp.warp.svc.cluster.local:8888
         - name: CRAWLER_HTTPS_PROXY
@@ -78,6 +80,9 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /data
+        - name: browser-cookies
+          mountPath: /config
+          readOnly: true
         readinessProbe:
           httpGet:
             path: /api/health
@@ -127,3 +132,9 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: data
+      - name: browser-cookies
+        secret:
+          secretName: onepassword-karakeep
+          items:
+          - key: reddit-cookies
+            path: browser-cookies.json
