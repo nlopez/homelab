@@ -40,7 +40,7 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 
 - `main` moved: `main` only accepts a PR that contains its latest commit, so rebase (`git fetch origin && git rebase origin/main`), push with `git push --force-with-lease`, and wait for a fresh `ci-ok`. If the move touched the same stack, re-read the new plan: a plan made before someone else's merge to the same stack is stale.
 - Rebase conflict: resolve it in your worktree, re-run the hooks, and continue. If another agent's change is involved, keep both intents.
-- A plan shows changes you did not make: look for an open `Drift in <stack>` issue. Every OpenTofu stack plans nightly on `main` and keeps that issue open while the live state differs from `main`. Do not fold a fix for the drift into an unrelated PR; leave it for a human, or fix it in its own PR that links the issue.
+- A plan shows changes you did not make: look for an open `Drift in <stack>` issue. Every OpenTofu stack plans nightly on `main`, and Ansible runs in check mode nightly, and each keeps that issue open while the live state differs from `main`. Do not fold a fix for the drift into an unrelated PR; leave it for a human, or fix it in its own PR that links the issue.
 - A hook fails: fix the cause and commit again. Do not bypass it.
 - A plan job fails before it plans (credentials, network): say so in the PR and leave it for a human. Do not merge without a plan.
 

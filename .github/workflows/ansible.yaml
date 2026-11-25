@@ -26,6 +26,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      issues: write
 
     steps:
       - name: Checkout
@@ -71,6 +72,7 @@ jobs:
         uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
 
       - name: Check for drift
+        id: drift
         if: ${{ !inputs.apply }}
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
@@ -89,11 +91,53 @@ jobs:
             tail -c 60000 check.log
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          echo "drift=${drift}" >> "$GITHUB_OUTPUT"
+          echo "rc=${rc}" >> "$GITHUB_OUTPUT"
           if [ "$drift" -gt 0 ]; then
-            echo "::error::the hosts do not match the playbooks; see the run summary"
-            exit 1
+            echo "::warning::the hosts do not match the playbooks; see the Drift in Ansible issue"
           fi
           exit "$rc"
+
+      # Keeps one open "Drift in Ansible" issue while the hosts differ from the
+      # playbooks, as the OpenTofu stacks do (_tofu-stack.yaml). The issue gets
+      # only the play recap and the names of the changed tasks: --diff output
+      # can hold rendered templates with secrets, so it stays in the run log.
+      - name: Report drift
+        if: ${{ !inputs.apply && steps.drift.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: Drift in Ansible
+          DRIFT: ${{ steps.drift.outputs.drift }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          issue="$(gh issue list --state open --search "\"${TITLE}\" in:title" --json number,title \
+            --jq "map(select(.title == env.TITLE)) | .[0].number // empty")"
+          if [ "${DRIFT}" -gt 0 ]; then
+            {
+              echo "The nightly check-mode run of \`${GITHUB_SHA:0:8}\` on \`main\` found hosts that differ from the playbooks ([run](${RUN_URL}); the full diff is in its log)."
+              echo
+              echo "Changed tasks:"
+              echo
+              echo '```'
+              awk '/^TASK \[/ { task = $0 } /^changed: / { print task; print "  " $0 }' check.log | head -c 30000
+              echo '```'
+              echo
+              echo "Recap:"
+              echo
+              echo '```'
+              grep -E '^[A-Za-z0-9.-]+ +: ok=' check.log
+              echo '```'
+            } > drift.md
+            if [ -n "${issue}" ]; then
+              gh issue comment "${issue}" --body-file drift.md
+            else
+              gh issue create --title "${TITLE}" --body-file drift.md
+            fi
+          elif [ -n "${issue}" ]; then
+            gh issue close "${issue}" --comment "The nightly check-mode run of \`${GITHUB_SHA:0:8}\` found no drift ([run](${RUN_URL}))."
+          fi
 
       - name: Apply
         if: ${{ inputs.apply }}
