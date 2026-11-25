@@ -1,0 +1,51 @@
+name: Discord notify
+description: >-
+  Post an apply result to Discord. The webhook lives in 1Password, so this
+  installs the CLI first. Call it only when there is something to say.
+
+inputs:
+  result:
+    description: applied, or failed
+    required: true
+  subject:
+    description: >-
+      What the title names. Defaults to the workflow name, and a matrix job
+      passes its stack so its legs stay apart.
+    required: false
+  op-service-account-token:
+    description: 1Password service account token that can read the webhook
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install 1Password CLI
+      uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
+
+    - name: Post
+      shell: bash
+      env:
+        OP_SERVICE_ACCOUNT_TOKEN: ${{ inputs.op-service-account-token }}
+        RESULT: ${{ inputs.result }}
+        SUBJECT: ${{ inputs.subject }}
+        WORKFLOW: ${{ github.workflow }}
+        BRANCH: ${{ github.ref_name }}
+        SHA: ${{ github.sha }}
+        MESSAGE: ${{ github.event.head_commit.message }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        subject="${SUBJECT:-${WORKFLOW}}"
+        if [[ "${RESULT}" == applied ]]; then
+          icon="✅"; color=3066993
+        else
+          icon="❌"; color=15158332
+        fi
+        jq -n \
+          --arg title "${icon} ${subject} ${RESULT}" \
+          --arg url "${RUN_URL}" \
+          --arg body "\`${SHA:0:8}\` ${MESSAGE%%$'\n'*}" \
+          --arg footer "${BRANCH}" \
+          --argjson color "${color}" \
+          '{username: "homelab actions", embeds: [{title: $title, url: $url, description: $body, color: $color, footer: {text: $footer}}]}' |
+          curl -fsS -H 'Content-Type: application/json' --data @- \
+            "$(op read op://kjgjpiwjlognsprl7qxsonrqoi/6hgf3n5cgyskb7xtic6qkrdm74/credential)"

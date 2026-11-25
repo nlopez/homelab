@@ -6,7 +6,7 @@ on:
     paths: ['datadog/**', '.github/workflows/datadog.yaml']
   pull_request:
     branches: [ "main" ]
-    paths: ['datadog/**', '.github/workflows/datadog.yaml', '.github/actions/tofu-plan/**']
+    paths: ['datadog/**', '.github/workflows/datadog.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
   workflow_dispatch:
 
 permissions:
@@ -100,3 +100,15 @@ jobs:
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
         run: op run --env-file secrets.env -- tofu apply -input=false tfplan
+
+      - uses: ./.github/actions/discord-notify
+        if: success() && steps.plan.outputs.changed == 'true'
+        with:
+          result: applied
+          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - uses: ./.github/actions/discord-notify
+        if: failure() || cancelled()
+        with:
+          result: failed
+          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
