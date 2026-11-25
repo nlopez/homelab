@@ -156,3 +156,42 @@ resource "opnsense_unbound_acl" "lga2_private" {
   networks    = each.key
   description = "Private-range clients"
 }
+
+# hgz003 is the HaGeZi Multi PRO feed. Empty list attributes read back as [""].
+resource "opnsense_unbound_dnsbl" "lga1" {
+  provider = opnsense.lga1
+
+  blocklists  = [""]
+  enabled     = true
+  lists       = [""]
+  nxdomain    = true
+  safe_search = false
+  type        = ["hgz003"]
+  whitelists  = [""]
+  wildcards   = [""]
+}
+
+import {
+  provider = opnsense.lga1
+  to       = opnsense_unbound_dnsbl.lga1
+  id       = "unbound-dnsbl"
+}
+
+resource "opnsense_unbound_dnsbl" "lga2" {
+  provider = opnsense.lga2
+
+  blocklists  = [""]
+  enabled     = true
+  lists       = [""]
+  nxdomain    = true
+  safe_search = false
+  type        = ["hgz003"]
+  whitelists  = [""]
+  wildcards   = [""]
+}
+
+import {
+  provider = opnsense.lga2
+  to       = opnsense_unbound_dnsbl.lga2
+  id       = "unbound-dnsbl"
+}
