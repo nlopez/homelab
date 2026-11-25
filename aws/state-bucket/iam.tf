@@ -258,6 +258,7 @@ data "aws_iam_policy_document" "aws_state" {
       "${aws_s3_bucket.state.arn}/forgejo-smtp/*",
       "${aws_s3_bucket.state.arn}/seafile-smtp/*",
       "${aws_s3_bucket.state.arn}/nas-smtp/*",
+      "${aws_s3_bucket.state.arn}/immich-smtp/*",
     ]
   }
 
@@ -291,6 +292,7 @@ data "aws_iam_policy_document" "aws_state" {
       "arn:aws:iam::546422192262:user/forgejo-smtp",
       "arn:aws:iam::546422192262:user/seafile-smtp",
       "arn:aws:iam::546422192262:user/nas-smtp",
+      "arn:aws:iam::546422192262:user/immich-smtp",
     ]
   }
 }
