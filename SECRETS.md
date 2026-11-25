@@ -4,8 +4,7 @@ Nothing secret is committed. Every credential lives in 1Password (account `my.1p
 the repo holds only `op://<vault>/<item>/<field>` references, by vault and item ID. This page maps
 those IDs to what they are, who can read them, and how to rotate them.
 
-The vault names below come from comments in this repo. Where nothing in the repo names a vault, the
-name says *unnamed*; fill it in when you know it.
+Each vault's name is its name in 1Password.
 
 ## Vaults
 

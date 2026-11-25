@@ -59,11 +59,11 @@ Enabled managers: `custom.regex`, `helm-values`, `github-actions`, `pre-commit`,
 
 Not covered: the collections in `ansible/requirements.yaml`, and `devenv.lock`.
 
-Renovate is not running on this repository yet (as of 2026-11-25), so none of these managers open
-updates today. The media-toolbox schedule builds new yt-dlp and bgutil releases but no longer
+The Renovate app was installed on 2026-11-25; its first run is due inside the 8:00
+America/New_York window that `renovate.json` schedules. The media-toolbox schedule builds new yt-dlp and bgutil releases but no longer
 commits the new pins to `main`, so `media-toolbox/Makefile` falls behind the published image.
 
-Fix: run Renovate, then add `ansible-galaxy` and `nix` to `enabledManagers` and add a regex manager
+Fix: add `ansible-galaxy` and `nix` to `enabledManagers` and add a regex manager
 for the two versions in `media-toolbox/Makefile`.
 
 ### 5. Repo hygiene
