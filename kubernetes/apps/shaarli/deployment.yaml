@@ -37,7 +37,7 @@ spec:
           fsType: ext4
       containers:
       - name: shaarli
-        image: ghcr.io/shaarli/shaarli:v0.16.10
+        image: ghcr.io/shaarli/shaarli:v0.16.11
         resources:
           requests:
             cpu: 10m
