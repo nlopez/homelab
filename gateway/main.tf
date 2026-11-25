@@ -14,6 +14,10 @@ terraform {
       source  = "matthew-on-git/opnsense"
       version = "~> 0.30"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.7"
+    }
   }
 }
 

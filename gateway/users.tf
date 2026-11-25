@@ -16,7 +16,27 @@ variable "lga2_dns_webhook_password" {
   sensitive = true
 }
 
+# Login password for the pull-request plan user. Nobody logs in as it; OPNsense
+# only requires one to create the user.
+resource "random_password" "ci_pr" {
+  length  = 40
+  special = false
+}
+
 locals {
+  # The pull-request plan user reads everything tofu manages. OPNsense has no
+  # read-only API privileges, so it is an admin like the apply key's user; it
+  # exists so the key that pull requests can read is revocable on its own.
+  # Its API keypair is generated after apply (api/auth/user/addApiKey) and
+  # stored in the ci-pr vault as gateway-plan.
+  ci_pr_user = {
+    full_name         = "Pull-request tofu plans"
+    uid               = 2002
+    group_memberships = ["1999"]
+    privileges        = []
+    password          = random_password.ci_pr.result
+  }
+
   # Privileges the external-dns webhook needs: host override CRUD
   # (api/unbound/settings/*), reconfigure and status (api/unbound/service/*),
   # and the overview page. Names as listed in OPNsense's Unbound ACL model.
@@ -60,6 +80,7 @@ locals {
       privileges        = local.unbound_webhook_privileges
       password          = var.lga1_dns_webhook_password
     }
+    ci-pr = local.ci_pr_user
   }
   lga2_users = {
     root = {
@@ -86,6 +107,7 @@ locals {
       privileges        = local.unbound_webhook_privileges
       password          = var.lga2_dns_webhook_password
     }
+    ci-pr = local.ci_pr_user
   }
 }
 
@@ -109,7 +131,7 @@ resource "opnsense_auth_user" "lga1" {
 
 import {
   provider = opnsense.lga1
-  for_each = local.lga1_users
+  for_each = { for name, user in local.lga1_users : name => user if can(user.uuid) }
   to       = opnsense_auth_user.lga1[each.key]
   id       = each.value.uuid
 }
@@ -134,7 +156,7 @@ resource "opnsense_auth_user" "lga2" {
 
 import {
   provider = opnsense.lga2
-  for_each = local.lga2_users
+  for_each = { for name, user in local.lga2_users : name => user if can(user.uuid) }
   to       = opnsense_auth_user.lga2[each.key]
   id       = each.value.uuid
 }
