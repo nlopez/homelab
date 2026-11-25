@@ -33,6 +33,8 @@ gitea:
     existingSecret: onepassword-forgejo-oauth
     autoDiscoverUrl: https://arsox.desertbluffs.com/application/o/forgejo/.well-known/openid-configuration
     scopes: email profile
+    # authentik enforces MFA, so SSO sign-ins skip Forgejo's own 2FA prompt.
+    skip-local-2fa: true
   additionalConfigFromEnvs:
   - name: FORGEJO__DATABASE__PASSWD
     valueFrom:
