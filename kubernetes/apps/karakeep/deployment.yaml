@@ -68,6 +68,10 @@ spec:
               key: meili-master-key
         - name: BROWSER_WEB_URL
           value: http://localhost:9222
+        - name: CRAWLER_HTTP_PROXY
+          value: http://warp.warp.svc.cluster.local:8888
+        - name: CRAWLER_HTTPS_PROXY
+          value: http://warp.warp.svc.cluster.local:8888
         ports:
         - name: http
           containerPort: 3000

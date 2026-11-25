@@ -54,6 +54,20 @@ spec:
             - 'curl --max-time 5 --fail --socks5-hostname 127.0.0.1:1080 https://cloudflare.com/cdn-cgi/trace | grep -qE "warp=(plus|on)" || exit 1'
           initialDelaySeconds: 10
           periodSeconds: 60
+      - name: http-proxy
+        # Exposes warp's socks5 exit as an HTTP proxy; karakeep's crawler
+        # only understands http(s) proxies.
+        image: ginuerzh/gost:v2.12.0
+        args:
+        - -L=http://:8888
+        - -F=socks5://127.0.0.1:1080
+        resources:
+          requests:
+            cpu: 5m
+            memory: 16Mi
+        ports:
+        - containerPort: 8888
+          protocol: TCP
       volumes:
       - name: warp
         persistentVolumeClaim:
