@@ -19,6 +19,9 @@ permissions: {}
 jobs:
   notify:
     name: Notify
+    # A pull-request run never applies, so its completion says nothing worth
+    # posting. Skipping the job skips the runner it would spend finding that out.
+    if: github.event.workflow_run.event != 'pull_request'
     environment: production
     runs-on: ubuntu-24.04
     permissions:
