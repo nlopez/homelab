@@ -53,7 +53,9 @@ resource "aws_ssoadmin_account_assignment" "administrators_admin" {
 }
 
 # ReadOnlyAccess includes s3:GetObject, so this can read tofu state, which
-# holds the SES SMTP passwords.
+# holds the SES SMTP passwords. The inline policy lets it take and release the
+# S3 native state locks so plans run with locking on. It can write only
+# *.tflock objects, never state.
 resource "aws_ssoadmin_permission_set" "read_only" {
   instance_arn     = local.sso_instance_arn
   name             = "ReadOnlyAccess"
@@ -64,6 +66,22 @@ resource "aws_ssoadmin_managed_policy_attachment" "read_only" {
   instance_arn       = local.sso_instance_arn
   permission_set_arn = aws_ssoadmin_permission_set.read_only.arn
   managed_policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+}
+
+data "aws_iam_policy_document" "read_only_state_lock" {
+  statement {
+    actions = [
+      "s3:PutObject",
+      "s3:DeleteObject",
+    ]
+    resources = ["${aws_s3_bucket.state.arn}/*.tflock"]
+  }
+}
+
+resource "aws_ssoadmin_permission_set_inline_policy" "read_only" {
+  instance_arn       = local.sso_instance_arn
+  permission_set_arn = aws_ssoadmin_permission_set.read_only.arn
+  inline_policy      = data.aws_iam_policy_document.read_only_state_lock.json
 }
 
 resource "aws_ssoadmin_account_assignment" "administrators_read_only" {
