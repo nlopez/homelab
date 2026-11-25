@@ -19,6 +19,9 @@ resource "authentik_provider_oauth2" "forgejo" {
   property_mappings = concat(
     data.authentik_property_mapping_provider_scope.oidc.ids,
     [authentik_property_mapping_provider_scope.picture.id],
+    # Carries group names to Forgejo; ADMIN_GROUP in its chart values maps
+    # the admins group to site admin on each sign-in.
+    [authentik_property_mapping_provider_scope.groups.id],
   )
   grant_types = ["authorization_code", "refresh_token"]
 

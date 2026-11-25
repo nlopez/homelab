@@ -57,3 +57,10 @@ resource "authentik_property_mapping_provider_scope" "picture" {
   scope_name = "profile"
   expression = "return {\"picture\": request.user.avatar}"
 }
+
+# Emits the user's authentik group names as the OIDC groups claim.
+resource "authentik_property_mapping_provider_scope" "groups" {
+  name       = "OIDC groups claim"
+  scope_name = "groups"
+  expression = "return {\"groups\": [group.name for group in request.user.ak_groups]}"
+}

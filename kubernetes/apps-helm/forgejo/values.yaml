@@ -32,7 +32,7 @@ gitea:
     provider: openidConnect
     existingSecret: onepassword-forgejo-oauth
     autoDiscoverUrl: https://arsox.desertbluffs.com/application/o/forgejo/.well-known/openid-configuration
-    scopes: email profile
+    scopes: email profile groups
     # authentik enforces MFA, so SSO sign-ins skip Forgejo's own 2FA prompt.
     # Only add-oauth applies this flag; update-oauth ignores it, so an
     # existing source needs "Skip local 2FA" set in the admin panel.
@@ -82,6 +82,8 @@ gitea:
     oauth2_client:
       # Copies the authentik picture claim into the avatar on each sign-in.
       UPDATE_AVATAR: true
+      # The authentik groups claim maps the admins group to site admin.
+      ADMIN_GROUP: admins
     service:
       DISABLE_REGISTRATION: true
       REQUIRE_SIGNIN_VIEW: true
