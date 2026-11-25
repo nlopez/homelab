@@ -45,8 +45,9 @@ jobs:
           echo "192.168.222.1 gw.lga1.radoncanyon.com" | sudo tee -a /etc/hosts
           echo "192.168.239.254 gw.lga2.radoncanyon.com" | sudo tee -a /etc/hosts
 
-      # OPNsense API privileges can't be read-only, so the API keys are copies
-      # of the production ones.
+      # The keys belong to the ci-pr user (gateway/users.tf). Its
+      # user-config-readonly privilege rejects every config write with a 403,
+      # so the plan can read the pages it grants and change nothing.
       - name: Load credentials
         uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
         with:
