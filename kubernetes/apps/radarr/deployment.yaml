@@ -47,6 +47,9 @@ spec:
           value: "America/New_York"
         - name: DOTNET_SYSTEM_NET_DISABLEIPV6
           value: "1"
+        # authentik signs browsers in at the gateway (gateway-oidc.yaml).
+        - name: RADARR__AUTH__METHOD
+          value: External
         - name: RADARR__POSTGRES__HOST
           value: radarr-database-tn-rw
         - name: RADARR__POSTGRES__PORT

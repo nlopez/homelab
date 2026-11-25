@@ -47,6 +47,9 @@ spec:
           value: "America/New_York"
         - name: DOTNET_SYSTEM_NET_DISABLEIPV6
           value: "1"
+        # authentik signs browsers in at the gateway (gateway-oidc.yaml).
+        - name: SONARR__AUTH__METHOD
+          value: External
         - name: SONARR__POSTGRES__HOST
           value: sonarr-database-tn-rw
         - name: SONARR__POSTGRES__PORT

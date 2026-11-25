@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/onepassword.com/onepassworditem_v1.json
+apiVersion: onepassword.com/v1
+kind: OnePasswordItem
+metadata:
+  name: gateway-oidc-radarr
+spec:
+  itemPath: "vaults/evjh25ux2mnoufaut6qhvm2pdi/items/gateway-oidc-radarr"
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
+# Sends browsers to authentik before they reach the app. The client lives in
+# authentik/gateway.tf.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: radarr-oidc
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: radarr-private
+  oidc:
+    provider:
+      issuer: https://arsox.desertbluffs.com/application/o/radarr/
+    clientID: radarr
+    clientSecret:
+      name: gateway-oidc-radarr
+    redirectURL: https://dumud.desertbluffs.com/oauth2/callback
+    logoutPath: /oauth2/logout
+    refreshToken: true

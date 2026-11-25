@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/onepassword.com/onepassworditem_v1.json
+apiVersion: onepassword.com/v1
+kind: OnePasswordItem
+metadata:
+  name: gateway-oidc-homepage
+spec:
+  itemPath: "vaults/evjh25ux2mnoufaut6qhvm2pdi/items/gateway-oidc-homepage"
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
+# Sends browsers to authentik before they reach the app. The client lives in
+# authentik/gateway.tf.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: homepage-oidc
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: homepage-private
+  oidc:
+    provider:
+      issuer: https://arsox.desertbluffs.com/application/o/homepage/
+    clientID: homepage
+    clientSecret:
+      name: gateway-oidc-homepage
+    redirectURL: https://bushi.desertbluffs.com/oauth2/callback
+    logoutPath: /oauth2/logout
+    refreshToken: true
