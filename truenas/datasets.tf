@@ -156,17 +156,6 @@ resource "truenas_dataset" "etank_iscsi_nas1" {
   }
 }
 
-resource "truenas_dataset" "etank_iscsi_nextcloud_nas1" {
-  provider = truenas.nas1
-  aclmode  = "PASSTHROUGH"
-  name     = "etank/iscsi/nextcloud"
-  type     = "filesystem"
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
 resource "truenas_dataset" "etank_home_nas2" {
   provider = truenas.nas2
   aclmode  = "PASSTHROUGH"
