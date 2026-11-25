@@ -87,18 +87,12 @@ spec:
           mountPath: /config
         - name: media
           mountPath: /media
-        - name: scratch
-          mountPath: /downloads
-          subPath: downloads
         - name: run
           mountPath: /run
       volumes:
       - name: config
         persistentVolumeClaim:
           claimName: config
-      - name: scratch
-        persistentVolumeClaim:
-          claimName: scratch
       - name: media
         persistentVolumeClaim:
           claimName: media
