@@ -4,18 +4,43 @@ on:
   push:
     branches: [ "main" ]
     paths: ['gateway/**', '.github/workflows/gateway.yaml']
+  pull_request:
+    branches: [ "main" ]
+    paths: ['gateway/**', '.github/workflows/gateway.yaml']
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: gateway
-  cancel-in-progress: false
+  group: gateway-${{ github.event.pull_request.number || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # The client ID comes from tailscale_federated_identity
+  # .github_actions_pull_request in tailnet/admin.
+  plan:
+    name: Plan
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    uses: ./.github/workflows/tofu-plan.yaml
+    with:
+      name: Gateway
+      working-directory: gateway
+      role: homelab-gateway-plan
+      env-file: secrets.pr.env
+      tailscale-client-id: ${{ vars.TAILSCALE_PR_CLIENT_ID }}
+      hosts: |-
+        192.168.222.1 gw.lga1.radoncanyon.com
+        192.168.239.254 gw.lga2.radoncanyon.com
+    secrets: inherit
+
   apply:
     name: Apply
+    if: github.event_name != 'pull_request'
     environment: production
     runs-on: ubuntu-24.04
     permissions:

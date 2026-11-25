@@ -312,6 +312,9 @@ locals {
     datadog   = ["datadog"]
     dns       = ["dns"]
     gateway   = ["gateway"]
+    # The plan for tailnet/admin reads the tailnet with its own all:read
+    # OAuth client, so the role only needs the state.
+    tailnet-admin = ["tailnet-admin"]
   }
 }
 
@@ -376,4 +379,75 @@ data "aws_iam_policy_document" "aws_plan_refresh" {
 resource "aws_iam_role_policy" "aws_plan_refresh" {
   role   = aws_iam_role.plan["aws"].id
   policy = data.aws_iam_policy_document.aws_plan_refresh.json
+}
+
+# tailnet/admin applies on push with a CI copy of the admin API key.
+resource "aws_iam_role" "tailnet_admin_apply" {
+  name               = "homelab-tailnet-admin-apply"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
+}
+
+data "aws_iam_policy_document" "tailnet_admin_state" {
+  statement {
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:ListBucket",
+    ]
+    resources = [aws_s3_bucket.state.arn]
+  }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+    ]
+    resources = ["${aws_s3_bucket.state.arn}/tailnet-admin/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "tailnet_admin_state" {
+  role   = aws_iam_role.tailnet_admin_apply.id
+  policy = data.aws_iam_policy_document.tailnet_admin_state.json
+}
+
+# This stack applies itself on push. A role that can edit IAM roles can grant
+# itself anything, so a narrower policy would not limit it; it gets
+# AdministratorAccess. If an apply locks the role out (a broken trust policy or
+# OIDC provider), a local apply with the AdministratorAccess permission set
+# repairs it.
+resource "aws_iam_role" "state_bucket_apply" {
+  name               = "homelab-state-bucket-apply"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
+}
+
+resource "aws_iam_role_policy_attachment" "state_bucket_apply" {
+  role       = aws_iam_role.state_bucket_apply.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+# The plan refreshes IAM, S3, and IAM Identity Center configuration across the
+# account, so it gets ReadOnlyAccess. The deny keeps it from reading any state
+# but its own, since other stacks' state holds SMTP passwords.
+resource "aws_iam_role" "state_bucket_plan" {
+  name               = "homelab-state-bucket-plan"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_pull_request_assume.json
+}
+
+resource "aws_iam_role_policy_attachment" "state_bucket_plan" {
+  role       = aws_iam_role.state_bucket_plan.name
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+}
+
+data "aws_iam_policy_document" "state_bucket_plan_deny" {
+  statement {
+    effect        = "Deny"
+    actions       = ["s3:GetObject", "s3:GetObjectVersion"]
+    not_resources = ["${aws_s3_bucket.state.arn}/state-bucket/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "state_bucket_plan_deny" {
+  role   = aws_iam_role.state_bucket_plan.id
+  policy = data.aws_iam_policy_document.state_bucket_plan_deny.json
 }

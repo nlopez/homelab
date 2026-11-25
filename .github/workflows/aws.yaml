@@ -4,18 +4,39 @@ on:
   push:
     branches: [ "main" ]
     paths: ['aws/**', '.github/workflows/aws.yaml']
+  pull_request:
+    branches: [ "main" ]
+    paths: ['aws/**', '.github/workflows/aws.yaml']
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: aws
-  cancel-in-progress: false
+  group: aws-${{ github.event.pull_request.number || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  plan:
+    name: Plan ${{ matrix.dir }}
+    if: github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: [ses, authentik-smtp, forgejo-smtp, seafile-smtp, nas-smtp, immich-smtp]
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    uses: ./.github/workflows/tofu-plan.yaml
+    with:
+      name: AWS ${{ matrix.dir }}
+      working-directory: aws/${{ matrix.dir }}
+      role: homelab-aws-plan
+
   apply:
     name: Apply ${{ matrix.dir }}
+    if: github.event_name != 'pull_request'
     strategy:
       fail-fast: false
       matrix:

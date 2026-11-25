@@ -17,7 +17,7 @@ terraform {
   }
 }
 
-# Reads TAILSCALE_API_KEY and TAILSCALE_TAILNET from the environment. These
-# resources need admin scope, so this project is applied from a workstation
-# with the superuser token and never from CI.
+# Reads its credentials from the environment. Applies use an admin API key
+# (secrets.env); pull-request plans use a read-only OAuth client
+# (secrets.pr.env).
 provider "tailscale" {}

@@ -4,18 +4,37 @@ on:
   push:
     branches: [ "main" ]
     paths: ['dns/**', '.github/workflows/dns.yaml']
+  pull_request:
+    branches: [ "main" ]
+    paths: ['dns/**', '.github/workflows/dns.yaml']
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: dns
-  cancel-in-progress: false
+  group: dns-${{ github.event.pull_request.number || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  plan:
+    name: Plan
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    uses: ./.github/workflows/tofu-plan.yaml
+    with:
+      name: DNS
+      working-directory: dns
+      role: homelab-dns-plan
+      env-file: secrets.pr.env
+    secrets: inherit
+
   apply:
     name: Apply
+    if: github.event_name != 'pull_request'
     environment: production
     runs-on: ubuntu-24.04
     permissions:

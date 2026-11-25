@@ -1,0 +1,61 @@
+name: State bucket
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: ['aws/state-bucket/**', '.github/workflows/state-bucket.yaml']
+  pull_request:
+    branches: [ "main" ]
+    paths: ['aws/state-bucket/**', '.github/workflows/state-bucket.yaml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: state-bucket-${{ github.event.pull_request.number || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  plan:
+    name: Plan
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    uses: ./.github/workflows/tofu-plan.yaml
+    with:
+      name: State bucket
+      working-directory: aws/state-bucket
+      role: homelab-state-bucket-plan
+
+  apply:
+    name: Apply
+    if: github.event_name != 'pull_request'
+    environment: production
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::546422192262:role/homelab-state-bucket-apply
+          aws-region: us-east-1
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: 1.13.2
+
+      - name: Apply
+        working-directory: aws/state-bucket
+        run: |-
+          tofu init -input=false
+          tofu apply -input=false -auto-approve

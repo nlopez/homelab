@@ -4,18 +4,37 @@ on:
   push:
     branches: [ "main" ]
     paths: ['authentik/**', '.github/workflows/authentik.yaml']
+  pull_request:
+    branches: [ "main" ]
+    paths: ['authentik/**', '.github/workflows/authentik.yaml']
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: authentik
-  cancel-in-progress: false
+  group: authentik-${{ github.event.pull_request.number || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  plan:
+    name: Plan
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    uses: ./.github/workflows/tofu-plan.yaml
+    with:
+      name: Authentik
+      working-directory: authentik
+      role: homelab-authentik-plan
+      env-file: secrets.pr.env
+    secrets: inherit
+
   apply:
     name: Apply
+    if: github.event_name != 'pull_request'
     environment: production
     runs-on: ubuntu-24.04
     permissions:

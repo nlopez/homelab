@@ -13,8 +13,8 @@ permissions:
   actions: read
 
 concurrency:
-  group: tailnet
-  cancel-in-progress: false
+  group: tailnet-${{ github.event.pull_request.number || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   validate:
@@ -88,18 +88,27 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           OUTCOME: ${{ steps.plan.outcome }}
+          PR: ${{ github.event.pull_request.number }}
         run: |-
           cd tailnet/tofu
           if [ "$OUTCOME" = success ]; then out=plan.txt; else out=plan.log; fi
+          # Other stacks comment on the same PR; the marker finds this one.
+          marker="<!-- tofu-plan: Tailnet -->"
           {
+            echo "$marker"
             echo "### Tailnet plan ($OUTCOME)"
             echo
             echo '```hcl'
             tail -c 60000 "$out"
             echo '```'
           } > comment.md
-          gh pr comment "${{ github.event.pull_request.number }}" --body-file comment.md \
-            --edit-last --create-if-none
+          id=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id" | tail -n 1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -F body=@comment.md > /dev/null
+          else
+            gh pr comment "$PR" --body-file comment.md
+          fi
 
   apply:
     name: Apply

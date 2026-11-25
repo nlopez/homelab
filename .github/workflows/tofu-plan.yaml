@@ -1,0 +1,126 @@
+name: Tofu plan
+
+# Plans one OpenTofu stack on a pull request with read-only credentials and
+# keeps one comment per stack on the PR up to date.
+on:
+  workflow_call:
+    inputs:
+      name:
+        description: Stack name, used in the comment heading and to find the comment again
+        type: string
+        required: true
+      working-directory:
+        type: string
+        required: true
+      role:
+        description: Name of the read-only AWS role for the stack's state
+        type: string
+        required: true
+      env-file:
+        description: op run env file with the stack's pull-request credentials, relative to working-directory
+        type: string
+        default: ''
+      tailscale-client-id:
+        description: Federated identity client ID for joining the tailnet as tag:ci; empty stays off the tailnet
+        type: string
+        default: ''
+      hosts:
+        description: Lines to append to /etc/hosts after joining the tailnet
+        type: string
+        default: ''
+    secrets:
+      OP_CI_PR_SERVICE_ACCOUNT_TOKEN:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The audience of a Tailscale federated identity is
+      # api.tailscale.com/<client id>.
+      - name: Join the tailnet
+        if: inputs.tailscale-client-id != ''
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ inputs.tailscale-client-id }}
+          audience: api.tailscale.com/${{ inputs.tailscale-client-id }}
+          tags: tag:ci
+
+      - name: Add hosts entries
+        if: inputs.hosts != ''
+        env:
+          HOSTS: ${{ inputs.hosts }}
+        run: printf '%s\n' "$HOSTS" | sudo tee -a /etc/hosts
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::546422192262:role/${{ inputs.role }}
+          aws-region: us-east-1
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: 1.13.2
+          tofu_wrapper: false
+
+      - name: Install 1Password CLI
+        if: inputs.env-file != ''
+        uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
+
+      - name: Plan
+        id: plan
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          ENV_FILE: ${{ inputs.env-file }}
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_CI_PR_SERVICE_ACCOUNT_TOKEN }}
+        run: |-
+          tofu init -input=false
+          # The state lock needs write access, which pull requests don't get.
+          plan=(tofu plan -input=false -lock=false -no-color -out=tfplan)
+          if [ -n "$ENV_FILE" ]; then
+            plan=(op run --env-file "$ENV_FILE" -- "${plan[@]}")
+          fi
+          "${plan[@]}" 2>&1 | tee plan.log
+          tofu show -no-color tfplan > plan.txt
+
+      - name: Comment plan
+        if: always() && steps.plan.outcome != 'skipped'
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NAME: ${{ inputs.name }}
+          OUTCOME: ${{ steps.plan.outcome }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |-
+          if [ "$OUTCOME" = success ]; then out=plan.txt; else out=plan.log; fi
+          marker="<!-- tofu-plan: $NAME -->"
+          {
+            echo "$marker"
+            echo "### $NAME plan ($OUTCOME)"
+            echo
+            echo '```hcl'
+            tail -c 60000 "$out"
+            echo '```'
+          } > "$RUNNER_TEMP/comment.md"
+          id=$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id" | tail -n 1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -F "body=@$RUNNER_TEMP/comment.md" > /dev/null
+          else
+            gh pr comment "$PR" --body-file "$RUNNER_TEMP/comment.md"
+          fi
