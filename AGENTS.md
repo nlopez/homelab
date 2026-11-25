@@ -6,6 +6,7 @@ Several agents and people work in this repo at the same time. Every change lands
 
 - Enter the dev shell (`direnv allow` or `devenv shell`). It provides every tool the pre-commit hooks need and installs the hooks.
 - Hooks run on every commit and must pass. Never skip them (`--no-verify`) or skip signing.
+- Claude Code cloud sessions can't build the dev shell. `.claude/hooks/session-start.sh` installs the same tools from Nix and PyPI at session start instead, and installs the hooks. `ansible-lint` there needs `galaxy.ansible.com` allowed in the session's environment.
 - The `pre-commit` check runs the same hooks in CI on the files a PR changes. Without the dev shell, install `pre-commit`, `tofu`, `ansible-lint`, and `go` some other way and run the hooks anyway; CI is the backstop, not the first check.
 
 ## One task, one branch, one worktree, one PR
