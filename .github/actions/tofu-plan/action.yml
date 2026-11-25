@@ -45,7 +45,7 @@ runs:
       run: |-
         marker="<!-- tofu-plan: ${TITLE} -->"
         if [ "$OUTCOME" = success ]; then out=plan.txt; else out=plan.log; fi
-        summary="$(grep -E '^(Plan:|No changes\.)' plan.log | tail -n 1)"
+        summary="$(grep -E '^(Plan:|No changes\.)' plan.log | tail -n 1 || true)"
         {
           echo "$marker"
           echo "### ${TITLE} plan (${OUTCOME})"
