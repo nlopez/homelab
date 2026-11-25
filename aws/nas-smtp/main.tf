@@ -24,7 +24,8 @@ provider "aws" {
 data "aws_caller_identity" "current" {}
 
 locals {
-  from_address = "nas@desertbluffs.com"
+  # One sender per NAS, set in truenas/mail.tf.
+  from_addresses = ["nas1@desertbluffs.com", "nas2@desertbluffs.com"]
 }
 
 resource "aws_iam_user" "nas_smtp" {
@@ -39,7 +40,7 @@ data "aws_iam_policy_document" "send_as_nas" {
     condition {
       test     = "StringEquals"
       variable = "ses:FromAddress"
-      values   = [local.from_address]
+      values   = local.from_addresses
     }
   }
 }
