@@ -19,3 +19,22 @@ output "ci_federated_identity_id" {
 output "ci_federated_identity_audience" {
   value = tailscale_federated_identity.github_actions.audience
 }
+
+# Workload identity for the pull-request plan jobs. Runners join with tag:ci
+# too: the gateway plans need the same gateway API reach as the applies, and
+# the Ansible check-mode run needs the same SSH access.
+resource "tailscale_federated_identity" "github_actions_pull_request" {
+  description = "homelab pull-request plan workflows"
+  issuer      = "https://token.actions.githubusercontent.com"
+  subject     = "repo:nlopez@20211302/homelab@1466265485:pull_request"
+  scopes      = ["auth_keys", "devices:core"]
+  tags        = ["tag:ci"]
+}
+
+output "ci_pull_request_federated_identity_id" {
+  value = tailscale_federated_identity.github_actions_pull_request.id
+}
+
+output "ci_pull_request_federated_identity_audience" {
+  value = tailscale_federated_identity.github_actions_pull_request.audience
+}
