@@ -16,8 +16,11 @@ resource "authentik_provider_oauth2" "forgejo" {
   authorization_flow = data.authentik_flow.default_authorization.id
   invalidation_flow  = data.authentik_flow.default_invalidation.id
   signing_key        = data.authentik_certificate_key_pair.default.id
-  property_mappings  = data.authentik_property_mapping_provider_scope.oidc.ids
-  grant_types        = ["authorization_code", "refresh_token"]
+  property_mappings = concat(
+    data.authentik_property_mapping_provider_scope.oidc.ids,
+    [authentik_property_mapping_provider_scope.picture.id],
+  )
+  grant_types = ["authorization_code", "refresh_token"]
 
   # The source name in the forgejo chart values sets the callback path.
   allowed_redirect_uris = [{

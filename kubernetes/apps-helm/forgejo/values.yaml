@@ -75,6 +75,9 @@ gitea:
     security:
       # Envoy Gateway runs in the pod network and sets X-Forwarded-For.
       REVERSE_PROXY_TRUSTED_PROXIES: 10.43.16.0/20
+    oauth2_client:
+      # Copies the authentik picture claim into the avatar on each sign-in.
+      UPDATE_AVATAR: true
     service:
       DISABLE_REGISTRATION: true
       REQUIRE_SIGNIN_VIEW: true

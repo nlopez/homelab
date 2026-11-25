@@ -47,3 +47,11 @@ data "authentik_property_mapping_provider_scope" "oidc" {
     "goauthentik.io/providers/oauth2/scope-profile",
   ]
 }
+
+# Adds the standard OIDC picture claim to the profile scope, alongside the
+# managed profile mapping.
+resource "authentik_property_mapping_provider_scope" "picture" {
+  name       = "OIDC picture claim"
+  scope_name = "profile"
+  expression = "return {\"picture\": request.user.avatar}"
+}
