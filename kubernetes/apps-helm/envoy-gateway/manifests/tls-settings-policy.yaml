@@ -51,18 +51,15 @@ spec:
     alpnProtocols:
     - h2
     - http/1.1
+    # Most internet hostnames are DNS-only, so clients connect directly without
+    # a certificate. Proxied routes check for Cloudflare's Authenticated Origin
+    # Pulls certificate themselves (see the timekeeper EnvoyExtensionPolicy).
     clientValidation:
+      mode: VerifyIfGiven
       caCertificateRefs:
       - kind: ConfigMap
         name: timekeeper-aop-ca
         group: ""
-      - kind: ConfigMap
-        name: desertbluffs-aop-ca
-        group: ""
-  clientIPDetection:
-    customHeader:
-      name: CF-Connecting-IP
-      failClosed: true
   headers:
     lateResponseHeaders:
       set:

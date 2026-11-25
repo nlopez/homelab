@@ -30,8 +30,6 @@ kind: HTTPRoute
 metadata:
   name: obsidian-livesync
   namespace: obsidian-livesync
-  annotations:
-    external-dns.kubernetes.io/cloudflare-proxied: "true"
 spec:
   parentRefs:
   - name: internet

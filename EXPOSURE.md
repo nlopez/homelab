@@ -10,15 +10,15 @@ route between the `internet` and `private` gateways.
 | Argo CD | `argocd` | `flopie` | Yes | HTTP and gRPC routes on the private gateway; HTTP only on the internet gateway. |
 | authentik | `authentik` | `arsox` | Yes | |
 | Atuin | `atuin` | `pyrin` | Yes | |
-| Forgejo | `forgejo` | `dazzi`; SSH `dazzi.desertbluffs.com:22` | Yes | Git SSH runs only on the private gateway's TCP listener; Cloudflare can't proxy it. HTTPS pushes over the internet are subject to Cloudflare's request body limit (100 MB on Free and Pro). |
+| Forgejo | `forgejo` | `dazzi`; SSH `dazzi.desertbluffs.com:22` | Yes | Git SSH runs only on the private gateway's TCP listener. |
 | Immich | `immich` | `nox` | Yes | |
 | Jellyfin | `jellyfin` | `wixen` | Yes | |
 | Obsidian LiveSync | `obsidian-livesync` | `lifmunk` | Yes | |
 | PixivFE | `pixivfe` | `dupin` | Yes | Authentik protects every path on both gateways. |
 | Plex | `pms` | `vixy`; LoadBalancer `10.43.64.2:32400` | Yes | |
 | Shaarli | `shaarli` | `gumoss` | Yes | |
-| Timekeeper (ash) | `timekeeper-ash` | `ash.kamotimestamps.com` | Only | No private route. |
-| Timekeeper (oak) | `timekeeper-oak` | `oak.kamotimestamps.com` | Only | No private route. |
+| Timekeeper (ash) | `timekeeper-ash` | `ash.kamotimestamps.com` | Only | No private route. Proxied through Cloudflare. |
+| Timekeeper (oak) | `timekeeper-oak` | `oak.kamotimestamps.com` | Only | No private route. Proxied through Cloudflare. |
 | Apex redirect | `envoy-gateway-system` | `desertbluffs.com`, `www` | Yes | Redirect only; no backend. The apex has no private route, so it resolves to the public addresses everywhere; `www` is private inside. |
 | Engram | `engram` | `mau` | No | |
 | Goldpinger | `goldpinger` | `fuack` | No | |
@@ -40,7 +40,7 @@ Unmatched hostnames under `*.desertbluffs.com` (both gateways) get a catch-all `
 ## Split-horizon DNS
 
 One hostname per app, answered differently inside and outside. LAN and tailnet clients get the
-private gateway; internet clients get Cloudflare. Using `pyrin.desertbluffs.com` (Atuin) as the
+private gateway; internet clients get the internet gateway's public addresses. Using `pyrin.desertbluffs.com` (Atuin) as the
 example.
 
 ```mermaid
@@ -62,13 +62,12 @@ flowchart LR
   end
 
   cfdns[("Cloudflare DNS<br/>desertbluffs.com")]
-  edge["Cloudflare proxy"]
   gw["gw.lga1 (OPNsense)<br/>WAN 96.246.156.39"]
   unbound["gw.lga1 / gw.lga2 Unbound<br/>(host overrides)"]
 
   edp -- "A + AAAA as host overrides (OPNsense API)" --> unbound
   wanip -- "Gateway target annotation" --> edc
-  edc -- "proxied A + AAAA for internet hostnames" --> cfdns
+  edc -- "DNS-only A + AAAA (60s TTL) for internet hostnames" --> cfdns
 
   lan -- "pyrin? (LAN: site Unbound;<br/>tailnet: split-DNS → 100.83.144.88 / 100.86.37.97)" --> unbound
   unbound -- "local record: 10.43.64.10 / fd54:…::10" --> lan
@@ -76,14 +75,13 @@ flowchart LR
   lan -- "HTTPS" --> priv
 
   web -- "pyrin?" --> cfdns
-  cfdns -- "Cloudflare anycast IPs" --> web
-  web -- "HTTPS" --> edge
-  edge -- "IPv4: 96.246.156.39:443" --> gw
+  cfdns -- "96.246.156.39 / 2600:…::20" --> web
+  web -- "IPv4: 96.246.156.39:443" --> gw
   gw -- "port forward" --> inet
-  edge -- "IPv6: [2600:…::20]:443<br/>(WAN rule allows Cloudflare ranges only)" --> inet
+  web -- "IPv6: [2600:…::20]:443" --> inet
 
   priv --> app
-  inet -- "Cloudflare origin-pull mTLS required" --> app
+  inet --> app
 ```
 
 - **Inside (`desertbluffs.com`):** Each site gateway's Unbound answers every hostname routed on
@@ -98,11 +96,12 @@ flowchart LR
   `gw.lga2` (`gateway/`), so they resolve even when the cluster is down. Tailnet split-DNS routes
   `radoncanyon.com` to both gateways (`100.83.144.88`, `100.86.37.97`), and Tailscale MagicDNS (`*.macaroni-pirate.ts.net`) answers tailnet IPs
   automatically. No private IPs are published in Cloudflare (`dns/`).
-- **Outside:** Cloudflare answers with its own anycast addresses, because every internet record is
-  proxied. The A and AAAA contents (the WAN address and the gateway's public IPv6 address) are only
-  where Cloudflare connects, and never appear in public answers.
+- **Outside:** Cloudflare DNS answers with the WAN address and the gateway's public IPv6 address.
+  Internet records are DNS-only with a 60s TTL, so clients that move between inside and outside
+  pick up the other answer quickly. The `kamotimestamps.com` routes are the exception: they opt in
+  to the Cloudflare proxy, so they answer with Cloudflare anycast addresses.
 - A hostname routed only on the internet gateway has no host override, so LAN and tailnet
-  clients fall through to Cloudflare and follow the same path as internet clients.
+  clients fall through to public DNS and follow the same path as internet clients.
 - Apps that use SSO (OIDC or SAML) see one hostname everywhere, so redirect URIs, issuers, and
   session cookies match whether the browser is inside or outside.
 
@@ -110,27 +109,28 @@ flowchart LR
 
 ### Internet
 
-1. Cloudflare serves the public DNS record, proxied (`external-dns.kubernetes.io/cloudflare-proxied: "true"`).
+1. Cloudflare serves the public DNS record. Records are DNS-only with a 60s TTL (`--min-ttl`) by
+   default; a route opts in to the proxy with `external-dns.kubernetes.io/cloudflare-proxied: "true"`.
    The `external-dns` instance only publishes routes attached to the `internet` gateway.
-2. Each internet hostname has its own proxied A and AAAA record. Their content is where Cloudflare
-   connects: the WAN address and the `internet` gateway's public IPv6 address. The `wan-ip`
+2. Each internet hostname has its own A and AAAA record: the WAN address and the `internet`
+   gateway's public IPv6 address. The `wan-ip`
    CronJob (`apps/wan-ip`) detects the WAN address every 5 minutes and writes both addresses to
    the gateway's `external-dns.kubernetes.io/target` annotation, which the `external-dns` instance
-   applies to every route. The apex `desertbluffs.com` is a proxied CNAME to `www` in
+   applies to every route. The apex `desertbluffs.com` is a DNS-only CNAME to `www` in
    `dns/desertbluffs.com.tf`, because external-dns can't own apex records.
 3. The router sends that traffic to the `internet` gateway at `10.43.64.20`.
-4. The gateway accepts only TLS clients that present a Cloudflare authenticated origin pull
-   certificate (`tls-settings-internet` in `tls-settings-policy.yaml`), so connections that
-   bypass Cloudflare fail the TLS handshake.
+4. The gateway verifies a Cloudflare Authenticated Origin Pulls certificate when a client presents
+   one, but doesn't require it (`tls-settings-internet` in `tls-settings-policy.yaml`). The
+   proxied timekeeper routes reject connections without a valid one in their Lua filter, so only
+   Cloudflare reaches them and their `CF-*` headers can be trusted.
 
 The `internet` gateway also has the public IPv6 address `2600:4041:5b21:6b64::20`, from the
 Cilium `public-v6` pool (`2600:4041:5b21:6b64::/112`, in `apps-helm/cilium/manifests/bgp.yaml`).
 Only Services labeled `lbipam.homelab/pool: public` get addresses from that pool, and the gateway
 is the only one. OPNsense's WAN rule `ingress gateway` allows port 443 to it (alias
-`ingress_gateway_v6`) only from Cloudflare's published ranges (`cf_ips_v6`). The address sits
+`ingress_gateway_v6`) and to the IPv4 port forward from any source. The address sits
 inside the prefix Verizon delegates, so it changes if that prefix does; the pool, the alias, and
 the gateway's `lbipam.cilium.io/ips` annotation then need the new prefix, and external-dns follows.
-With both records published, Cloudflare still reaches the origin over IPv4.
 
 ### Private
 

@@ -27,9 +27,10 @@ sources:
 - gateway-tcproute
 - gateway-udproute
 extraArgs:
-# Proxied (orange-cloud) is the default for every record; a route opts out
-# with external-dns.kubernetes.io/cloudflare-proxied: "false".
-- --cloudflare-proxied
+# Records are DNS-only by default; a route opts in to the Cloudflare proxy
+# with external-dns.kubernetes.io/cloudflare-proxied: "true". DNS-only records
+# get a 60s TTL so split-DNS clients switch answers quickly.
+- --min-ttl=60s
 - --gateway-name=internet
 - --domain-filter=desertbluffs.com
 - --domain-filter=kamotimestamps.com

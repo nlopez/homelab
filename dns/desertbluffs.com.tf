@@ -8,7 +8,7 @@ locals {
     "caa-apex-issuewild-pki"         = { name = "@", type = "CAA", data = { flags = 0, tag = "issuewild", value = "pki.goog" } }
     "caa-apex-iodef-mailto"          = { name = "@", type = "CAA", data = { flags = 128, tag = "iodef", value = "mailto:sslabuse@desertbluffs.com" } }
     # external-dns serves www from the internet gateway but cannot own apex records.
-    "cname-apex"                                        = { name = "@", type = "CNAME", content = "www.desertbluffs.com", proxied = true }
+    "cname-apex"                                        = { name = "@", type = "CNAME", content = "www.desertbluffs.com", ttl = 60 }
     "cname-ec25ukpzz6h4nddab3jyevcnzmmmbrgm._domainkey" = { name = "ec25ukpzz6h4nddab3jyevcnzmmmbrgm._domainkey", type = "CNAME", content = "ec25ukpzz6h4nddab3jyevcnzmmmbrgm.dkim.amazonses.com" }
     "cname-gc4caluqqezmfk6xanwpdpw5eytglrkn._domainkey" = { name = "gc4caluqqezmfk6xanwpdpw5eytglrkn._domainkey", type = "CNAME", content = "gc4caluqqezmfk6xanwpdpw5eytglrkn.dkim.amazonses.com" }
     "cname-ptusb247sybmwk4i32j5lmagtmtqq7qi._domainkey" = { name = "ptusb247sybmwk4i32j5lmagtmtqq7qi._domainkey", type = "CNAME", content = "ptusb247sybmwk4i32j5lmagtmtqq7qi.dkim.amazonses.com" }

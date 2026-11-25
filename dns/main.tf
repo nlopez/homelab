@@ -36,7 +36,7 @@ locals {
 
   records = merge([
     for zone, z in local.zones : {
-      for key, r in z.records : "${zone}/${key}" => merge(r, { zone = zone, ttl = z.ttl })
+      for key, r in z.records : "${zone}/${key}" => merge({ ttl = z.ttl }, r, { zone = zone })
     }
   ]...)
 }

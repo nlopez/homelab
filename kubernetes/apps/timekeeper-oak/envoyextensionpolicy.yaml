@@ -12,8 +12,9 @@ spec:
   - type: Inline
     inline: |-
       -- The app trusts X-Client-* (TRUST_PROXY_HEADERS). Only this filter may set them: drop whatever
-      -- the client sent, then copy from the headers Cloudflare added (the gateway requires
-      -- Authenticated Origin Pulls, so only Cloudflare reaches this route).
+      -- the client sent, then copy from the headers Cloudflare added. The gateway verifies client
+      -- certificates against Cloudflare's Authenticated Origin Pulls CA but does not require one,
+      -- so reject any connection that did not present a valid one: only Cloudflare reaches this route.
       local map = {
         ["x-client-ip"] = "cf-connecting-ip",
         ["x-client-country"] = "cf-ipcountry",
@@ -21,6 +22,11 @@ spec:
         ["x-client-region"] = "cf-region-code",
       }
       function envoy_on_request(handle)
+        local ssl = handle:connection():ssl()
+        if ssl == nil or not ssl:peerCertificateValidated() then
+          handle:respond({[":status"] = "403"}, "forbidden")
+          return
+        end
         local headers = handle:headers()
         for out, src in pairs(map) do
           local value = headers:get(src)

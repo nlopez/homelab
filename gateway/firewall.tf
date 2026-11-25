@@ -110,7 +110,7 @@ locals {
       direction        = "in"
       ip_protocol      = "inet46"
       protocol         = "TCP/UDP"
-      source_net       = "cf_ips_v4,cf_ips_v6"
+      source_net       = "any"
       state_type       = "keep"
       allow_options    = false
       destination_not  = false
