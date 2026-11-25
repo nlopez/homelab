@@ -16,6 +16,8 @@ spec:
         app: pixivfe
     spec:
       automountServiceAccountToken: false
+      # The Service would otherwise inject PIXIVFE_PORT as a URL.
+      enableServiceLinks: false
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
