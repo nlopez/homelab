@@ -66,26 +66,6 @@ resource "sonarr_media_management" "media_management" {
 
 # Download clients
 
-resource "sonarr_download_client_qbittorrent" "nas1" {
-  enable                     = false
-  first_and_last             = false
-  host                       = "nas1.lga1.radoncanyon.com"
-  initial_state              = 0
-  name                       = "qBittorrent - nas1"
-  older_tv_priority          = 0
-  password                   = var.qbittorrent_password
-  port                       = 30024
-  priority                   = 1
-  recent_tv_priority         = 0
-  remove_completed_downloads = true
-  remove_failed_downloads    = true
-  sequential_order           = false
-  tags                       = [sonarr_tag.unused.id]
-  tv_category                = "sonarr-anime"
-  use_ssl                    = false
-  username                   = "admin"
-}
-
 resource "sonarr_download_client_qbittorrent" "nas2" {
   enable                     = true
   first_and_last             = false
