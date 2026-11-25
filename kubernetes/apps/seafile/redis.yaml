@@ -9,6 +9,9 @@ spec:
       app: redis
   template:
     metadata:
+      annotations:
+        ad.datadoghq.com/redis.checks: |-
+          {"redisdb":{"init_config":{},"instances":[{"host":"%%host%%","port":6379,"password":"ENC[seafile/seafile-redis;password]"}]}}
       labels:
         app: redis
         app.kubernetes.io/name: redis
@@ -29,8 +32,8 @@ spec:
         - name: REDIS_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: onepassword-seafile
-              key: redis-password
+              name: seafile-redis
+              key: password
         ports:
         - name: redis
           containerPort: 6379

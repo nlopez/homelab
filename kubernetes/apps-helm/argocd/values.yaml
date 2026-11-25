@@ -1,3 +1,7 @@
+redis:
+  podAnnotations:
+    ad.datadoghq.com/redis.checks: |-
+      {"redisdb":{"init_config":{},"instances":[{"host":"%%host%%","port":6379,"password":"ENC[argocd/argocd-redis;auth]"}]}}
 global:
   domain: flopie.desertbluffs.com
   podLabels:

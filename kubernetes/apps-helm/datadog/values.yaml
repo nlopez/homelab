@@ -1,4 +1,7 @@
 datadog:
+  secretBackend:
+    type: k8s.secrets
+    enableGlobalPermissions: false
   site: datadoghq.com
   apiKeyExistingSecret: datadog-keys
   appKeyExistingSecret: datadog-keys

@@ -32,6 +32,10 @@ valkey:
   enabled: true
   controllers:
     main:
+      pod:
+        annotations:
+          ad.datadoghq.com/main.checks: |-
+            {"redisdb":{"init_config":{},"instances":[{"host":"%%host%%","port":6379}]}}
       containers:
         main:
           image:
