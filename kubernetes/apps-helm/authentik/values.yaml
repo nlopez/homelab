@@ -40,7 +40,44 @@ authentik:
     from: authentik <authentik@desertbluffs.com>
   error_reporting:
     enabled: false
+# Serves the Desert Bluffs brand assets (branding/ directory, rendered into
+# manifests/branding.yaml) from /static/dist/assets/desert-bluffs/, which
+# the authentik_brand resource in authentik/brand.tf points at. ConfigMap
+# keys cannot contain '/', so each key is mounted by name via subPath.
 server:
+  volumes:
+  - name: branding
+    configMap:
+      name: authentik-branding
+  volumeMounts:
+  - name: branding
+    subPath: logo-light.svg
+    mountPath: /web/dist/assets/desert-bluffs/logo-light.svg
+    readOnly: true
+  - name: branding
+    subPath: logo-dark.svg
+    mountPath: /web/dist/assets/desert-bluffs/logo-dark.svg
+    readOnly: true
+  - name: branding
+    subPath: logo-light.png
+    mountPath: /web/dist/assets/desert-bluffs/logo-light.png
+    readOnly: true
+  - name: branding
+    subPath: logo-dark.png
+    mountPath: /web/dist/assets/desert-bluffs/logo-dark.png
+    readOnly: true
+  - name: branding
+    subPath: favicon.svg
+    mountPath: /web/dist/assets/desert-bluffs/favicon.svg
+    readOnly: true
+  - name: branding
+    subPath: favicon.png
+    mountPath: /web/dist/assets/desert-bluffs/favicon.png
+    readOnly: true
+  - name: branding
+    subPath: background.png
+    mountPath: /web/dist/assets/desert-bluffs/background.png
+    readOnly: true
   resources:
     requests:
       cpu: 50m

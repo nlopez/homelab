@@ -11,8 +11,10 @@ terraform {
 
   required_providers {
     authentik = {
+      # 2026.8.2 adds flow_request et al. to authentik_brand's update, so
+      # taking over the default brand stops dropping its system-set flows.
       source  = "goauthentik/authentik"
-      version = "~> 2026.8"
+      version = "2026.8.2"
     }
   }
 }
