@@ -27,6 +27,9 @@ sources:
 - gateway-tcproute
 - gateway-udproute
 extraArgs:
+# Proxied (orange-cloud) is the default for every record; a route opts out
+# with external-dns.kubernetes.io/cloudflare-proxied: "false".
+- --cloudflare-proxied
 - --gateway-name=internet
 - --domain-filter=desertbluffs.com
 - --domain-filter=kamotimestamps.com
