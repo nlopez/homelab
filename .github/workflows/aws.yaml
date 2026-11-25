@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dir: [ses, authentik-smtp, forgejo-smtp, seafile-smtp, nas-smtp]
+        dir: [ses, authentik-smtp, forgejo-smtp, seafile-smtp, nas-smtp, immich-smtp]
     environment: production
     runs-on: ubuntu-24.04
     permissions:
