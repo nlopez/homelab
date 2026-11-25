@@ -6,7 +6,7 @@ on:
     paths: ['aws/**', '.github/workflows/aws.yaml']
   pull_request:
     branches: [ "main" ]
-    paths: ['aws/**', '.github/workflows/aws.yaml', '.github/actions/tofu-plan/**']
+    paths: ['aws/**', '.github/workflows/aws.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
   workflow_dispatch:
 
 permissions:
@@ -92,3 +92,17 @@ jobs:
         if: steps.plan.outputs.changed == 'true'
         working-directory: aws/${{ matrix.dir }}
         run: tofu apply -input=false tfplan
+
+      - uses: ./.github/actions/discord-notify
+        if: success() && steps.plan.outputs.changed == 'true'
+        with:
+          result: applied
+          subject: AWS ${{ matrix.dir }}
+          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - uses: ./.github/actions/discord-notify
+        if: failure() || cancelled()
+        with:
+          result: failed
+          subject: AWS ${{ matrix.dir }}
+          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}

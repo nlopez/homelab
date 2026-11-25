@@ -6,7 +6,7 @@ on:
     paths: ['aws/state-bucket/**', '.github/workflows/state-bucket.yaml']
   pull_request:
     branches: [ "main" ]
-    paths: ['aws/state-bucket/**', '.github/workflows/state-bucket.yaml', '.github/actions/tofu-plan/**']
+    paths: ['aws/state-bucket/**', '.github/workflows/state-bucket.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
   workflow_dispatch:
 
 permissions:
@@ -87,3 +87,15 @@ jobs:
         if: steps.plan.outputs.changed == 'true'
         working-directory: aws/state-bucket
         run: tofu apply -input=false tfplan
+
+      - uses: ./.github/actions/discord-notify
+        if: success() && steps.plan.outputs.changed == 'true'
+        with:
+          result: applied
+          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - uses: ./.github/actions/discord-notify
+        if: failure() || cancelled()
+        with:
+          result: failed
+          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
