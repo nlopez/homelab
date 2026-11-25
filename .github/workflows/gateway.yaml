@@ -8,6 +8,11 @@ on:
     branches: [ "main" ]
     paths: ['gateway/**', '.github/workflows/gateway.yaml', '.github/workflows/_tofu-stack.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
   workflow_dispatch:
+    inputs:
+      drift-only:
+        description: Only plan and report drift, as the nightly run does; don't apply
+        type: boolean
+        default: false
   schedule:
     # Nightly drift check; see _tofu-stack.yaml.
     - cron: '19 7 * * *'
@@ -34,6 +39,7 @@ jobs:
       pull-requests: write
     secrets: inherit
     with:
+      drift-only: ${{ inputs.drift-only == true }}
       directory: gateway
       title: Gateway
       plan-role: homelab-gateway-plan

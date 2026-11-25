@@ -1,7 +1,8 @@
 name: OpenTofu stack
 
 # Plans one OpenTofu stack on a pull request and posts the plan as a comment,
-# or plans and applies it on main. On a schedule it only plans, with the apply
+# or plans and applies it on main. On a schedule, or a manual run with
+# drift-only, it only plans, with the apply
 # credentials, and keeps one open "Drift: <title>" issue while the stack has
 # drifted from main. Each stack's workflow calls this with its
 # directory and roles; see dns.yaml for the smallest caller.
@@ -54,6 +55,10 @@ on:
         description: Subject of the Discord message; defaults to the workflow name
         type: string
         default: ""
+      drift-only:
+        description: Plan on main and report drift as the nightly run does, without applying
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -145,7 +150,8 @@ jobs:
           tofu-version: ${{ env.TOFU_VERSION }}
 
   apply:
-    name: ${{ github.event_name == 'schedule' && 'Drift check' || 'Apply' }}
+    # A fixed name: GitHub shows a skipped job's expression unevaluated.
+    name: Apply
     if: github.event_name != 'pull_request'
     environment: production
     runs-on: ubuntu-24.04
@@ -206,7 +212,7 @@ jobs:
           esac
 
       - name: Apply
-        if: steps.plan.outputs.changed == 'true' && github.event_name != 'schedule'
+        if: steps.plan.outputs.changed == 'true' && github.event_name != 'schedule' && !inputs.drift-only
         working-directory: ${{ inputs.directory }}
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
@@ -218,7 +224,7 @@ jobs:
           fi
 
       - name: Report drift
-        if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule' || inputs.drift-only
         working-directory: ${{ inputs.directory }}
         env:
           GH_TOKEN: ${{ github.token }}
@@ -249,7 +255,7 @@ jobs:
           fi
 
       - uses: ./.github/actions/discord-notify
-        if: success() && steps.plan.outputs.changed == 'true' && github.event_name != 'schedule'
+        if: success() && steps.plan.outputs.changed == 'true' && github.event_name != 'schedule' && !inputs.drift-only
         with:
           result: applied
           subject: ${{ inputs.notify-subject }}

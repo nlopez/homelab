@@ -8,6 +8,11 @@ on:
     branches: [ "main" ]
     paths: ['dns/**', '.github/workflows/dns.yaml', '.github/workflows/_tofu-stack.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
   workflow_dispatch:
+    inputs:
+      drift-only:
+        description: Only plan and report drift, as the nightly run does; don't apply
+        type: boolean
+        default: false
   schedule:
     # Nightly drift check; see _tofu-stack.yaml.
     - cron: '7 7 * * *'
@@ -29,6 +34,7 @@ jobs:
       pull-requests: write
     secrets: inherit
     with:
+      drift-only: ${{ inputs.drift-only == true }}
       directory: dns
       title: DNS
       plan-role: homelab-dns-plan
