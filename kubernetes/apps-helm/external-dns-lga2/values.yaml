@@ -6,8 +6,8 @@ provider:
   name: webhook
   webhook:
     image:
-      repository: ghcr.io/crutonjohn/external-dns-opnsense-webhook
-      tag: v1.0.0
+      repository: ghcr.io/nlopez/external-dns-opnsense-webhook
+      tag: feat-record-ttl@sha256:3131c7cff4907e0ce61c3373daa35335389a256a7d44c3ca98ee801df63862e4
     env:
     - name: OPNSENSE_API_SECRET
       valueFrom:
