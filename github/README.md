@@ -37,6 +37,17 @@ settings: requiring approval for all outside collaborators' workflow runs, priva
 vulnerability reporting, and the Actions secrets (`OP_CI_PR_SERVICE_ACCOUNT_TOKEN`
 on the repository, `OP_SERVICE_ACCOUNT_TOKEN` on `production`).
 
+# Protecting main
+The `main` ruleset requires a pull request whose `ci-ok` check passed, a linear
+history, and signed commits, with no bypass for admins. It exists only when
+`public = true` or `rulesets = true`. Set `rulesets = true` to keep the
+repository private on a plan that offers rulesets there. Until one of them is
+set, nothing enforces the pull request flow in `AGENTS.md`.
+
+The GitHub Actions app bypasses the ruleset so the media-toolbox version bump can
+push to `main`. Any workflow with `contents: write` could use that, so remove the
+bypass once the bump opens a pull request instead.
+
 # Recreating the repository
 The `dns` and `tailnet` AWS role trust policies in `aws/state-bucket/iam.tf` match
 the OIDC subject `repo:nlopez@20211302/homelab@<repository id>:environment:production`.
