@@ -121,3 +121,38 @@ import {
   to       = opnsense_unbound_general.lga2
   id       = "unbound-general"
 }
+
+# acl_default_action refuses anything outside the interface subnets Unbound
+# auto-allows. Cross-site queries arrive over WireGuard without SNAT, so the
+# other site's LAN, the tailnet and the ULA ranges need an explicit allow.
+# One ACL per network: the provider reads a multi-network ACL back as only its
+# first network.
+locals {
+  unbound_private_networks = [
+    "10.0.0.0/8",
+    "100.64.0.0/10",
+    "172.16.0.0/12",
+    "192.168.0.0/16",
+    "fc00::/7",
+  ]
+}
+
+resource "opnsense_unbound_acl" "lga1_private" {
+  provider = opnsense.lga1
+  for_each = toset(local.unbound_private_networks)
+
+  name        = "private-${replace(replace(each.key, "/", "-"), ":", "")}"
+  action      = "allow"
+  networks    = each.key
+  description = "Private-range clients"
+}
+
+resource "opnsense_unbound_acl" "lga2_private" {
+  provider = opnsense.lga2
+  for_each = toset(local.unbound_private_networks)
+
+  name        = "private-${replace(replace(each.key, "/", "-"), ":", "")}"
+  action      = "allow"
+  networks    = each.key
+  description = "Private-range clients"
+}
