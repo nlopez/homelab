@@ -74,6 +74,8 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      # Labels: destroy-approved (see .github/actions/tofu-plan).
+      issues: write
       pull-requests: write
 
     steps:
