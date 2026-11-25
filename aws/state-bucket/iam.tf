@@ -235,7 +235,7 @@ resource "aws_iam_role" "aws_apply" {
   assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
 }
 
-# State access for the four apply-on-push AWS stacks plus the SES and SMTP
+# State access for the apply-on-push AWS stacks plus the SES and SMTP
 # IAM resources each one manages.
 data "aws_iam_policy_document" "aws_state" {
   statement {
@@ -257,6 +257,7 @@ data "aws_iam_policy_document" "aws_state" {
       "${aws_s3_bucket.state.arn}/authentik-smtp/*",
       "${aws_s3_bucket.state.arn}/forgejo-smtp/*",
       "${aws_s3_bucket.state.arn}/seafile-smtp/*",
+      "${aws_s3_bucket.state.arn}/nas-smtp/*",
     ]
   }
 
@@ -289,6 +290,7 @@ data "aws_iam_policy_document" "aws_state" {
       "arn:aws:iam::546422192262:user/authentik-smtp",
       "arn:aws:iam::546422192262:user/forgejo-smtp",
       "arn:aws:iam::546422192262:user/seafile-smtp",
+      "arn:aws:iam::546422192262:user/nas-smtp",
     ]
   }
 }
