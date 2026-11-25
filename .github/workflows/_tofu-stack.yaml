@@ -99,7 +99,10 @@ jobs:
         uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
 
       # Resolves secrets.plan.env with the read-only service account, masks
-      # each value, and exports it to the later steps.
+      # each value, and exports it to the later steps. Each reference goes
+      # through its own `op read`: resolving the whole file with `op run`
+      # intermittently failed to find the gateway-plan item ("deleted or
+      # archived"), which the earlier per-variable loading never did.
       - name: Load read-only credentials
         if: hashFiles(format('{0}/secrets.plan.env', inputs.directory)) != ''
         working-directory: ${{ inputs.directory }}
@@ -107,17 +110,17 @@ jobs:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_CI_PR_SERVICE_ACCOUNT_TOKEN }}
         run: |-
           set -euo pipefail
-          NAMES="$(grep -E '^[A-Za-z_][A-Za-z0-9_]*=' secrets.plan.env | cut -d= -f1 | tr '\n' ' ')"
-          export NAMES
-          op run --env-file secrets.plan.env --no-masking -- bash -euo pipefail -c '
-            for name in ${NAMES}; do
-              value="${!name}"
-              while IFS= read -r line; do
-                if [ -n "${line}" ]; then echo "::add-mask::${line}"; fi
-              done <<<"${value}"
-              delim="EOF_$(openssl rand -hex 8)"
-              printf "%s<<%s\n%s\n%s\n" "${name}" "${delim}" "${value}" "${delim}" >>"${GITHUB_ENV}"
-            done'
+          while IFS='=' read -r name ref; do
+            case "${ref}" in
+              op://*) value="$(op read --no-newline "${ref}")" ;;
+              *) value="${ref}" ;;
+            esac
+            while IFS= read -r line; do
+              if [ -n "${line}" ]; then echo "::add-mask::${line}"; fi
+            done <<<"${value}"
+            delim="EOF_$(openssl rand -hex 8)"
+            printf '%s<<%s\n%s\n%s\n' "${name}" "${delim}" "${value}" "${delim}" >>"${GITHUB_ENV}"
+          done < <(grep -E '^[A-Za-z_][A-Za-z0-9_]*=' secrets.plan.env)
 
       - name: Set plan variables
         if: inputs.plan-env != ''
