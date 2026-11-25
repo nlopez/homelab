@@ -1,38 +1,55 @@
 # Agent guide
 
-Several agents and people work in this repo at the same time. Every rule below exists to avoid conflicts and keep `main` moving.
+Several agents and people work in this repo at the same time. Every change lands through a pull request, and every stack that applies on `main` posts a plan on the PR first. Agents need no production credentials locally: CI plans with read-only credentials and applies after merge.
 
 ## Setup
 
 - Enter the dev shell (`direnv allow` or `devenv shell`). It provides every tool the pre-commit hooks need and installs the hooks.
 - Hooks run on every commit and must pass. Never skip them (`--no-verify`) or skip signing.
 
-## One task, one branch, one worktree
+## One task, one branch, one worktree, one PR
 
 - Never edit files in the main clone. Create a worktree first: `wt switch --create <branch>`.
 - Keep the worktree directory and its branch matched. Never `git switch` or `git checkout` to another branch inside a worktree.
-- Keep each task small and touching few files. Small changes conflict less.
+- Keep each task small and touching few files. Small changes conflict less and plan faster.
 - Do not reformat or reorganize files you are not otherwise changing.
+- Before you start, check open PRs for the same stack: `gh pr list --search '<dir>'`. If another PR changes the same resources, coordinate in that PR instead of opening a competing one.
 
-## Merge to main before you push
+## Open a PR and wait for the plan
 
 1. Commit in your worktree. The pre-commit hooks run on each commit.
-2. Run `wt merge` as the last command of the task. It squashes, rebases onto the latest `main`, fast-forwards `main`, and removes the worktree and its branch.
-3. The post-merge hook pushes `main` for you. Check the result with `wt config state logs`.
+2. Push the branch and open a PR: `git push -u origin HEAD`, then `gh pr create --fill`. Say in the description what the plan should show, for example "adds one A record, changes nothing else".
+3. Wait for the checks: `gh pr checks --watch`.
+4. Read every plan comment on the PR (`gh pr view --comments`). Each stack posts its own comment and updates it on every push.
+5. Compare each plan with what the description says it should show.
+   - It matches and every check passed: merge with `gh pr merge --squash --delete-branch`.
+   - It shows anything you did not intend (an extra replace, a destroy, drift from someone else's change): do not merge. Fix the change, or describe the unexpected diff in a PR comment and leave it for a human.
+   - A plan that destroys or replaces a stateful resource (a DNS zone, an IAM user, a WireGuard server, an authentik flow) needs a human's approval in the PR, even when intended.
+6. After the merge, the stack's workflow applies on `main`. Confirm it passed: `gh run list --branch main --limit 5`. If the apply fails, open a follow-up PR; do not retry by hand.
+7. Remove the worktree once `gh pr view --json state -q .state` prints `MERGED`: `wt remove -D`. The squash merge gives `main` a new commit ID, so the local branch looks unmerged and needs `-D`.
 
-Do not pass `--no-remove`. If you abandon a task without merging, run `wt remove` before you finish. Never leave a worktree behind.
+If you abandon a task, close the PR (`gh pr close --delete-branch`) and run `wt remove -D`. Never leave a worktree or an open PR behind without saying why in the PR.
 
-Never push a feature branch's work to `main` without rebasing onto current `main` first.
+Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` against production from your machine.
 
 ## When something goes wrong
 
-- Push rejected because `main` moved: run `wt merge` again, then push. Do not force-push.
+- `main` moved and touches the same stack: rebase (`git fetch origin && git rebase origin/main`), push with `git push --force-with-lease`, and wait for a fresh plan. A plan made before someone else's merge to the same stack is stale.
 - Rebase conflict: resolve it in your worktree, re-run the hooks, and continue. If another agent's change is involved, keep both intents.
 - A hook fails: fix the cause and commit again. Do not bypass it.
+- A plan job fails before it plans (credentials, network): say so in the PR and leave it for a human. Do not merge without a plan.
 
 ## Where checks run
 
-- `ansible/` changes: `ansible-lint` hook.
-- `dns/` changes: `tofu fmt` hook. A push to `main` that touches `dns/` runs `tofu apply` in the `DNS` workflow.
-- `kubernetes/` changes: yamlfmt, schema, and kubeconform hooks. Rendered manifest diffs only appear on PRs.
-- `tailnet/` changes apply on push to `main` with no pre-merge check.
+| Directory | On the PR | On push to `main` |
+| --- | --- | --- |
+| `ansible/` | `ansible-lint`, check-mode drift run | nothing; apply is a manual `Ansible` dispatch |
+| `authentik/` | `tofu plan` comment | `tofu apply` |
+| `aws/` (SES and SMTP stacks) | `tofu plan` comment per stack | `tofu apply` |
+| `datadog/` | `tofu plan` comment | `tofu apply` |
+| `dns/` | `tofu plan` comment | `tofu apply` |
+| `gateway/` | `tofu plan` comment | `tofu apply` |
+| `kubernetes/` | yamlfmt, schema, kubeconform hooks; rendered manifest diff comment | Argo CD syncs |
+| `tailnet/` | ACL tests, `tofu plan` comment | `tofu apply` |
+
+`aws/state-bucket`, `tailnet/admin`, `github`, `truenas`, and `arr` have no CI. A human applies them; open the PR anyway and say in it that it needs a local apply.
