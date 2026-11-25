@@ -34,7 +34,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: sonarr-api-key
-                  key: SONARR_API_KEY
+                  key: credential
             - name: DISCORD_URL
               valueFrom:
                 secretKeyRef:
@@ -73,7 +73,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: sonarr-api-key
-                  key: SONARR_API_KEY
+                  key: credential
             volumeMounts:
             - name: config-template
               mountPath: /config-template

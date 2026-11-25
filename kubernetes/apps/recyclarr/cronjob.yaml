@@ -44,7 +44,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: sonarr-api-key
-                  key: SONARR_API_KEY
+                  key: credential
             - name: RADARR_API_KEY
               valueFrom:
                 secretKeyRef:

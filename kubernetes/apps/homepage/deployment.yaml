@@ -46,7 +46,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: homepage-sonarr
-              key: SONARR_API_KEY
+              key: credential
         resources:
           requests:
             cpu: 10m
