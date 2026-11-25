@@ -301,3 +301,79 @@ resource "aws_iam_role_policy" "aws_state" {
   role   = aws_iam_role.aws_apply.id
   policy = data.aws_iam_policy_document.aws_state.json
 }
+
+# Pull requests plan every apply-on-push stack with read-only access to its
+# state. Each role is named homelab-<stack>-plan and reads only its own state
+# prefixes.
+locals {
+  plan_state_prefixes = {
+    authentik = ["authentik"]
+    aws       = ["ses", "authentik-smtp", "forgejo-smtp", "seafile-smtp", "nas-smtp", "immich-smtp"]
+    datadog   = ["datadog"]
+    dns       = ["dns"]
+    gateway   = ["gateway"]
+  }
+}
+
+resource "aws_iam_role" "plan" {
+  for_each = local.plan_state_prefixes
+
+  name               = "homelab-${each.key}-plan"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_pull_request_assume.json
+}
+
+data "aws_iam_policy_document" "plan_state_read" {
+  for_each = local.plan_state_prefixes
+
+  statement {
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:ListBucket",
+    ]
+    resources = [aws_s3_bucket.state.arn]
+  }
+
+  statement {
+    actions   = ["s3:GetObject"]
+    resources = [for prefix in each.value : "${aws_s3_bucket.state.arn}/${prefix}/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "plan_state_read" {
+  for_each = local.plan_state_prefixes
+
+  role   = aws_iam_role.plan[each.key].id
+  policy = data.aws_iam_policy_document.plan_state_read[each.key].json
+}
+
+# Refreshing the SES and SMTP stacks reads the resources they manage.
+data "aws_iam_policy_document" "aws_plan_refresh" {
+  statement {
+    actions = [
+      "ses:GetEmailIdentity",
+      "ses:GetEmailIdentityMailFromAttributes",
+      "ses:ListTagsForResource",
+    ]
+    resources = ["arn:aws:ses:us-east-1:546422192262:identity/desertbluffs.com"]
+  }
+
+  statement {
+    actions = [
+      "iam:GetUser",
+      "iam:GetUserPolicy",
+      "iam:ListAccessKeys",
+    ]
+    resources = [
+      "arn:aws:iam::546422192262:user/authentik-smtp",
+      "arn:aws:iam::546422192262:user/forgejo-smtp",
+      "arn:aws:iam::546422192262:user/seafile-smtp",
+      "arn:aws:iam::546422192262:user/nas-smtp",
+      "arn:aws:iam::546422192262:user/immich-smtp",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "aws_plan_refresh" {
+  role   = aws_iam_role.plan["aws"].id
+  policy = data.aws_iam_policy_document.aws_plan_refresh.json
+}
