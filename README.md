@@ -18,7 +18,7 @@ workflow, which people and agents both follow.
 | [`gateway/`](gateway) | OPNsense on `gw-lga1` and `gw-lga2`: Unbound, routes, WireGuard, API users | `tofu plan` (WireGuard excluded) | `tofu apply` |
 | [`tailnet/`](tailnet) | Tailnet policy (`policy.hujson`) and DNS (`tofu/`) | ACL tests, `tofu plan` | `tofu apply` |
 | [`tailnet/admin/`](tailnet/admin) | Tailscale OAuth clients and CI federated identities | `tofu plan` | `tofu apply` |
-| [`media-toolbox/`](media-toolbox) | Container image for media tools | Image build (on any branch push) | Image push; nightly version bump |
+| [`media-toolbox/`](media-toolbox) | Container image for media tools | Image build (on any branch push) | Image push; nightly build of new yt-dlp releases |
 | [`github/`](github) | This repository's settings | None | **Local apply by a human** |
 | [`truenas/`](truenas) | `nas1` and `nas2`: datasets, shares, users, apps, snapshots | None | **Local apply by a human** |
 | [`arr/`](arr) | Sonarr and Radarr settings | None | **Local apply by a human** |

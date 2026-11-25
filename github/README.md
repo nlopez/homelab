@@ -44,9 +44,10 @@ The `main` ruleset requires a pull request that is up to date with `main` and wh
 repository private on a plan that offers rulesets there. Until one of them is
 set, nothing enforces the pull request flow in `AGENTS.md`.
 
-The GitHub Actions app bypasses the ruleset so the media-toolbox version bump can
-push to `main`. Any workflow with `contents: write` could use that, so remove the
-bypass once the bump opens a pull request instead.
+Nothing bypasses it, workflows included. GitHub only accepts a GitHub App as a
+bypass actor when the app belongs to the repository's owner, and on a user-owned
+repository the GitHub Actions app doesn't. So the media-toolbox schedule builds
+new releases without committing the new pins (see its workflow).
 
 # Recreating the repository
 The `dns` and `tailnet` AWS role trust policies in `aws/state-bucket/iam.tf` match

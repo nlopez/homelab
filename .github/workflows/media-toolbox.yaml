@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
   packages: write
 
 jobs:
@@ -30,7 +30,8 @@ jobs:
     outputs:
       yt_dlp: ${{ steps.resolve.outputs.yt_dlp }}
       bgutil: ${{ steps.resolve.outputs.bgutil }}
-      build: ${{ steps.resolve.outputs.build }}
+      # Skips a scheduled build when the same versions were already built.
+      build: ${{ steps.resolve.outputs.build == 'true' && steps.built.outputs.cache-hit != 'true' }}
     steps:
       -
         name: Checkout
@@ -73,6 +74,15 @@ jobs:
             echo "build=$BUILD"
           } >> "$GITHUB_OUTPUT"
           echo "yt-dlp: $PINNED_YT_DLP -> $YT_DLP | bgutil: $PINNED_BGUTIL -> $BGUTIL | build: $BUILD"
+      -
+        name: Look for an earlier build of these versions
+        id: built
+        if: github.event_name == 'schedule' && steps.resolve.outputs.build == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .media-toolbox-built
+          key: media-toolbox-built-${{ steps.resolve.outputs.yt_dlp }}-${{ steps.resolve.outputs.bgutil }}
+          lookup-only: true
 
   docker:
     needs: check
@@ -85,16 +95,6 @@ jobs:
       -
         name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      -
-        name: Bump pinned versions in Makefile
-        id: bump
-        run: |
-          set -euo pipefail
-          sed -i "s|^YT_DLP_VERSION :=.*|YT_DLP_VERSION := $YT_DLP|" media-toolbox/Makefile
-          sed -i "s|^# https://github.com/yt-dlp/yt-dlp/releases/tag/.*|# https://github.com/yt-dlp/yt-dlp/releases/tag/$YT_DLP|" media-toolbox/Makefile
-          sed -i "s|^BGUTIL_YTDLP_POT_PROVIDER_VERSION :=.*|BGUTIL_YTDLP_POT_PROVIDER_VERSION := $BGUTIL|" media-toolbox/Makefile
-          if git diff --quiet -- media-toolbox/Makefile; then echo "changed=false" >> "$GITHUB_OUTPUT"; else echo "changed=true" >> "$GITHUB_OUTPUT"; fi
-          git diff -- media-toolbox/Makefile
       -
         name: Set up QEMU
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
@@ -133,13 +133,18 @@ jobs:
           cache-to: |
             type=gha,mode=max
             type=registry,ref=ghcr.io/nlopez/media-toolbox:build-cache,mode=max
+      # The schedule builds the latest releases without committing the new pins:
+      # the main ruleset accepts changes only through pull requests. This
+      # marker stops the next night from rebuilding the same pair; the Makefile
+      # pins move when Renovate (or a person) updates them.
       -
-        name: Commit version bump
-        if: steps.bump.outputs.changed == 'true' && github.ref == 'refs/heads/main'
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add media-toolbox/Makefile
-          git commit -m "chore: bump yt-dlp to $YT_DLP, bgutil to $BGUTIL [skip ci]"
-          git push origin HEAD:main
+        name: Record this build
+        if: github.event_name == 'schedule' && github.ref == 'refs/heads/main'
+        run: echo "${YT_DLP} ${BGUTIL}" > .media-toolbox-built
+      -
+        name: Save the build marker
+        if: github.event_name == 'schedule' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .media-toolbox-built
+          key: media-toolbox-built-${{ env.YT_DLP }}-${{ env.BGUTIL }}
