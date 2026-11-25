@@ -28,12 +28,13 @@ No CI applies this stack: an operator runs `tofu plan` and `tofu apply` after a
 change merges. The webhook secret is the 1Password item argocd-server verifies
 against.
 
-# Going public
-Set `public = true` (for example `tofu apply -var public=true`). That changes the
-repository visibility, turns on secret scanning with push protection, and creates
-the `main` ruleset, which GitHub does not offer on private repositories on the free
-plan. These settings have no provider support and stay manual in the repository
-settings: requiring approval for all outside collaborators' workflow runs, private
+# Public by default
+The repository is public, and `public` defaults to `true`: the visibility, secret
+scanning with push protection, and the `main` ruleset all follow from it. Setting
+`public = false` makes the repository private and deletes the ruleset, which GitHub
+offers on private repositories only on a paid plan (`rulesets = true`). These
+settings have no provider support and stay manual in the repository settings:
+requiring approval for all outside collaborators' workflow runs, private
 vulnerability reporting, and the Actions secrets (`OP_CI_PR_SERVICE_ACCOUNT_TOKEN`
 on the repository, `OP_SERVICE_ACCOUNT_TOKEN` on `production`).
 
