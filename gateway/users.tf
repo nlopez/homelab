@@ -24,17 +24,48 @@ resource "random_password" "ci_pr" {
 }
 
 locals {
-  # The pull-request plan user reads everything tofu manages. It is in the
-  # admins group for read access, and user-config-readonly ("System: Deny
-  # config write") makes the API reject every config write for it. Service
-  # actions (start, stop, restart, reconfigure) skip that check. Its API
-  # keypair is generated after apply (api/auth/user/addApiKey) and stored in
-  # the ci-pr vault as gateway-plan.
+  # The pull-request plan user can read the pages tofu manages and nothing
+  # else, and user-config-readonly ("System: Deny config write") makes the API
+  # reject every config write for it. Left out on purpose: WireGuard (private
+  # keys) and backups (the full config.xml). Two gaps the read-only check
+  # doesn't cover: service actions (start, stop, restart, reconfigure), and
+  # the firmware page, which the provider's Unbound and FRR resources need for
+  # version checks and which also allows updates, plugin installs and reboots.
+  # Its API keypair is generated after apply (api/auth/user/addApiKey) and
+  # stored in the ci-pr vault as gateway-plan.
+  ci_pr_privileges = [
+    "user-config-readonly",
+    "page-diagnostics-logs-settings-targets",
+    "page-dhcp-kea-ctrl-agent",
+    "page-dhcp-kea-ddns",
+    "page-dhcp-kea-v4",
+    "page-filter-api",
+    "page-firewall-alias-edit",
+    "page-firewall-aliases",
+    "page-firewall-categories",
+    "page-firewall-nat-portforward-edit",
+    "page-firewall-trafficshaper",
+    "page-firewall-virtualipaddress-edit",
+    "page-interfaces-vlan-edit",
+    "page-routing",
+    "page-services-acmeclient",
+    "page-services-dnsforwarder",
+    "page-services-dnsresolver-overrides",
+    "page-services-monit",
+    "page-services-unbound",
+    "page-status-interfaces",
+    "page-system-advanced-sysctl",
+    "page-system-cron",
+    "page-system-firmware-manualupdate",
+    "page-system-gateways",
+    "page-system-staticroutes",
+    "page-system-usermanager",
+  ]
   ci_pr_user = {
     full_name         = "Pull-request tofu plans"
     uid               = 2002
-    group_memberships = ["1999"]
-    privileges        = ["user-config-readonly"]
+    group_memberships = []
+    privileges        = local.ci_pr_privileges
     password          = random_password.ci_pr.result
   }
 
