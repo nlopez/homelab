@@ -6,6 +6,7 @@ Several agents and people work in this repo at the same time. Every change lands
 
 - Enter the dev shell (`direnv allow` or `devenv shell`). It provides every tool the pre-commit hooks need and installs the hooks.
 - Hooks run on every commit and must pass. Never skip them (`--no-verify`) or skip signing.
+- The `pre-commit` check runs the same hooks in CI on the files a PR changes. Without the dev shell, install `pre-commit`, `tofu`, `ansible-lint`, and `go` some other way and run the hooks anyway; CI is the backstop, not the first check.
 
 ## One task, one branch, one worktree, one PR
 
@@ -44,6 +45,7 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 | Directory | On the PR | On push to `main` |
 | --- | --- | --- |
 | every PR | `ci-ok`, which passes only when every other check passed | nothing |
+| every PR | `pre-commit`: the commit hooks, on the files the PR changes | nothing |
 | `ansible/` | `ansible-lint`, check-mode drift run | nothing; apply is a manual `Ansible` dispatch |
 | `authentik/` | `tofu plan` comment | `tofu apply` |
 | `aws/` (SES and SMTP stacks) | `tofu plan` comment per stack | `tofu apply` |
