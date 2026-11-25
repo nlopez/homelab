@@ -150,7 +150,8 @@ jobs:
           tofu-version: ${{ env.TOFU_VERSION }}
 
   apply:
-    name: ${{ (github.event_name == 'schedule' || inputs.drift-only) && 'Drift check' || 'Apply' }}
+    # A fixed name: GitHub shows a skipped job's expression unevaluated.
+    name: Apply
     if: github.event_name != 'pull_request'
     environment: production
     runs-on: ubuntu-24.04
