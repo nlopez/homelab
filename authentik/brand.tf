@@ -34,3 +34,9 @@ resource "authentik_brand" "desert_bluffs" {
   flow_invalidation   = data.authentik_flow.default_invalidation.id
   flow_user_settings  = data.authentik_flow.default_user_settings.id
 }
+
+# The default brand exists outside of Tofu; card.id becomes the resource id.
+import {
+  to = authentik_brand.desert_bluffs
+  id = "fdde4285-e2a6-486e-96d3-771a7e5c138a"
+}
