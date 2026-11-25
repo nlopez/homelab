@@ -39,6 +39,7 @@ locals {
     "page-dhcp-kea-ctrl-agent",
     "page-dhcp-kea-ddns",
     "page-dhcp-kea-v4",
+    "page-dhcp-kea-v6",
     "page-filter-api",
     "page-firewall-alias-edit",
     "page-firewall-aliases",
