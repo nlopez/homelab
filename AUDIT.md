@@ -1,7 +1,8 @@
 # Config management audit
 
 What is managed by this repo, what is not, and where the gaps are. Audited against the live
-tailnet, the LAN device inventory, and the running cluster.
+tailnet, the LAN device inventory, and the running cluster. On 2026-11-25 the claims about the repo
+itself were corrected against the repo; the claims about live systems were not re-checked.
 
 ## Coverage
 
@@ -11,7 +12,7 @@ tailnet, the LAN device inventory, and the running cluster.
 | `charon-0/1`, `heimdall-0/1`, `exit-lga1` | Argo CD (Tailscale operator proxy pods) | None. |
 | `gw-lga1`, `gw-lga2` | `gateway/` OpenTofu | Only Unbound, routes, and gateways. |
 | `akane` (laptop) | chezmoi (`nlopez/dotfiles`) | Separate repo. No nix-darwin. |
-| `nas1`, `nas2` | Nothing | No IaC, no config backup, no Datadog agent. |
+| `nas1`, `nas2` | `truenas/` OpenTofu, applied locally | No CI apply, no config backup, no Datadog agent. |
 | `uos` (UniFi OS Server, DigitalOcean) | Nothing | No IaC, no config backup, no monitoring. |
 | `nas1-ipmi`, `electabuzz` (PDU) | Nothing | BMC and PDU with no management. |
 
@@ -20,7 +21,8 @@ tailnet, the LAN device inventory, and the running cluster.
 ### 1. Unmanaged stateful machines
 
 `nas1` and `nas2` run TrueNAS SCALE 25.10.7 and hold the NFS, SMB, and iSCSI data behind the
-cluster's persistent volumes. Neither is in the Ansible inventory. TrueNAS config backups stop at
+cluster's persistent volumes. `truenas/` manages their datasets, shares, users, apps, and snapshot
+tasks, but only a local apply runs it. Neither is in the Ansible inventory. TrueNAS config backups stop at
 2021 (the FreeNAS era), and `datadog-agent` is inactive on `nas1`.
 
 `uos` is a DigitalOcean droplet running `uosserver.service` (UniFi OS Server). It has no backup and
@@ -39,22 +41,21 @@ the snapshots.
 Fix: schedule a `config.xml` download from the OPNsense API to the state bucket, or add a
 `gateway_backup` role.
 
-### 3. Three OpenTofu projects have no CI apply
+### 3. Three OpenTofu projects have no CI
 
-`datadog/`, `gateway/`, and `aws/*` are applied by hand. Only `dns/`, `github/`, and `tailnet/` have
-workflows. `datadog/` is also missing from the `tofu fmt` pre-commit hook, whose `files:` pattern is
-`^(aws|dns|gateway|github|tailnet/tofu)/`.
+`github/`, `truenas/`, and `arr/` have no workflow, so a human plans and applies them locally. Every
+other OpenTofu stack plans on pull requests and applies on `main`.
 
-Fix: add a workflow per project, and add `datadog` to the pre-commit pattern.
+Fix: add a workflow per project. `truenas/` and `arr/` reach LAN hosts, so their jobs need to join
+the tailnet as the `gateway/` jobs do; `github/` needs a token that can administer the repository.
 
-### 4. Renovate covers four of seven dependency types
+### 4. Renovate covers five of seven dependency types
 
-Enabled managers: `custom.regex`, `helm-values`, `github-actions`, `pre-commit`.
+Enabled managers: `custom.regex`, `helm-values`, `github-actions`, `pre-commit`, `terraform`.
 
-Not covered: OpenTofu provider versions (`~> 5.0`, `~> 0.30`, `~> 6.0`), the collections in
-`ansible/requirements.yaml`, and `devenv.lock`.
+Not covered: the collections in `ansible/requirements.yaml`, and `devenv.lock`.
 
-Fix: add `terraform`, `ansible`, and `nix` to `enabledManagers`.
+Fix: add `ansible-galaxy` and `nix` to `enabledManagers`.
 
 ### 5. Repo hygiene
 
@@ -62,10 +63,8 @@ Fix: add `terraform`, `ansible`, and `nix` to `enabledManagers`.
   not in Argo CD. Delete it.
 - `ansible/group_vars/os_Archlinux` and `os_FreeBSD` have no matching hosts, because the gateways
   are not in the inventory.
-- The `forgejo` and `immich` Argo CD applications have `automated.enabled: false` and are currently
-  `OutOfSync`.
-- There is no root README. The only machine list is the four-host Ansible inventory plus a CSV on
-  the desktop.
+- There is no machine list beyond the four-host Ansible inventory and a CSV on the desktop. The
+  root [README](README.md) lists the stacks, not the machines.
 
 ## Security notes
 
