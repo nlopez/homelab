@@ -92,6 +92,11 @@ locals {
       gateway     = "WG_LGA1"
       description = "To the private gateway (IPv4, WireGuard)"
     }
+    "10.43.16.0/20" = {
+      network     = "10.43.16.0/20"
+      gateway     = "WG_LGA1"
+      description = "To lga1 Kubernetes pods (IPv4, WireGuard)"
+    }
     "192.168.222.0/24" = {
       uuid        = "c30286cd-e2b2-4804-9926-5e6dd90454bc"
       network     = "192.168.222.0/24"
@@ -185,7 +190,7 @@ import {
 
 import {
   provider = opnsense.lga2
-  for_each = local.lga2_routes
+  for_each = { for k, v in local.lga2_routes : k => v if can(v.uuid) }
   to       = opnsense_system_route.lga2_routes[each.key]
   id       = each.value.uuid
 }
