@@ -47,6 +47,11 @@ kind: CiliumBGPPeerConfig
 metadata:
   name: cilium-peer
 spec:
+  # FRR on the gateway negotiates the lower hold time, so both sides set the same values.
+  timers:
+    connectRetryTimeSeconds: 5
+    keepAliveTimeSeconds: 3
+    holdTimeSeconds: 9
   gracefulRestart:
     enabled: true
     restartTimeSeconds: 15
@@ -63,6 +68,11 @@ kind: CiliumBGPPeerConfig
 metadata:
   name: cilium-peer-v6
 spec:
+  # FRR on the gateway negotiates the lower hold time, so both sides set the same values.
+  timers:
+    connectRetryTimeSeconds: 5
+    keepAliveTimeSeconds: 3
+    holdTimeSeconds: 9
   gracefulRestart:
     enabled: true
     restartTimeSeconds: 15

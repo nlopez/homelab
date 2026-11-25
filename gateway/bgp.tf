@@ -5,14 +5,6 @@ locals {
   # Entries that share a name form one FRR prefix list, which ends in an implicit deny.
   # A neighbor links a list through any one of its entries.
   lga1_bgp_prefix_lists = {
-    "bc-any" = {
-      name        = "bc-any"
-      action      = "permit"
-      network     = "any"
-      sequence    = 10
-      version     = "IPv4"
-      description = "Allow Any"
-    }
     # Per-node pod CIDRs (/24s of the cluster pool) and Cilium load balancer addresses.
     "cilium-in-pods" = {
       name        = "cilium-in"
@@ -74,28 +66,6 @@ locals {
   }
 
   lga1_bgp_neighbors = {
-    "knode2" = {
-      address        = "192.168.222.144"
-      description    = "knode2"
-      update_source  = "opt2"
-      family         = ["ipv4"]
-      prefixlist_in  = "bc-any"
-      prefixlist_out = "bc-any"
-      remote_as      = 64512
-      enabled        = false
-      next_hop_self  = true
-    }
-    "knode1" = {
-      address        = "192.168.222.143"
-      description    = "knode1"
-      update_source  = "opt2"
-      family         = ["ipv4"]
-      prefixlist_in  = "bc-any"
-      prefixlist_out = "bc-any"
-      remote_as      = 64512
-      enabled        = false
-      next_hop_self  = true
-    }
     "knode2-cilium" = {
       address        = "192.168.222.144"
       description    = "knode2-cilium"
@@ -201,14 +171,19 @@ resource "opnsense_quagga_bgp_neighbor" "lga1_bgp_neighbors" {
   description           = each.value.description
   family                = each.value.family
   remote_as             = each.value.remote_as
-  update_source         = try(each.value.update_source, null)
   linked_prefixlist_in  = [opnsense_quagga_prefix_list.lga1_bgp_prefix_lists[each.value.prefixlist_in].id]
   linked_prefixlist_out = [opnsense_quagga_prefix_list.lga1_bgp_prefix_lists[each.value.prefixlist_out].id]
   linked_routemap_in    = []
   linked_routemap_out   = []
   enabled               = each.value.enabled
-  next_hop_self         = try(each.value.next_hop_self, false)
+  next_hop_self         = false
   bfd                   = true
+
+  # Matches the timers in the CiliumBGPPeerConfigs. Cilium has no BFD, so the hold
+  # timer is what detects a dead node.
+  keepalive     = 3
+  holddown      = 9
+  connect_timer = 5
 
   next_hop_self_all            = false
   multihop                     = false
