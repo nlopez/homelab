@@ -97,7 +97,7 @@ locals {
       hostname    = "knode1"
       domain      = "lga1.radoncanyon.com"
       rr          = "AAAA"
-      server      = "fd54:571b:560a:2:d65d:dfff:fe07:5137"
+      server      = "fd54:571b:560a:2::143"
       description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
     }
     "knode2-AAAA" = {
@@ -105,7 +105,7 @@ locals {
       hostname    = "knode2"
       domain      = "lga1.radoncanyon.com"
       rr          = "AAAA"
-      server      = "fd54:571b:560a:2:21f:c6ff:fe9c:bfd7"
+      server      = "fd54:571b:560a:2::144"
       description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
     }
     "nas1-AAAA" = {

@@ -1,4 +1,13 @@
 ---
+netplan_renderer: NetworkManager
+netplan_ethernets:
+  end0:
+    dhcp4: true
+    dhcp6: true
+    ipv6-address-token: "{{ netplan_ipv6_token }}"
+    ipv6-privacy: false
+    wakeonlan: true
+
 tailscale_accept_dns: false
 # The sites reach each other over the gateways' WireGuard tunnel. Accepting
 # the other site's subnet routes here would send this box's replies to

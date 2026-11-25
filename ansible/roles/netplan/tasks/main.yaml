@@ -1,0 +1,19 @@
+---
+- name: Write the netplan config
+  ansible.builtin.copy:
+    dest: /etc/netplan/10-ansible.yaml
+    content: |
+      # Managed by Ansible (roles/netplan).
+      {{ {'network': {'version': 2, 'renderer': netplan_renderer, 'ethernets': netplan_ethernets}} | to_nice_yaml(indent=2) }}
+    owner: root
+    group: root
+    mode: "0600"
+  when: netplan_ethernets | length > 0
+  notify: Apply netplan
+
+- name: Remove the netplan files this config replaces
+  ansible.builtin.file:
+    path: "/etc/netplan/{{ item }}"
+    state: absent
+  loop: "{{ netplan_remove_files }}"
+  notify: Apply netplan

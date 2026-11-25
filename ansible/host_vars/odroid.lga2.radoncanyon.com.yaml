@@ -1,8 +1,9 @@
 ---
-static_ula_connection: Wired connection 1
-static_ula_interface: end0
-static_ula_addresses:
-  - fd72:ce7b:d4a9:9511::2/64
+netplan_ipv6_token: "::2"
+# NetworkManager's own netplan files: end0 (now in 10-ansible.yaml) and a stale eth0.
+netplan_remove_files:
+  - 90-NM-3074e371-e9f9-309d-9768-38c061e494e1.yaml
+  - 90-NM-b62d74a3-a412-4103-961c-28b545dfbf17.yaml
 
 tailscale_search_domains:
   - lga2.radoncanyon.com

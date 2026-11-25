@@ -1,0 +1,10 @@
+---
+netplan_renderer: networkd
+# Netplan `ethernets` entries, keyed by interface name.
+netplan_ethernets: {}
+# Per-host addresses that netplan_ethernets entries reference.
+netplan_addresses: []
+# Interface ID that SLAAC uses for every advertised prefix, e.g. "::143".
+netplan_ipv6_token: ""
+# Files in /etc/netplan that define the same interfaces and are replaced by this role.
+netplan_remove_files: []

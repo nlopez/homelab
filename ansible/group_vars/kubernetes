@@ -1,4 +1,23 @@
 ---
+# eno1 carries the node's addresses and default route. SLAAC builds its IPv6 addresses
+# from the host's token, so the ULA and global addresses end in the IPv4 host number.
+netplan_ethernets:
+  eno1:
+    dhcp4: false
+    dhcp6: false
+    addresses: "{{ netplan_addresses }}"
+    ipv6-address-token: "{{ netplan_ipv6_token }}"
+    routes:
+      - to: default
+        via: 192.168.222.1
+    nameservers:
+      search:
+        - lga1.radoncanyon.com
+      addresses:
+        - 192.168.222.1
+netplan_remove_files:
+  - 00-eno1.yaml
+
 nfs_mounts:
   - {
       src: "nas1.lga1.radoncanyon.com:/mnt/etank/scratch",

@@ -1,5 +1,5 @@
 # FRR/Quagga BGP on the gateways. lga1 peers with Cilium on both Kubernetes nodes;
-# lga2 has BGP enabled with no neighbors.
+# lga2 has no BGP peers, so BGP is off there.
 
 locals {
   # Entries that share a name form one FRR prefix list, which ends in an implicit deny.
@@ -85,7 +85,7 @@ locals {
       enabled        = true
     }
     "knode1-cilium-v6" = {
-      address        = "fd54:571b:560a:2:d65d:dfff:fe07:5137"
+      address        = "fd54:571b:560a:2::143"
       description    = "knode1-cilium-v6"
       family         = ["ipv6"]
       prefixlist_in  = "cilium-in-v6-pods"
@@ -94,7 +94,7 @@ locals {
       enabled        = true
     }
     "knode2-cilium-v6" = {
-      address        = "fd54:571b:560a:2:21f:c6ff:fe9c:bfd7"
+      address        = "fd54:571b:560a:2::144"
       description    = "knode2-cilium-v6"
       family         = ["ipv6"]
       prefixlist_in  = "cilium-in-v6-pods"
@@ -135,7 +135,7 @@ import {
 resource "opnsense_quagga_bgp_global" "lga2" {
   provider = opnsense.lga2
 
-  enabled              = true
+  enabled              = false
   as_number            = 65551
   graceful_restart     = false
   log_neighbor_changes = false

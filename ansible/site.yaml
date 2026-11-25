@@ -13,6 +13,8 @@
 - name: Configure Kubernetes hosts
   hosts: kubernetes
   roles:
+    - role: netplan
+      tags: netplan
     - resolved
     - iscsi
     - nfs
@@ -30,10 +32,11 @@
 - name: Configure infra hosts
   hosts: infra
   roles:
+    - role: netplan
+      tags: netplan
     - armbian_ramlog
     - role: tailscale
       tags: tailscale
-    - static_ula
     - pihole
     - role: unattended_upgrades
       tags: unattended_upgrades

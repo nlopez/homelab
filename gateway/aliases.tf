@@ -115,8 +115,8 @@ locals {
     "odroid_gua" = {
       uuid        = "25caeffb-1417-483c-991c-d0bb66915b59"
       type        = "dynipv6host"
-      content     = ["::21e:6ff:fe33:da28"]
-      description = "odroid.lga1 EUI-64 global IPv6 on LAB (follows prefix changes)"
+      content     = ["::2"]
+      description = "odroid.lga1 global IPv6 on LAB, token ::2 (follows prefix changes)"
       enabled     = true
       stats       = false
       interface   = "opt2"
@@ -132,8 +132,8 @@ locals {
     "knode1_gua_lab" = {
       uuid        = "251631c9-ebf9-4eeb-afac-2e5b720622b0"
       type        = "dynipv6host"
-      content     = ["::d65d:dfff:fe07:5137"]
-      description = "knode1 eno1 EUI-64 global IPv6 on LAB"
+      content     = ["::143"]
+      description = "knode1 eno1 global IPv6 on LAB, token ::143"
       enabled     = true
       stats       = false
       interface   = "opt2"
@@ -141,8 +141,8 @@ locals {
     "knode2_gua_lab" = {
       uuid        = "6051225e-4102-47da-9a0d-91c0077cd65e"
       type        = "dynipv6host"
-      content     = ["::21f:c6ff:fe9c:bfd7"]
-      description = "knode2 eno1 EUI-64 global IPv6 on LAB"
+      content     = ["::144"]
+      description = "knode2 eno1 global IPv6 on LAB, token ::144"
       enabled     = true
       stats       = false
       interface   = "opt2"

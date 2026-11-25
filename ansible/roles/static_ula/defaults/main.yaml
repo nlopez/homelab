@@ -1,6 +1,0 @@
----
-static_ula_addresses: []
-static_ula_interface: end0
-static_ula_connection: Wired connection 1
-static_ula_addr_gen_mode6: eui64
-static_ula_ip_privacy6: disabled
