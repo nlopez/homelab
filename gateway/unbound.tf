@@ -157,6 +157,68 @@ resource "opnsense_unbound_acl" "lga2_private" {
   description = "Private-range clients"
 }
 
+# Allowlist entries are regexes matched from the start of the query name, so
+# each domain is written to also match its subdomains.
+locals {
+  dnsbl_allowed_domains = [
+    "browser-intake-ap1-datadoghq.com",
+    "browser-intake-ap2-datadoghq.com",
+    "browser-intake-datad0g.com",
+    "browser-intake-datad0g.eu",
+    "browser-intake-datadoghq.com",
+    "browser-intake-datadoghq.eu",
+    "browser-intake-ddog-gov.com",
+    "browser-intake-prtest01-datad0g.com",
+    "browser-intake-prtest02-datad0g.com",
+    "browser-intake-prtest03-datad0g.com",
+    "browser-intake-prtest04-datad0g.com",
+    "browser-intake-prtest08-datadoghq.com",
+    "browser-intake-uk1-datadoghq.com",
+    "browser-intake-us2-ddog-gov.com",
+    "browser-intake-us3-datadoghq.com",
+    "browser-intake-us4-datadoghq.com",
+    "browser-intake-us5-datadoghq.com",
+    "browser-intake-us7-datadoghq.com",
+    "browser-intake-us8-datadoghq.com",
+    "d.dog",
+    "dashcon.io",
+    "datad0g-browser-agent.com",
+    "datad0g.com",
+    "datad0g.eu",
+    "datad0guserapps.com",
+    "datadog.blue",
+    "datadog.com",
+    "datadog.design",
+    "datadog.jp",
+    "datadog.ninja",
+    "datadoghq-browser-agent.com",
+    "datadoghq.com",
+    "datadoghq.eu",
+    "datadoguserapps.com",
+    "dd0g-gov.com",
+    "ddbuild.io",
+    "ddog-gov.com",
+    "downdog.ai",
+    "fed.dog",
+    "graph.new",
+    "mgmt.dog",
+    "prod.dog",
+    "seekret.io",
+    "session-replay-datad0g.com",
+    "session-replay-datadoghq.com",
+    "session-replay-ddog-gov.com",
+    "staging-fed.dog",
+    "staging.dog",
+    "tenant.dog",
+    "updog.ai",
+    "vector.dev",
+    "vrl.dev",
+  ]
+  dnsbl_allowlist = [
+    for d in local.dnsbl_allowed_domains : "(.*\\.)?${replace(d, ".", "\\.")}$"
+  ]
+}
+
 # hgz003 is the HaGeZi Multi PRO feed. Empty list attributes read back as [""].
 resource "opnsense_unbound_dnsbl" "lga1" {
   provider = opnsense.lga1
@@ -167,7 +229,7 @@ resource "opnsense_unbound_dnsbl" "lga1" {
   nxdomain    = true
   safe_search = false
   type        = ["hgz003"]
-  whitelists  = [""]
+  whitelists  = local.dnsbl_allowlist
   wildcards   = [""]
 }
 
@@ -186,7 +248,7 @@ resource "opnsense_unbound_dnsbl" "lga2" {
   nxdomain    = true
   safe_search = false
   type        = ["hgz003"]
-  whitelists  = [""]
+  whitelists  = local.dnsbl_allowlist
   wildcards   = [""]
 }
 
