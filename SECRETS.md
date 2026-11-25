@@ -13,9 +13,9 @@ name says *unnamed*; fill it in when you know it.
 | --- | --- | --- | --- | --- |
 | `6foq5pqns6uslgstwbfoyyyftu` | `ci-pr` | `OP_CI_PR_SERVICE_ACCOUNT_TOKEN` (repository secret), in every PR | Read-only credentials for pull-request plans and the tailnet ACL test | `<stack>/secrets.plan.env`, `.github/workflows/tailnet.yaml` |
 | `kjgjpiwjlognsprl7qxsonrqoi` | `ci` | `OP_SERVICE_ACCOUNT_TOKEN` (`production` environment secret), on `main` only | CI copies of operator-vault items, for applies; the Discord webhook | `<stack>/secrets.env` of the CI-applied stacks, `ansible/secrets.env`, `.github/actions/discord-notify` |
-| `eirjdyavzyx7tegpglsc2udq3a` | Operator vault, *unnamed* | The operator, through the 1Password app | Originals of the items copied to `ci`; NAS, `arr`, and Ansible host credentials | `truenas/secrets.env`, `arr/secrets.env`, `ansible/group_vars/infra`, `ansible/scripts/device_inventory.py` |
+| `eirjdyavzyx7tegpglsc2udq3a` | `operator` | The operator, through the 1Password app | Originals of the items copied to `ci`; NAS, `arr`, and Ansible host credentials | `truenas/secrets.env`, `arr/secrets.env`, `ansible/group_vars/infra`, `ansible/scripts/device_inventory.py` |
 | `evjh25ux2mnoufaut6qhvm2pdi` | `Automation` | 1Password Connect in the cluster; the operator | Every Kubernetes secret (`OnePasswordItem`), plus a few operator-only items | `kubernetes/**` (`itemPath: vaults/…`), `github/secrets.env`, `arr/secrets.env` |
-| `bamv726zv6zbcfke3cnbwjtnuu` | *unnamed* | The operator | The 1Password Connect credentials and token, used once at cluster bootstrap | `kubernetes/README.md` |
+| `bamv726zv6zbcfke3cnbwjtnuu` | `Private` | The operator | The 1Password Connect credentials and token, used once at cluster bootstrap | `kubernetes/README.md` |
 
 The `ci` name comes from `tailnet/README.md`, which puts the `Tailscale GitOps` client in the `ci`
 vault, the vault `tailnet/tofu/secrets.env` reads it from. The `Automation` name comes from
