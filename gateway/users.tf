@@ -16,7 +16,59 @@ variable "lga2_dns_webhook_password" {
   sensitive = true
 }
 
+# Login password for the pull-request plan user. Nobody logs in as it; OPNsense
+# only requires one to create the user.
+resource "random_password" "ci_pr" {
+  length  = 40
+  special = false
+}
+
 locals {
+  # The pull-request plan user can read the pages tofu manages and nothing
+  # else, and user-config-readonly ("System: Deny config write") makes the API
+  # reject every config write for it. Left out on purpose: WireGuard (private
+  # keys) and backups (the full config.xml). Two gaps the read-only check
+  # doesn't cover: service actions (start, stop, restart, reconfigure), and
+  # the firmware page, which the provider's Unbound and FRR resources need for
+  # version checks and which also allows updates, plugin installs and reboots.
+  # Its API keypair is generated after apply (api/auth/user/addApiKey) and
+  # stored in the ci-pr vault as gateway-plan.
+  ci_pr_privileges = [
+    "user-config-readonly",
+    "page-diagnostics-logs-settings-targets",
+    "page-dhcp-kea-ctrl-agent",
+    "page-dhcp-kea-ddns",
+    "page-dhcp-kea-v4",
+    "page-filter-api",
+    "page-firewall-alias-edit",
+    "page-firewall-aliases",
+    "page-firewall-categories",
+    "page-firewall-nat-portforward-edit",
+    "page-firewall-trafficshaper",
+    "page-firewall-virtualipaddress-edit",
+    "page-interfaces-vlan-edit",
+    "page-routing",
+    "page-services-acmeclient",
+    "page-services-dnsforwarder",
+    "page-services-dnsresolver-overrides",
+    "page-services-monit",
+    "page-services-unbound",
+    "page-status-interfaces",
+    "page-system-advanced-sysctl",
+    "page-system-cron",
+    "page-system-firmware-manualupdate",
+    "page-system-gateways",
+    "page-system-staticroutes",
+    "page-system-usermanager",
+  ]
+  ci_pr_user = {
+    full_name         = "Pull-request tofu plans"
+    uid               = 2002
+    group_memberships = []
+    privileges        = local.ci_pr_privileges
+    password          = random_password.ci_pr.result
+  }
+
   # Privileges the external-dns webhook needs: host override CRUD
   # (api/unbound/settings/*), reconfigure and status (api/unbound/service/*),
   # and the overview page. Names as listed in OPNsense's Unbound ACL model.
@@ -60,6 +112,7 @@ locals {
       privileges        = local.unbound_webhook_privileges
       password          = var.lga1_dns_webhook_password
     }
+    ci-pr = local.ci_pr_user
   }
   lga2_users = {
     root = {
@@ -86,6 +139,7 @@ locals {
       privileges        = local.unbound_webhook_privileges
       password          = var.lga2_dns_webhook_password
     }
+    ci-pr = local.ci_pr_user
   }
 }
 
@@ -109,7 +163,7 @@ resource "opnsense_auth_user" "lga1" {
 
 import {
   provider = opnsense.lga1
-  for_each = local.lga1_users
+  for_each = { for name, user in local.lga1_users : name => user if can(user.uuid) }
   to       = opnsense_auth_user.lga1[each.key]
   id       = each.value.uuid
 }
@@ -134,7 +188,7 @@ resource "opnsense_auth_user" "lga2" {
 
 import {
   provider = opnsense.lga2
-  for_each = local.lga2_users
+  for_each = { for name, user in local.lga2_users : name => user if can(user.uuid) }
   to       = opnsense_auth_user.lga2[each.key]
   id       = each.value.uuid
 }
