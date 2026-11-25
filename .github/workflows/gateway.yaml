@@ -61,29 +61,4 @@ jobs:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
         run: |-
           tofu init -input=false
-          op run --env-file secrets.env -- tofu apply -input=false -auto-approve -no-color | tee "$RUNNER_TEMP/apply.log"
-
-      # The provider saves DNSBL settings without rebuilding the blocklist, so a
-      # changed policy has no effect until Unbound downloads the lists and reloads.
-      - name: Reload Unbound DNSBL
-        working-directory: gateway
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-        run: |-
-          sites=$(sed -nE 's/^opnsense_unbound_dnsbl\.(lga[0-9]+): (Creation|Modifications) complete.*/\1/p' "$RUNNER_TEMP/apply.log" | sort -u)
-          if [ -z "$sites" ]; then
-            echo "No DNSBL changes"
-            exit 0
-          fi
-          grep -E '^TF_VAR_lga[0-9]+_api_(key|secret)=' secrets.env > "$RUNNER_TEMP/api.env"
-          for site in $sites; do
-            # shellcheck disable=SC2016 # expanded by the inner shell after op run injects secrets
-            SITE=$site op run --env-file "$RUNNER_TEMP/api.env" -- sh -ec '
-              eval "key=\$TF_VAR_${SITE}_api_key secret=\$TF_VAR_${SITE}_api_secret"
-              for action in dnsbl reconfigure; do
-                curl -fsS -X POST -H "Content-Type: application/json" -d "{}" -u "$key:$secret" \
-                  "https://gw.$SITE.radoncanyon.com/api/unbound/service/$action"
-                echo " <- $SITE $action"
-              done
-            '
-          done
+          op run --env-file secrets.env -- tofu apply -input=false -auto-approve

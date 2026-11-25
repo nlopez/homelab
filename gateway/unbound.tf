@@ -257,3 +257,39 @@ import {
   to       = opnsense_unbound_dnsbl.lga2
   id       = "unbound-dnsbl"
 }
+
+# The provider saves DNSBL settings without rebuilding the blocklist.
+# service/dnsbl regenerates the Unbound templates and the list, and the running
+# dnsbl module reloads the list within 60 seconds without restarting Unbound.
+locals {
+  dnsbl_refresh_command = <<-EOT
+    curl -fsS -X POST -H "Content-Type: application/json" -d "{}" \
+      -u "$API_KEY:$API_SECRET" "https://gw.$SITE.radoncanyon.com/api/unbound/service/dnsbl"
+  EOT
+}
+
+resource "terraform_data" "lga1_dnsbl_refresh" {
+  triggers_replace = opnsense_unbound_dnsbl.lga1
+
+  provisioner "local-exec" {
+    command = local.dnsbl_refresh_command
+    environment = {
+      SITE       = "lga1"
+      API_KEY    = var.lga1_api_key
+      API_SECRET = var.lga1_api_secret
+    }
+  }
+}
+
+resource "terraform_data" "lga2_dnsbl_refresh" {
+  triggers_replace = opnsense_unbound_dnsbl.lga2
+
+  provisioner "local-exec" {
+    command = local.dnsbl_refresh_command
+    environment = {
+      SITE       = "lga2"
+      API_KEY    = var.lga2_api_key
+      API_SECRET = var.lga2_api_secret
+    }
+  }
+}
