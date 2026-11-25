@@ -70,3 +70,29 @@ resource "authentik_policy_binding" "email_change_verify" {
   policy = authentik_policy_expression.email_changed.id
   order  = 0
 }
+
+# A singleton; every field is set because the provider sends its own default
+# for any that are left out. Email changes are allowed because the bindings
+# above gate them.
+resource "authentik_system_settings" "this" {
+  avatars                      = "gravatar,initials"
+  default_user_change_name     = true
+  default_user_change_email    = true
+  default_user_change_username = false
+  event_retention              = "days=365"
+  reputation_lower_limit       = -5
+  reputation_upper_limit       = 5
+  footer_links                 = []
+  gdpr_compliance              = true
+  impersonation                = true
+  default_token_duration       = "days=1"
+  default_token_length         = 60
+  pagination_default_page_size = 20
+  pagination_max_page_size     = 100
+  flags = jsonencode({
+    flows_refresh_others                   = false
+    flows_continuous_login                 = false
+    core_default_app_access                = true
+    enterprise_audit_include_expanded_diff = false
+  })
+}
