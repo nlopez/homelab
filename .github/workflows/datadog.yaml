@@ -4,18 +4,56 @@ on:
   push:
     branches: [ "main" ]
     paths: ['datadog/**', '.github/workflows/datadog.yaml']
+  pull_request:
+    branches: [ "main" ]
+    paths: ['datadog/**', '.github/workflows/datadog.yaml', '.github/actions/tofu-plan/**']
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: datadog
+  group: ${{ github.event_name == 'pull_request' && format('datadog-pr-{0}', github.event.pull_request.number) || 'datadog' }}
   cancel-in-progress: false
 
 jobs:
+  plan:
+    name: Plan
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Load read-only credentials
+        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_CI_PR_SERVICE_ACCOUNT_TOKEN }}
+          DD_API_KEY: op://6foq5pqns6uslgstwbfoyyyftu/3mgsibva262zkv5obqeozzbcq4/api-key
+          DD_APP_KEY: op://6foq5pqns6uslgstwbfoyyyftu/3mgsibva262zkv5obqeozzbcq4/app-key
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::546422192262:role/homelab-datadog-plan
+          aws-region: us-east-1
+
+      - name: Plan
+        uses: ./.github/actions/tofu-plan
+        with:
+          working-directory: datadog
+          title: Datadog
+
   apply:
     name: Apply
+    if: github.event_name != 'pull_request'
     environment: production
     runs-on: ubuntu-24.04
     permissions:

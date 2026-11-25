@@ -4,18 +4,51 @@ on:
   push:
     branches: [ "main" ]
     paths: ['aws/**', '.github/workflows/aws.yaml']
+  pull_request:
+    branches: [ "main" ]
+    paths: ['aws/**', '.github/workflows/aws.yaml', '.github/actions/tofu-plan/**']
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: aws
+  group: ${{ github.event_name == 'pull_request' && format('aws-pr-{0}', github.event.pull_request.number) || 'aws' }}
   cancel-in-progress: false
 
 jobs:
+  plan:
+    name: Plan ${{ matrix.dir }}
+    if: github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: [ses, authentik-smtp, forgejo-smtp, seafile-smtp, nas-smtp, immich-smtp]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::546422192262:role/homelab-aws-plan
+          aws-region: us-east-1
+
+      - name: Plan
+        uses: ./.github/actions/tofu-plan
+        with:
+          working-directory: aws/${{ matrix.dir }}
+          title: AWS ${{ matrix.dir }}
+
   apply:
     name: Apply ${{ matrix.dir }}
+    if: github.event_name != 'pull_request'
     strategy:
       fail-fast: false
       matrix:

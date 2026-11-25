@@ -6,7 +6,7 @@ on:
     paths: ['tailnet/**', '.github/workflows/tailnet.yaml']
   pull_request:
     branches: [ "main" ]
-    paths: ['tailnet/**', '.github/workflows/tailnet.yaml']
+    paths: ['tailnet/**', '.github/workflows/tailnet.yaml', '.github/actions/tofu-plan/**']
 
 permissions:
   contents: read
@@ -63,43 +63,16 @@ jobs:
           role-to-assume: arn:aws:iam::546422192262:role/homelab-tailnet-plan
           aws-region: us-east-1
 
-      - name: Set up OpenTofu
-        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
-        with:
-          tofu_version: 1.13.2
-          tofu_wrapper: false
-
       - name: Plan
-        id: plan
-        working-directory: tailnet/tofu
+        uses: ./.github/actions/tofu-plan
         env:
           TAILSCALE_OAUTH_CLIENT_ID: ${{ steps.op.outputs.TS_OAUTH_ID }}
           TAILSCALE_OAUTH_CLIENT_SECRET: ${{ steps.op.outputs.TS_OAUTH_SECRET }}
           TAILSCALE_TAILNET: ${{ steps.op.outputs.TS_TAILNET }}
           TF_VAR_oauth_scopes: '["devices:core:read", "devices:routes:read", "policy_file:read", "dns:read"]'
-        run: |-
-          tofu init -input=false
-          # The state lock needs write access, which pull requests don't get.
-          tofu plan -input=false -lock=false -no-color -out=tfplan 2>&1 | tee plan.log
-          tofu show -no-color tfplan > plan.txt
-
-      - name: Comment plan
-        if: always() && steps.plan.outcome != 'skipped'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          OUTCOME: ${{ steps.plan.outcome }}
-        run: |-
-          cd tailnet/tofu
-          if [ "$OUTCOME" = success ]; then out=plan.txt; else out=plan.log; fi
-          {
-            echo "### Tailnet plan ($OUTCOME)"
-            echo
-            echo '```hcl'
-            tail -c 60000 "$out"
-            echo '```'
-          } > comment.md
-          gh pr comment "${{ github.event.pull_request.number }}" --body-file comment.md \
-            --edit-last --create-if-none
+        with:
+          working-directory: tailnet/tofu
+          title: Tailnet
 
   apply:
     name: Apply

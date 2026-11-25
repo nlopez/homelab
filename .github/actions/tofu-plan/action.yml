@@ -1,0 +1,73 @@
+name: tofu plan comment
+description: >-
+  Plan an OpenTofu stack without taking the state lock and post the plan as a
+  pull request comment. Each stack keeps one comment, found by a marker and
+  updated on every push. Provider credentials come from the job environment.
+
+inputs:
+  working-directory:
+    description: Directory of the stack
+    required: true
+  title:
+    description: Heading of the comment; also identifies it across pushes
+    required: true
+  plan-args:
+    description: Extra arguments for tofu plan
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Set up OpenTofu
+      uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+      with:
+        tofu_version: 1.13.2
+        tofu_wrapper: false
+
+    - name: Plan
+      id: plan
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        PLAN_ARGS: ${{ inputs.plan-args }}
+      run: |-
+        set -o pipefail
+        tofu init -input=false -no-color 2>&1 | tee plan.log
+        # The state lock needs write access, which pull requests don't get.
+        # shellcheck disable=SC2086
+        tofu plan -input=false -lock=false -no-color ${PLAN_ARGS} -out=tfplan 2>&1 | tee -a plan.log
+        tofu show -no-color tfplan > plan.txt
+
+    - name: Comment plan
+      if: always()
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        OUTCOME: ${{ steps.plan.outcome }}
+        TITLE: ${{ inputs.title }}
+        PR: ${{ github.event.pull_request.number }}
+        REPO: ${{ github.repository }}
+      run: |-
+        marker="<!-- tofu-plan: ${TITLE} -->"
+        if [ "$OUTCOME" = success ]; then out=plan.txt; else out=plan.log; fi
+        summary="$(grep -E '^(Plan:|No changes\.)' plan.log | tail -n 1 || true)"
+        {
+          echo "$marker"
+          echo "### ${TITLE} plan (${OUTCOME})"
+          echo
+          echo "${summary:-See the run log.} Commit \`${GITHUB_SHA:0:8}\`, [run](${GITHUB_SERVER_URL}/${REPO}/actions/runs/${GITHUB_RUN_ID})."
+          echo
+          echo '```hcl'
+          tail -c 60000 "$out" 2>/dev/null
+          echo '```'
+        } > comment.md
+        cat comment.md >> "$GITHUB_STEP_SUMMARY"
+        id="$(gh api --paginate "repos/${REPO}/issues/${PR}/comments" \
+          --jq ".[] | select(.user.login == \"github-actions[bot]\") | select(.body | startswith(\"${marker}\")) | .id" | tail -n 1)"
+        if [ -n "$id" ]; then
+          gh api -X PATCH "repos/${REPO}/issues/comments/${id}" -F body=@comment.md >/dev/null
+        else
+          gh api -X POST "repos/${REPO}/issues/${PR}/comments" -F body=@comment.md >/dev/null
+        fi

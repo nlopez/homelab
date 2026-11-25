@@ -40,6 +40,10 @@ data "authentik_flow" "default_invalidation" {
 
 data "authentik_certificate_key_pair" "default" {
   name = "authentik Self-signed Certificate"
+
+  # Only the ID is used, and pull-request plans can't read private keys.
+  fetch_key         = false
+  fetch_certificate = false
 }
 
 data "authentik_property_mapping_provider_scope" "oidc" {
