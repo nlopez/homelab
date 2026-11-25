@@ -101,6 +101,11 @@ spec:
             secretKeyRef:
               name: onepassword-seafile-smtp
               key: from
+        - name: OAUTH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-seafile
+              key: oauth-client-secret
         - name: CACHE_PROVIDER
           value: redis
         - name: REDIS_HOST
