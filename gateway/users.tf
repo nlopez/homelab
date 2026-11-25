@@ -24,16 +24,17 @@ resource "random_password" "ci_pr" {
 }
 
 locals {
-  # The pull-request plan user reads everything tofu manages. OPNsense has no
-  # read-only API privileges, so it is an admin like the apply key's user; it
-  # exists so the key that pull requests can read is revocable on its own.
-  # Its API keypair is generated after apply (api/auth/user/addApiKey) and
-  # stored in the ci-pr vault as gateway-plan.
+  # The pull-request plan user reads everything tofu manages. It is in the
+  # admins group for read access, and user-config-readonly ("System: Deny
+  # config write") makes the API reject every config write for it. Service
+  # actions (start, stop, restart, reconfigure) skip that check. Its API
+  # keypair is generated after apply (api/auth/user/addApiKey) and stored in
+  # the ci-pr vault as gateway-plan.
   ci_pr_user = {
     full_name         = "Pull-request tofu plans"
     uid               = 2002
     group_memberships = ["1999"]
-    privileges        = []
+    privileges        = ["user-config-readonly"]
     password          = random_password.ci_pr.result
   }
 
