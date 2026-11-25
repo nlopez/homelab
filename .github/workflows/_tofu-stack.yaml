@@ -1,0 +1,224 @@
+name: OpenTofu stack
+
+# Plans one OpenTofu stack on a pull request and posts the plan as a comment,
+# or plans and applies it on main. Each stack's workflow calls this with its
+# directory and roles; see dns.yaml for the smallest caller.
+#
+# Credentials:
+# - AWS: OIDC roles <plan-role> and <apply-role> (aws/state-bucket/iam.tf).
+#   The token's subject is the caller's (pull_request, or
+#   environment:production), so calling through this workflow changes nothing
+#   in the trust policies.
+# - 1Password: <directory>/secrets.plan.env holds the read-only references a
+#   pull-request plan uses (read with OP_CI_PR_SERVICE_ACCOUNT_TOKEN), and
+#   <directory>/secrets.env the ones an apply uses (OP_SERVICE_ACCOUNT_TOKEN).
+#   Either file may be absent.
+on:
+  workflow_call:
+    inputs:
+      directory:
+        description: Directory of the stack
+        type: string
+        required: true
+      title:
+        description: Heading of the plan comment; also identifies it across pushes
+        type: string
+        required: true
+      plan-role:
+        description: IAM role a pull-request plan assumes
+        type: string
+        required: true
+      apply-role:
+        description: IAM role the apply on main assumes
+        type: string
+        required: true
+      tailnet:
+        description: Join the tailnet first, for stacks whose API is only on the LAN
+        type: boolean
+        default: false
+      hosts:
+        description: Lines to add to /etc/hosts after joining the tailnet
+        type: string
+        default: ""
+      plan-args:
+        description: Extra arguments for tofu plan on a pull request
+        type: string
+        default: ""
+      plan-env:
+        description: Non-secret NAME=value lines set for a pull-request plan
+        type: string
+        default: ""
+      notify-subject:
+        description: Subject of the Discord message; defaults to the workflow name
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+env:
+  TOFU_VERSION: 1.13.2
+  AWS_ACCOUNT_ID: "546422192262"
+  # tailscale_federated_identity.github_actions in tailnet/admin. The PR
+  # identity, .github_actions_pull_request, is the TAILSCALE_PR_CLIENT_ID
+  # repository variable.
+  TAILSCALE_APPLY_CLIENT_ID: TX3ajrU7JY71CNTRL-kQaJB6AVyQ11CNTRL
+
+jobs:
+  plan:
+    name: Plan
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Join the tailnet
+        if: inputs.tailnet
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ vars.TAILSCALE_PR_CLIENT_ID }}
+          audience: api.tailscale.com/${{ vars.TAILSCALE_PR_CLIENT_ID }}
+          tags: tag:ci
+
+      - name: Add hosts entries
+        if: inputs.hosts != ''
+        env:
+          HOSTS: ${{ inputs.hosts }}
+        run: printf '%s\n' "${HOSTS}" | sudo tee -a /etc/hosts
+
+      - name: Install 1Password CLI
+        if: hashFiles(format('{0}/secrets.plan.env', inputs.directory)) != ''
+        uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
+
+      # Resolves secrets.plan.env with the read-only service account, masks
+      # each value, and exports it to the later steps.
+      - name: Load read-only credentials
+        if: hashFiles(format('{0}/secrets.plan.env', inputs.directory)) != ''
+        working-directory: ${{ inputs.directory }}
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_CI_PR_SERVICE_ACCOUNT_TOKEN }}
+        run: |-
+          set -euo pipefail
+          NAMES="$(grep -E '^[A-Za-z_][A-Za-z0-9_]*=' secrets.plan.env | cut -d= -f1 | tr '\n' ' ')"
+          export NAMES
+          op run --env-file secrets.plan.env --no-masking -- bash -euo pipefail -c '
+            for name in ${NAMES}; do
+              value="${!name}"
+              while IFS= read -r line; do
+                if [ -n "${line}" ]; then echo "::add-mask::${line}"; fi
+              done <<<"${value}"
+              delim="EOF_$(openssl rand -hex 8)"
+              printf "%s<<%s\n%s\n%s\n" "${name}" "${delim}" "${value}" "${delim}" >>"${GITHUB_ENV}"
+            done'
+
+      - name: Set plan variables
+        if: inputs.plan-env != ''
+        env:
+          PLAN_ENV: ${{ inputs.plan-env }}
+        run: printf '%s\n' "${PLAN_ENV}" >>"${GITHUB_ENV}"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ inputs.plan-role }}
+          aws-region: us-east-1
+
+      - name: Plan
+        uses: ./.github/actions/tofu-plan
+        with:
+          working-directory: ${{ inputs.directory }}
+          title: ${{ inputs.title }}
+          plan-args: ${{ inputs.plan-args }}
+          tofu-version: ${{ env.TOFU_VERSION }}
+
+  apply:
+    name: Apply
+    if: github.event_name != 'pull_request'
+    environment: production
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The action requests a GitHub OIDC token for this audience itself.
+      - name: Join the tailnet
+        if: inputs.tailnet
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ env.TAILSCALE_APPLY_CLIENT_ID }}
+          audience: api.tailscale.com/${{ env.TAILSCALE_APPLY_CLIENT_ID }}
+          tags: tag:ci
+
+      - name: Add hosts entries
+        if: inputs.hosts != ''
+        env:
+          HOSTS: ${{ inputs.hosts }}
+        run: printf '%s\n' "${HOSTS}" | sudo tee -a /etc/hosts
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ inputs.apply-role }}
+          aws-region: us-east-1
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: ${{ env.TOFU_VERSION }}
+
+      - name: Install 1Password CLI
+        if: hashFiles(format('{0}/secrets.env', inputs.directory)) != ''
+        uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
+
+      - name: Plan
+        id: plan
+        working-directory: ${{ inputs.directory }}
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: |-
+          run() { if [ -f secrets.env ]; then op run --env-file secrets.env -- "$@"; else "$@"; fi; }
+          tofu init -input=false
+          # 0 planned nothing, 2 planned changes, 1 is an error.
+          status=0
+          run tofu plan -input=false -detailed-exitcode -out=tfplan || status=$?
+          case "${status}" in
+            0) echo "changed=false" >>"${GITHUB_OUTPUT}" ;;
+            2) echo "changed=true" >>"${GITHUB_OUTPUT}" ;;
+            *) exit "${status}" ;;
+          esac
+
+      - name: Apply
+        if: steps.plan.outputs.changed == 'true'
+        working-directory: ${{ inputs.directory }}
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: |-
+          if [ -f secrets.env ]; then
+            op run --env-file secrets.env -- tofu apply -input=false tfplan
+          else
+            tofu apply -input=false tfplan
+          fi
+
+      - uses: ./.github/actions/discord-notify
+        if: success() && steps.plan.outputs.changed == 'true'
+        with:
+          result: applied
+          subject: ${{ inputs.notify-subject }}
+          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - uses: ./.github/actions/discord-notify
+        if: failure() || cancelled()
+        with:
+          result: failed
+          subject: ${{ inputs.notify-subject }}
+          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}

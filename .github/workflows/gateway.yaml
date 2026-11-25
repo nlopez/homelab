@@ -3,10 +3,10 @@ name: Gateway
 on:
   push:
     branches: [ "main" ]
-    paths: ['gateway/**', '.github/workflows/gateway.yaml']
+    paths: ['gateway/**', '.github/workflows/gateway.yaml', '.github/workflows/_tofu-stack.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
   pull_request:
     branches: [ "main" ]
-    paths: ['gateway/**', '.github/workflows/gateway.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
+    paths: ['gateway/**', '.github/workflows/gateway.yaml', '.github/workflows/_tofu-stack.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
   workflow_dispatch:
 
 permissions:
@@ -17,151 +17,37 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  plan:
-    name: Plan
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04
+  # The WireGuard keys are deliberately kept out of pull requests: the plan user
+  # has no WireGuard page privilege, so the PR plan excludes every WireGuard
+  # resource and WireGuard changes aren't planned before merge. The dns-webhook
+  # passwords are ignore_changes, so placeholders plan the same as the real
+  # values.
+  gateway:
+    uses: ./.github/workflows/_tofu-stack.yaml
     permissions:
       contents: read
       id-token: write
       pull-requests: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      # TAILSCALE_PR_CLIENT_ID is tailscale_federated_identity
-      # .github_actions_pull_request in tailnet/admin. Its audience is
-      # api.tailscale.com/<client id>.
-      - name: Join the tailnet
-        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
-        with:
-          oauth-client-id: ${{ vars.TAILSCALE_PR_CLIENT_ID }}
-          audience: api.tailscale.com/${{ vars.TAILSCALE_PR_CLIENT_ID }}
-          tags: tag:ci
-
-      - name: Resolve the gateways
-        run: |
-          echo "192.168.222.1 gw.lga1.radoncanyon.com" | sudo tee -a /etc/hosts
-          echo "192.168.239.254 gw.lga2.radoncanyon.com" | sudo tee -a /etc/hosts
-
-      # The keys belong to the ci-pr user (gateway/users.tf). Its
-      # user-config-readonly privilege rejects every config write with a 403,
-      # so the plan can read the pages it grants and change nothing.
-      - name: Load credentials
-        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
-        with:
-          export-env: true
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_CI_PR_SERVICE_ACCOUNT_TOKEN }}
-          TF_VAR_lga1_api_key: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga1-api-key
-          TF_VAR_lga1_api_secret: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga1-api-secret
-          TF_VAR_lga2_api_key: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga2-api-key
-          TF_VAR_lga2_api_secret: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga2-api-secret
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
-        with:
-          role-to-assume: arn:aws:iam::546422192262:role/homelab-gateway-plan
-          aws-region: us-east-1
-
-      # The WireGuard keys are deliberately kept out of pull requests: the plan
-      # user has no WireGuard page privilege, so the plan excludes every
-      # WireGuard resource and WireGuard changes aren't planned before merge.
-      # The dns-webhook passwords are ignore_changes, so placeholders plan the
-      # same as the real values.
-      - name: Plan
-        uses: ./.github/actions/tofu-plan
-        env:
-          TF_VAR_lga1_wg_private_key: placeholder
-          TF_VAR_lga2_wg_private_key: placeholder
-          TF_VAR_wg_psk: placeholder
-          TF_VAR_lga1_dns_webhook_password: placeholder
-          TF_VAR_lga2_dns_webhook_password: placeholder
-        with:
-          working-directory: gateway
-          title: Gateway
-          plan-args: >-
-            -exclude=opnsense_wireguard_settings.lga1
-            -exclude=opnsense_wireguard_settings.lga2
-            -exclude=opnsense_wireguard_server.lga1
-            -exclude=opnsense_wireguard_server.lga2
-            -exclude=opnsense_wireguard_peer.lga1_lga2
-            -exclude=opnsense_wireguard_peer.lga2_lga1
-
-  apply:
-    name: Apply
-    if: github.event_name != 'pull_request'
-    environment: production
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      # The client id and audience come from tailscale_federated_identity
-      # .github_actions in tailnet/admin; the action requests a GitHub OIDC
-      # token for that audience itself.
-      - name: Join the tailnet
-        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
-        with:
-          oauth-client-id: TX3ajrU7JY71CNTRL-kQaJB6AVyQ11CNTRL
-          audience: api.tailscale.com/TX3ajrU7JY71CNTRL-kQaJB6AVyQ11CNTRL
-          tags: tag:ci
-
-      - name: Resolve the gateways
-        run: |
-          echo "192.168.222.1 gw.lga1.radoncanyon.com" | sudo tee -a /etc/hosts
-          echo "192.168.239.254 gw.lga2.radoncanyon.com" | sudo tee -a /etc/hosts
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
-        with:
-          role-to-assume: arn:aws:iam::546422192262:role/homelab-gateway-apply
-          aws-region: us-east-1
-
-      - name: Set up OpenTofu
-        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
-        with:
-          tofu_version: 1.13.2
-
-      - name: Install 1Password CLI
-        uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
-
-      - name: Plan
-        id: plan
-        working-directory: gateway
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-        run: |-
-          tofu init -input=false
-          # 0 planned nothing, 2 planned changes, 1 is an error.
-          status=0
-          op run --env-file secrets.env -- tofu plan -input=false -detailed-exitcode -out=tfplan || status=$?
-          case "${status}" in
-            0) echo "changed=false" >>"${GITHUB_OUTPUT}" ;;
-            2) echo "changed=true" >>"${GITHUB_OUTPUT}" ;;
-            *) exit "${status}" ;;
-          esac
-
-      - name: Apply
-        if: steps.plan.outputs.changed == 'true'
-        working-directory: gateway
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-        run: op run --env-file secrets.env -- tofu apply -input=false tfplan
-
-      - uses: ./.github/actions/discord-notify
-        if: success() && steps.plan.outputs.changed == 'true'
-        with:
-          result: applied
-          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-
-      - uses: ./.github/actions/discord-notify
-        if: failure() || cancelled()
-        with:
-          result: failed
-          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+    secrets: inherit
+    with:
+      directory: gateway
+      title: Gateway
+      plan-role: homelab-gateway-plan
+      apply-role: homelab-gateway-apply
+      tailnet: true
+      hosts: |-
+        192.168.222.1 gw.lga1.radoncanyon.com
+        192.168.239.254 gw.lga2.radoncanyon.com
+      plan-env: |-
+        TF_VAR_lga1_wg_private_key=placeholder
+        TF_VAR_lga2_wg_private_key=placeholder
+        TF_VAR_wg_psk=placeholder
+        TF_VAR_lga1_dns_webhook_password=placeholder
+        TF_VAR_lga2_dns_webhook_password=placeholder
+      plan-args: >-
+        -exclude=opnsense_wireguard_settings.lga1
+        -exclude=opnsense_wireguard_settings.lga2
+        -exclude=opnsense_wireguard_server.lga1
+        -exclude=opnsense_wireguard_server.lga2
+        -exclude=opnsense_wireguard_peer.lga1_lga2
+        -exclude=opnsense_wireguard_peer.lga2_lga1

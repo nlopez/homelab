@@ -30,8 +30,8 @@ check passed. OpenTofu state lives in the S3 bucket from `aws/state-bucket`, one
 
 Nothing secret is committed. Each OpenTofu stack lists its 1Password references in `secrets.env`;
 the dev shell's `tofu` wrapper resolves them with `op run`, and CI resolves them with a 1Password
-service account. Pull-request plans use separate read-only credentials, referenced in the stack's
-workflow. Kubernetes apps get their secrets from 1Password Connect through `OnePasswordItem`
+service account. Pull-request plans use separate read-only credentials, listed in the stack's
+`secrets.plan.env`. Kubernetes apps get their secrets from 1Password Connect through `OnePasswordItem`
 resources.
 
 ## Other docs
