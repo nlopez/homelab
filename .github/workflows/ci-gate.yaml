@@ -1,0 +1,59 @@
+name: CI gate
+
+# Path-filtered workflows report no status when they skip, so none of them can
+# be a required check. This workflow runs on every pull request and is the one
+# required check: `ci-ok` waits for every other check run on the PR's head
+# commit and fails if any of them failed.
+on:
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  ci-ok:
+    name: ci-ok
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      checks: read
+
+    steps:
+      - name: Wait for the other checks on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |-
+          set -euo pipefail
+          # Give the other workflows of this push time to register their runs.
+          sleep 30
+          quiet=0
+          while :; do
+            runs="$(gh api --paginate "repos/${REPO}/commits/${SHA}/check-runs?per_page=100" \
+              --jq '.check_runs[] | select(.name != "ci-ok") | {name, status, conclusion}' | jq -s .)"
+            failed="$(jq -r '.[] | select(.status == "completed")
+              | select(.conclusion | IN("success", "skipped", "neutral") | not)
+              | "\(.name): \(.conclusion)"' <<<"${runs}")"
+            if [ -n "${failed}" ]; then
+              echo "::error::Checks failed on ${SHA:0:8}:"
+              echo "${failed}"
+              exit 1
+            fi
+            pending="$(jq '[.[] | select(.status != "completed")] | length' <<<"${runs}")"
+            if [ "${pending}" -eq 0 ]; then
+              # Two quiet polls in a row, so a workflow that starts late still counts.
+              quiet=$((quiet + 1))
+              [ "${quiet}" -ge 2 ] && break
+            else
+              quiet=0
+            fi
+            sleep 20
+          done
+          echo "All other checks passed on ${SHA:0:8}:"
+          jq -r '.[] | "\(.name): \(.conclusion)"' <<<"${runs}"

@@ -19,10 +19,10 @@ Several agents and people work in this repo at the same time. Every change lands
 
 1. Commit in your worktree. The pre-commit hooks run on each commit.
 2. Push the branch and open a PR: `git push -u origin HEAD`, then `gh pr create --fill`. Say in the description what the plan should show, for example "adds one A record, changes nothing else".
-3. Wait for the checks: `gh pr checks --watch`.
+3. Wait for the checks: `gh pr checks --watch`. The `ci-ok` check (`.github/workflows/ci-gate.yaml`) runs on every PR, waits for all the others, and fails if any of them failed. If you re-run a failed check, re-run `ci-ok` too.
 4. Read every plan comment on the PR (`gh pr view --comments`). Each stack posts its own comment and updates it on every push.
 5. Compare each plan with what the description says it should show.
-   - It matches and every check passed: merge with `gh pr merge --squash --delete-branch`.
+   - It matches and `ci-ok` passed: merge with `gh pr merge --squash --delete-branch`.
    - It shows anything you did not intend (an extra replace, a destroy, drift from someone else's change): do not merge. Fix the change, or describe the unexpected diff in a PR comment and leave it for a human.
    - A plan that destroys or replaces a stateful resource (a DNS zone, an IAM user, a WireGuard server, an authentik flow) needs a human's approval in the PR, even when intended.
 6. After the merge, the stack's workflow applies on `main`. Confirm it passed: `gh run list --branch main --limit 5`. If the apply fails, open a follow-up PR; do not retry by hand.
@@ -43,6 +43,7 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 
 | Directory | On the PR | On push to `main` |
 | --- | --- | --- |
+| every PR | `ci-ok`, which passes only when every other check passed | nothing |
 | `ansible/` | `ansible-lint`, check-mode drift run | nothing; apply is a manual `Ansible` dispatch |
 | `authentik/` | `tofu plan` comment | `tofu apply` |
 | `aws/` (SES and SMTP stacks) | `tofu plan` comment per stack | `tofu apply` |
