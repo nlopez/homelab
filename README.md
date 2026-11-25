@@ -33,13 +33,14 @@ Nothing secret is committed. Each OpenTofu stack lists its 1Password references 
 the dev shell's `tofu` wrapper resolves them with `op run`, and CI resolves them with a 1Password
 service account. Pull-request plans use separate read-only credentials, listed in the stack's
 `secrets.plan.env`. Kubernetes apps get their secrets from 1Password Connect through `OnePasswordItem`
-resources.
+resources. [SECRETS.md](SECRETS.md) maps each vault ID to what it holds and who can read it.
 
 ## Other docs
 
 - [AGENTS.md](AGENTS.md): how to make a change, from worktree to merged PR.
 - [EXPOSURE.md](EXPOSURE.md): what each service exposes to the internet, and split-horizon DNS.
 - [CODENAMES.md](CODENAMES.md): unused hostnames for new apps.
+- [SECRETS.md](SECRETS.md): the 1Password vaults, who reads them, and how to add or rotate a secret.
 - [AUDIT.md](AUDIT.md): what is and isn't managed here, and known gaps.
 - [kubernetes/README.md](kubernetes/README.md): cluster bootstrap and disaster recovery.
 - [SECURITY.md](SECURITY.md): reporting a vulnerability.

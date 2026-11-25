@@ -58,6 +58,6 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 | `tailnet/` | ACL tests, `tofu plan` comment | `tofu apply` |
 | `tailnet/admin` | `tofu plan` comment | `tofu apply` |
 
-Every OpenTofu stack's workflow is a short caller of `.github/workflows/_tofu-stack.yaml`, which plans on PRs and applies on `main`. To add a stack, copy `dns.yaml`, give it plan and apply roles in `aws/state-bucket/iam.tf`, and put its read-only plan credentials in `<stack>/secrets.plan.env`.
+Every OpenTofu stack's workflow is a short caller of `.github/workflows/_tofu-stack.yaml`, which plans on PRs and applies on `main`. To add a stack, copy `dns.yaml`, give it plan and apply roles in `aws/state-bucket/iam.tf`, and put its read-only plan credentials in `<stack>/secrets.plan.env` ([SECRETS.md](SECRETS.md) says which vault each kind of credential goes in).
 
 `github`, `truenas`, and `arr` have no CI. A human applies them; open the PR anyway and say in it that it needs a local apply.
