@@ -3,6 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: karakeep
+  annotations:
+    secret.reloader.stakater.com/reload: "onepassword-karakeep"
 spec:
   replicas: 1
   strategy:
