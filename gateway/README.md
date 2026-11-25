@@ -80,6 +80,28 @@ Actions tab.
 Local runs need write access to the state bucket: the default SSO profile is read-only,
 so set `AWS_PROFILE=admin` for `tofu apply`.
 
+### DNSBL reload
+
+The provider saves Unbound DNSBL settings without rebuilding the blocklist, so a change
+has no effect until Unbound downloads the lists and reloads. The workflow's
+`Reload Unbound DNSBL` step does that for each gateway whose `opnsense_unbound_dnsbl`
+the apply created or modified, which restarts that gateway's Unbound for a few seconds.
+After a local apply that changes the DNSBL, run the same two calls yourself, replacing
+`lga1` with the site you changed:
+
+```sh
+OP_APP_AUTH=1 op run --account my.1password.com --env-file secrets.env -- sh -c '
+  for action in dnsbl reconfigure; do
+    curl -fsS -X POST -H "Content-Type: application/json" -d "{}" \
+      -u "$TF_VAR_lga1_api_key:$TF_VAR_lga1_api_secret" \
+      "https://gw.lga1.radoncanyon.com/api/unbound/service/$action"
+  done'
+```
+
+DNSBL allowlist entries are regexes that OPNsense matches from the start of the query
+name, so `dnsbl_allowed_domains` in `unbound.tf` lists plain domains and the config turns
+each into a pattern that also matches its subdomains.
+
 ## Adding an object
 
 Objects live in `lga1.tf` or `lga2.tf` as `for_each` maps keyed by something
