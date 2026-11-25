@@ -14,6 +14,7 @@ route between the `internet` and `private` gateways.
 | Immich | `immich` | `nox` | Yes | |
 | Jellyfin | `jellyfin` | `wixen` | Yes | |
 | Obsidian LiveSync | `obsidian-livesync` | `lifmunk` | Yes | |
+| PixivFE | `pixivfe` | `dupin` | Yes | Authentik protects every path on both gateways. |
 | Plex | `pms` | `vixy`; LoadBalancer `10.43.64.2:32400` | Yes | |
 | Shaarli | `shaarli` | `gumoss` | Yes | |
 | Timekeeper (ash) | `timekeeper-ash` | `ash.kamotimestamps.com` | Only | No private route. |

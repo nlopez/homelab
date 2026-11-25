@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pixivfe
+  annotations:
+    secret.reloader.stakater.com/reload: "pixivfe"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pixivfe
+  template:
+    metadata:
+      labels:
+        app: pixivfe
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: pixivfe
+        image: registry.gitlab.com/pixivfe/pixivfe:v3.1.0
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
+        env:
+        - name: PIXIVFE_HOST
+          value: "0.0.0.0"
+        - name: PIXIVFE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: pixivfe
+              key: PIXIVFE_TOKEN
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        ports:
+        - name: http
+          containerPort: 8282
+        readinessProbe:
+          tcpSocket:
+            port: http

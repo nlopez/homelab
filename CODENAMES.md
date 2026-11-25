@@ -4,7 +4,6 @@ Every app hostname, public or private, uses a single-word Palworld pal name as a
 These names are not used by any hostname in this repo yet, shortest first. When you take one,
 delete it from this list.
 
-- dupin
 - kikit
 - lullu
 - majex

@@ -18,6 +18,11 @@ variable "homepage_client_secret" {
   sensitive = true
 }
 
+variable "pixivfe_client_secret" {
+  type      = string
+  sensitive = true
+}
+
 variable "shaarli_client_secret" {
   type      = string
   sensitive = true
@@ -44,6 +49,11 @@ locals {
       name   = "Homepage"
       host   = "bushi.desertbluffs.com"
       secret = var.homepage_client_secret
+    }
+    pixivfe = {
+      name   = "PixivFE"
+      host   = "dupin.desertbluffs.com"
+      secret = var.pixivfe_client_secret
     }
     shaarli = {
       name   = "Shaarli"
