@@ -31,15 +31,17 @@ no monitoring.
 Fix: add both NAS boxes to `ansible/inventory` under `infra`, add a role that exports the TrueNAS
 config on a schedule, and install the Datadog agent.
 
-### 2. Gateways are partially managed
+### 2. Gateways are mostly managed
 
-`gateway/` covers Unbound query forwards, host overrides, custom gateways, and static routes.
-Firewall rules, NAT, DHCP, IDS, Tailscale, SNMP, captive portal, TAYGA, and system settings are
-GUI-only. The README says those are "left to the GUI and `config.xml` snapshots", but nothing takes
-the snapshots.
+`gateway/` covers firewall aliases and rules, NAT port forwards, DHCP (dnsmasq and Kea), VLANs and
+virtual IPs, routes and gateways, Unbound, tunables, cron, syslog, site-to-site WireGuard, FRR/BGP,
+Monit, users, and ACME; `gateway/README.md` lists it all. The provider has no resource for IDS,
+Squid, BIND, radvd, captive portal, TAYGA, Tailscale, SNMP, Netflow, HA sync, or system general
+settings, so those stay in the GUI. Each gateway uploads its own `config.xml` to Google Drive nightly
+through the `os-gdrive-backup` plugin, keeping 60 copies; that plugin setting is GUI-only too.
 
-Fix: schedule a `config.xml` download from the OPNsense API to the state bucket, or add a
-`gateway_backup` role.
+Gap: the backup lives outside this repo and nothing checks that it still runs. A restore test, or an
+alert when the newest copy is more than a day old, would close it.
 
 ### 3. Three OpenTofu projects have no CI
 

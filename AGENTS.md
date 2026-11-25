@@ -50,7 +50,7 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 | --- | --- | --- |
 | every PR | `ci-ok`, which passes only when every other check passed | nothing |
 | every PR | `pre-commit`: the commit hooks, on the files the PR changes | nothing |
-| `ansible/` | `ansible-lint`, check-mode drift run | nothing; apply is a manual `Ansible` dispatch |
+| `ansible/` | `ansible-lint` | nothing; a nightly check-mode drift run, and apply is a manual `Ansible` dispatch |
 | `authentik/` | `tofu plan` comment | `tofu apply` |
 | `aws/` (SES and SMTP stacks) | `tofu plan` comment per stack | `tofu apply` |
 | `aws/state-bucket` | `tofu plan` comment | `tofu apply` |
