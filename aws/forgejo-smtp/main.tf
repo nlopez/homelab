@@ -21,44 +21,32 @@ provider "aws" {
   region = "us-east-1"
 }
 
-data "aws_caller_identity" "current" {}
-
-locals {
-  from_address = "forgejo@desertbluffs.com"
-}
-
-resource "aws_iam_user" "forgejo_smtp" {
-  name = "forgejo-smtp"
-}
-
-data "aws_iam_policy_document" "send_as_forgejo" {
-  statement {
-    actions   = ["ses:SendRawEmail"]
-    resources = ["arn:aws:ses:us-east-1:${data.aws_caller_identity.current.account_id}:identity/desertbluffs.com"]
-
-    condition {
-      test     = "StringEquals"
-      variable = "ses:FromAddress"
-      values   = [local.from_address]
-    }
-  }
-}
-
-resource "aws_iam_user_policy" "send_as_forgejo" {
-  name   = "send-as-forgejo"
-  user   = aws_iam_user.forgejo_smtp.name
-  policy = data.aws_iam_policy_document.send_as_forgejo.json
-}
-
-resource "aws_iam_access_key" "forgejo_smtp" {
-  user = aws_iam_user.forgejo_smtp.name
+module "smtp" {
+  source         = "../modules/ses-smtp-user"
+  name           = "forgejo"
+  from_addresses = ["forgejo@desertbluffs.com"]
 }
 
 output "smtp_username" {
-  value = aws_iam_access_key.forgejo_smtp.id
+  value = module.smtp.smtp_username
 }
 
 output "smtp_password" {
-  value     = aws_iam_access_key.forgejo_smtp.ses_smtp_password_v4
+  value     = module.smtp.smtp_password
   sensitive = true
+}
+
+moved {
+  from = aws_iam_user.forgejo_smtp
+  to   = module.smtp.aws_iam_user.this
+}
+
+moved {
+  from = aws_iam_user_policy.send_as_forgejo
+  to   = module.smtp.aws_iam_user_policy.send_as
+}
+
+moved {
+  from = aws_iam_access_key.forgejo_smtp
+  to   = module.smtp.aws_iam_access_key.this
 }

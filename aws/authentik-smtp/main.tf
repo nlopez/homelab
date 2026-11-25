@@ -21,44 +21,32 @@ provider "aws" {
   region = "us-east-1"
 }
 
-data "aws_caller_identity" "current" {}
-
-locals {
-  from_address = "authentik@desertbluffs.com"
-}
-
-resource "aws_iam_user" "authentik_smtp" {
-  name = "authentik-smtp"
-}
-
-data "aws_iam_policy_document" "send_as_authentik" {
-  statement {
-    actions   = ["ses:SendRawEmail"]
-    resources = ["arn:aws:ses:us-east-1:${data.aws_caller_identity.current.account_id}:identity/desertbluffs.com"]
-
-    condition {
-      test     = "StringEquals"
-      variable = "ses:FromAddress"
-      values   = [local.from_address]
-    }
-  }
-}
-
-resource "aws_iam_user_policy" "send_as_authentik" {
-  name   = "send-as-authentik"
-  user   = aws_iam_user.authentik_smtp.name
-  policy = data.aws_iam_policy_document.send_as_authentik.json
-}
-
-resource "aws_iam_access_key" "authentik_smtp" {
-  user = aws_iam_user.authentik_smtp.name
+module "smtp" {
+  source         = "../modules/ses-smtp-user"
+  name           = "authentik"
+  from_addresses = ["authentik@desertbluffs.com"]
 }
 
 output "smtp_username" {
-  value = aws_iam_access_key.authentik_smtp.id
+  value = module.smtp.smtp_username
 }
 
 output "smtp_password" {
-  value     = aws_iam_access_key.authentik_smtp.ses_smtp_password_v4
+  value     = module.smtp.smtp_password
   sensitive = true
+}
+
+moved {
+  from = aws_iam_user.authentik_smtp
+  to   = module.smtp.aws_iam_user.this
+}
+
+moved {
+  from = aws_iam_user_policy.send_as_authentik
+  to   = module.smtp.aws_iam_user_policy.send_as
+}
+
+moved {
+  from = aws_iam_access_key.authentik_smtp
+  to   = module.smtp.aws_iam_access_key.this
 }
