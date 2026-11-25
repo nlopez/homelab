@@ -47,3 +47,10 @@ repos:
     entry: tofu fmt -check -diff
     language: system
     files: \.(tf|tfvars)$
+  - id: check-hostnames
+    name: 'Check that app hostnames and codenames do not collide'
+    entry: python scripts/check-hostnames.py
+    language: python
+    additional_dependencies: ['pyyaml==6.0.3']
+    pass_filenames: false
+    always_run: true
