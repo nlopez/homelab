@@ -315,6 +315,9 @@ locals {
     # The plan for tailnet/admin reads the tailnet with its own all:read
     # OAuth client, so the role only needs the state.
     tailnet-admin = ["tailnet-admin"]
+    # No workflow uses these yet; see lan_apply_state_prefixes.
+    truenas = ["truenas"]
+    arr     = ["arr"]
   }
 }
 
@@ -450,4 +453,51 @@ data "aws_iam_policy_document" "state_bucket_plan_deny" {
 resource "aws_iam_role_policy" "state_bucket_plan_deny" {
   role   = aws_iam_role.state_bucket_plan.id
   policy = data.aws_iam_policy_document.state_bucket_plan_deny.json
+}
+
+# truenas/ and arr/ manage LAN hosts and are still applied locally. These roles
+# exist ahead of their workflows, which also need read-only API keys in the
+# ci-pr vault, CI copies of the apply keys in the ci vault (SECRETS.md), and the
+# runner on the tailnet, as gateway's has. Each reads and writes only its own
+# state; the providers talk to the hosts, not to AWS.
+locals {
+  lan_apply_state_prefixes = {
+    truenas = "truenas"
+    arr     = "arr"
+  }
+}
+
+resource "aws_iam_role" "lan_apply" {
+  for_each = local.lan_apply_state_prefixes
+
+  name               = "homelab-${each.key}-apply"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
+}
+
+data "aws_iam_policy_document" "lan_apply_state" {
+  for_each = local.lan_apply_state_prefixes
+
+  statement {
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:ListBucket",
+    ]
+    resources = [aws_s3_bucket.state.arn]
+  }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+    ]
+    resources = ["${aws_s3_bucket.state.arn}/${each.value}/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "lan_apply_state" {
+  for_each = local.lan_apply_state_prefixes
+
+  role   = aws_iam_role.lan_apply[each.key].id
+  policy = data.aws_iam_policy_document.lan_apply_state[each.key].json
 }
