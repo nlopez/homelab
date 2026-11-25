@@ -2,6 +2,8 @@
 
 Several agents and people work in this repo at the same time. Every change lands through a pull request, and every stack that applies on `main` posts a plan on the PR first. Agents need no production credentials locally: CI plans with read-only credentials and applies after merge.
 
+`kubernetes/`, `gateway/`, and `aws/` each have their own `AGENTS.md`. Read it before you change files there.
+
 ## Setup
 
 - Enter the dev shell (`direnv allow` or `devenv shell`). It provides every tool the pre-commit hooks need and installs the hooks.
