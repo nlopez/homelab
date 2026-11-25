@@ -66,8 +66,9 @@ jobs:
 
       # The WireGuard keys are deliberately kept out of pull requests: the plan
       # user has no WireGuard page privilege, so the plan excludes every
-      # WireGuard resource and WireGuard changes aren't planned before merge. The dns-webhook passwords are ignore_changes, so
-      # placeholders plan the same as the real values.
+      # WireGuard resource and WireGuard changes aren't planned before merge.
+      # The dns-webhook passwords are ignore_changes, so placeholders plan the
+      # same as the real values.
       - name: Plan
         uses: ./.github/actions/tofu-plan
         env:
