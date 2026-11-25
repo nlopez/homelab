@@ -38,13 +38,3 @@ resource "truenas_mail" "nas2" {
   pass            = var.smtp_password
   pass_wo_version = local.pass_wo_version
 }
-
-import {
-  to = truenas_mail.nas1
-  id = "mail"
-}
-
-import {
-  to = truenas_mail.nas2
-  id = "mail"
-}
