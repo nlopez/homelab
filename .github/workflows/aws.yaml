@@ -8,6 +8,9 @@ on:
     branches: [ "main" ]
     paths: ['aws/**', '.github/workflows/aws.yaml', '.github/workflows/_tofu-stack.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
   workflow_dispatch:
+  schedule:
+    # Nightly drift check; see _tofu-stack.yaml.
+    - cron: '35 7 * * *'
 
 permissions:
   contents: read
@@ -26,6 +29,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      issues: write
       pull-requests: write
     secrets: inherit
     with:

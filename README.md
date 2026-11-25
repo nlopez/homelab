@@ -24,7 +24,8 @@ workflow, which people and agents both follow.
 | [`arr/`](arr) | Sonarr and Radarr settings | None | **Local apply by a human** |
 
 Every PR also runs `pre-commit` (the commit hooks) and `ci-ok`, which passes only when every other
-check passed. OpenTofu state lives in the S3 bucket from `aws/state-bucket`, one key per stack.
+check passed. Every OpenTofu stack also plans nightly on `main`, and keeps a `Drift in <stack>`
+issue open while the live state differs from `main`. OpenTofu state lives in the S3 bucket from `aws/state-bucket`, one key per stack.
 
 ## Secrets
 

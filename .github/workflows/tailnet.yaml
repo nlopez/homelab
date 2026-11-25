@@ -7,6 +7,9 @@ on:
   pull_request:
     branches: [ "main" ]
     paths: ['tailnet/**', '.github/workflows/tailnet.yaml', '.github/workflows/_tofu-stack.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
+  schedule:
+    # Nightly drift check; see _tofu-stack.yaml.
+    - cron: '23 7 * * *'
 
 permissions:
   contents: read
@@ -60,6 +63,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      issues: write
       pull-requests: write
     secrets: inherit
     with:
