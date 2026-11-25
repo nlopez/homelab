@@ -4,18 +4,79 @@ on:
   push:
     branches: [ "main" ]
     paths: ['gateway/**', '.github/workflows/gateway.yaml']
+  pull_request:
+    branches: [ "main" ]
+    paths: ['gateway/**', '.github/workflows/gateway.yaml', '.github/actions/tofu-plan/**']
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: gateway
+  group: ${{ github.event_name == 'pull_request' && format('gateway-pr-{0}', github.event.pull_request.number) || 'gateway' }}
   cancel-in-progress: false
 
 jobs:
+  plan:
+    name: Plan
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # TAILSCALE_PR_CLIENT_ID is tailscale_federated_identity
+      # .github_actions_pull_request in tailnet/admin. Its audience is
+      # api.tailscale.com/<client id>.
+      - name: Join the tailnet
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ vars.TAILSCALE_PR_CLIENT_ID }}
+          audience: api.tailscale.com/${{ vars.TAILSCALE_PR_CLIENT_ID }}
+          tags: tag:ci
+
+      - name: Resolve the gateways
+        run: |
+          echo "192.168.222.1 gw.lga1.radoncanyon.com" | sudo tee -a /etc/hosts
+          echo "192.168.239.254 gw.lga2.radoncanyon.com" | sudo tee -a /etc/hosts
+
+      # OPNsense API privileges can't be read-only, so the API keys are copies
+      # of the production ones. The other values are copies too, so the plan
+      # compares real values. Rotate them together with the production items.
+      - name: Load credentials
+        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_CI_PR_SERVICE_ACCOUNT_TOKEN }}
+          TF_VAR_lga1_api_key: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga1-api-key
+          TF_VAR_lga1_api_secret: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga1-api-secret
+          TF_VAR_lga2_api_key: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga2-api-key
+          TF_VAR_lga2_api_secret: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga2-api-secret
+          TF_VAR_lga1_wg_private_key: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga1-wg-private-key
+          TF_VAR_lga2_wg_private_key: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga2-wg-private-key
+          TF_VAR_wg_psk: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/wg-psk
+          TF_VAR_lga1_dns_webhook_password: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga1-dns-webhook-password
+          TF_VAR_lga2_dns_webhook_password: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga2-dns-webhook-password
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: arn:aws:iam::546422192262:role/homelab-gateway-plan
+          aws-region: us-east-1
+
+      - name: Plan
+        uses: ./.github/actions/tofu-plan
+        with:
+          working-directory: gateway
+          title: Gateway
+
   apply:
     name: Apply
+    if: github.event_name != 'pull_request'
     environment: production
     runs-on: ubuntu-24.04
     permissions:
