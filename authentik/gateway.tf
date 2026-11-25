@@ -96,7 +96,7 @@ resource "authentik_provider_oauth2" "karakeep" {
   allowed_redirect_uris = [{
     matching_mode     = "strict"
     redirect_uri_type = "authorization"
-    url               = "https://kxxx.desertbluffs.com/api/auth/callback/custom"
+    url               = "https://spheal.desertbluffs.com/api/auth/callback/custom"
   }]
 }
 
@@ -104,5 +104,5 @@ resource "authentik_application" "karakeep" {
   name              = "Karakeep"
   slug              = "karakeep"
   protocol_provider = authentik_provider_oauth2.karakeep.id
-  meta_launch_url   = "https://kxxx.desertbluffs.com/"
+  meta_launch_url   = "https://spheal.desertbluffs.com/"
 }
