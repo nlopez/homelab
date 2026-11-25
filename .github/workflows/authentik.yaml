@@ -94,10 +94,25 @@ jobs:
       - name: Install 1Password CLI
         uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
 
-      - name: Apply
+      - name: Plan
+        id: plan
         working-directory: authentik
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
         run: |-
           tofu init -input=false
-          op run --env-file secrets.env -- tofu apply -input=false -auto-approve
+          # 0 planned nothing, 2 planned changes, 1 is an error.
+          status=0
+          op run --env-file secrets.env -- tofu plan -input=false -detailed-exitcode -out=tfplan || status=$?
+          case "${status}" in
+            0) echo "changed=false" >>"${GITHUB_OUTPUT}" ;;
+            2) echo "changed=true" >>"${GITHUB_OUTPUT}" ;;
+            *) exit "${status}" ;;
+          esac
+
+      - name: Apply
+        if: steps.plan.outputs.changed == 'true'
+        working-directory: authentik
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: op run --env-file secrets.env -- tofu apply -input=false tfplan
