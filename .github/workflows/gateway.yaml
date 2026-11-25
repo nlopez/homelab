@@ -46,8 +46,7 @@ jobs:
           echo "192.168.239.254 gw.lga2.radoncanyon.com" | sudo tee -a /etc/hosts
 
       # OPNsense API privileges can't be read-only, so the API keys are copies
-      # of the production ones. The other values are copies too, so the plan
-      # compares real values. Rotate them together with the production items.
+      # of the production ones.
       - name: Load credentials
         uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
         with:
@@ -58,11 +57,6 @@ jobs:
           TF_VAR_lga1_api_secret: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga1-api-secret
           TF_VAR_lga2_api_key: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga2-api-key
           TF_VAR_lga2_api_secret: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga2-api-secret
-          TF_VAR_lga1_wg_private_key: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga1-wg-private-key
-          TF_VAR_lga2_wg_private_key: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga2-wg-private-key
-          TF_VAR_wg_psk: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/wg-psk
-          TF_VAR_lga1_dns_webhook_password: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga1-dns-webhook-password
-          TF_VAR_lga2_dns_webhook_password: op://6foq5pqns6uslgstwbfoyyyftu/gateway-plan/lga2-dns-webhook-password
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
@@ -70,11 +64,26 @@ jobs:
           role-to-assume: arn:aws:iam::546422192262:role/homelab-gateway-plan
           aws-region: us-east-1
 
+      # The WireGuard keys are deliberately kept out of pull requests, so the
+      # plan excludes the resources that use them and WireGuard changes aren't
+      # planned before merge. The dns-webhook passwords are ignore_changes, so
+      # placeholders plan the same as the real values.
       - name: Plan
         uses: ./.github/actions/tofu-plan
+        env:
+          TF_VAR_lga1_wg_private_key: placeholder
+          TF_VAR_lga2_wg_private_key: placeholder
+          TF_VAR_wg_psk: placeholder
+          TF_VAR_lga1_dns_webhook_password: placeholder
+          TF_VAR_lga2_dns_webhook_password: placeholder
         with:
           working-directory: gateway
           title: Gateway
+          plan-args: >-
+            -exclude=opnsense_wireguard_server.lga1
+            -exclude=opnsense_wireguard_server.lga2
+            -exclude=opnsense_wireguard_peer.lga1_lga2
+            -exclude=opnsense_wireguard_peer.lga2_lga1
 
   apply:
     name: Apply
