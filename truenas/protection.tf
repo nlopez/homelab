@@ -66,7 +66,7 @@ resource "truenas_periodic_snapshot_task" "etank_media_daily_nas2" {
   provider       = truenas.nas2
   allow_empty    = true
   dataset        = "etank/media"
-  enabled        = false
+  enabled        = true
   exclude        = []
   lifetime_unit  = "DAY"
   lifetime_value = 30
