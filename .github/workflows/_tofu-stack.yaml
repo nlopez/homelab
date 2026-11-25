@@ -1,7 +1,9 @@
 name: OpenTofu stack
 
 # Plans one OpenTofu stack on a pull request and posts the plan as a comment,
-# or plans and applies it on main. Each stack's workflow calls this with its
+# or plans and applies it on main. On a schedule it only plans, with the apply
+# credentials, and keeps one open "Drift: <title>" issue while the stack has
+# drifted from main. Each stack's workflow calls this with its
 # directory and roles; see dns.yaml for the smallest caller.
 #
 # Credentials:
@@ -138,13 +140,14 @@ jobs:
           tofu-version: ${{ env.TOFU_VERSION }}
 
   apply:
-    name: Apply
+    name: ${{ github.event_name == 'schedule' && 'Drift check' || 'Apply' }}
     if: github.event_name != 'pull_request'
     environment: production
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       id-token: write
+      issues: write
 
     steps:
       - name: Checkout
@@ -198,7 +201,7 @@ jobs:
           esac
 
       - name: Apply
-        if: steps.plan.outputs.changed == 'true'
+        if: steps.plan.outputs.changed == 'true' && github.event_name != 'schedule'
         working-directory: ${{ inputs.directory }}
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
@@ -209,8 +212,39 @@ jobs:
             tofu apply -input=false tfplan
           fi
 
+      - name: Report drift
+        if: github.event_name == 'schedule'
+        working-directory: ${{ inputs.directory }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: Drift in ${{ inputs.title }}
+          CHANGED: ${{ steps.plan.outputs.changed }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |-
+          set -euo pipefail
+          issue="$(gh issue list --state open --search "\"${TITLE}\" in:title" --json number,title \
+            --jq "map(select(.title == env.TITLE)) | .[0].number // empty")"
+          if [ "${CHANGED}" = true ]; then
+            {
+              echo "The nightly plan of \`${GITHUB_SHA:0:8}\` on \`main\` found changes ([run](${RUN_URL})). Something changed outside this repo, or a merge was never applied."
+              echo
+              echo '```hcl'
+              tofu show -no-color tfplan | tail -c 60000
+              echo '```'
+            } > drift.md
+            if [ -n "${issue}" ]; then
+              gh issue comment "${issue}" --body-file drift.md
+            else
+              gh issue create --title "${TITLE}" --body-file drift.md
+            fi
+            echo "::warning::${TITLE}: the plan has changes; see the issue."
+          elif [ -n "${issue}" ]; then
+            gh issue close "${issue}" --comment "The nightly plan of \`${GITHUB_SHA:0:8}\` has no changes ([run](${RUN_URL}))."
+          fi
+
       - uses: ./.github/actions/discord-notify
-        if: success() && steps.plan.outputs.changed == 'true'
+        if: success() && steps.plan.outputs.changed == 'true' && github.event_name != 'schedule'
         with:
           result: applied
           subject: ${{ inputs.notify-subject }}
