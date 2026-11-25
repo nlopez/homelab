@@ -78,6 +78,22 @@ configs:
       hs.status = "Healthy"
       hs.message = ""
       return hs
+    # Same as the built-in Ingress check, except the external-hosts placeholders
+    # exist only to carry gethomepage.dev annotations, so no controller will ever
+    # write a load balancer into their status.
+    resource.customizations.health.networking.k8s.io_Ingress: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil and obj.status.loadBalancer ~= nil then
+        lbs = obj.status.loadBalancer.ingress
+        if lbs ~= nil and #lbs > 0 then
+          hs.status = "Healthy"
+        elseif obj.metadata ~= nil and obj.metadata.annotations ~= nil and obj.metadata.annotations["gethomepage.dev/external"] == "true" then
+          hs.status = "Healthy"
+        end
+      end
+      return hs
   params:
     server.insecure: true
 server:
