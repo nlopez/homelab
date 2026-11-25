@@ -35,18 +35,3 @@ output "smtp_password" {
   value     = module.smtp.smtp_password
   sensitive = true
 }
-
-moved {
-  from = aws_iam_user.seafile_smtp
-  to   = module.smtp.aws_iam_user.this
-}
-
-moved {
-  from = aws_iam_user_policy.send_as_seafile
-  to   = module.smtp.aws_iam_user_policy.send_as
-}
-
-moved {
-  from = aws_iam_access_key.seafile_smtp
-  to   = module.smtp.aws_iam_access_key.this
-}
