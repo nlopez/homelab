@@ -31,10 +31,8 @@ data:
     OAUTH_TOKEN_URL = "https://arsox.desertbluffs.com/application/o/token/"
     OAUTH_USER_INFO_URL = "https://arsox.desertbluffs.com/application/o/userinfo/"
     OAUTH_SCOPE = ["openid", "profile", "email"]
-    # "email" -> "email" finds an account created before SSO and links its
-    # sub on first sign-in; "sub" -> "uid" is the lasting identity.
     OAUTH_ATTRIBUTE_MAP = {
-        "email": (True, "email"),
         "sub": (True, "uid"),
         "name": (False, "name"),
+        "email": (False, "contact_email"),
     }

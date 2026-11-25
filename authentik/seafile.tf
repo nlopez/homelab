@@ -3,8 +3,7 @@ variable "seafile_client_secret" {
   sensitive = true
 }
 
-# Seafile maps the OIDC sub claim to its own user, and links an existing
-# account whose email matches on its first SSO sign-in.
+# Seafile maps the OIDC sub claim to its own user.
 resource "authentik_provider_oauth2" "seafile" {
   name               = "seafile"
   client_type        = "confidential"
