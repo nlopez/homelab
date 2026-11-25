@@ -9,7 +9,9 @@ on:
       - Datadog
       - DNS
       - Gateway
+      - State bucket
       - Tailnet
+      - Tailnet admin
     types: [completed]
 
 permissions: {}
@@ -17,6 +19,9 @@ permissions: {}
 jobs:
   notify:
     name: Notify
+    # A pull-request run never applies, so its completion says nothing worth
+    # posting. Skipping the job skips the runner it would spend finding that out.
+    if: github.event.workflow_run.event != 'pull_request'
     environment: production
     runs-on: ubuntu-24.04
     permissions:
@@ -47,13 +52,13 @@ jobs:
           if grep -qvx success <<<"${conclusions}"; then
             icon="❌"; color=15158332; result="failed"
           else
-            # Every apply ends with this summary, and the all-zero form is the
-            # only one worth staying quiet about. A log that cannot be read
-            # yields no summaries, so it counts as a change: a failed fetch must
-            # not swallow a real apply.
-            summaries="$(gh run view "${RUN_ID}" --repo "${REPO}" --log 2>/dev/null |
-              grep -aoE 'Apply complete! Resources: [0-9]+ added, [0-9]+ changed, [0-9]+ destroyed\.' || true)"
-            if ! grep -qvx 'Apply complete! Resources: 0 added, 0 changed, 0 destroyed\.' <<<"${summaries}"; then
+            # Every apply job plans first, so a stack with nothing to do prints
+            # "No changes." and never reaches tofu apply. That line and an
+            # all-zero apply summary are the only results worth staying quiet
+            # about. An unreadable log yields neither, so it counts as a change.
+            results="$(gh run view "${RUN_ID}" --repo "${REPO}" --log 2>/dev/null |
+              grep -aoE 'No changes\.|Apply complete! Resources: [0-9]+ added, [0-9]+ changed, [0-9]+ destroyed\.' || true)"
+            if ! grep -qvx -e 'No changes\.' -e 'Apply complete! Resources: 0 added, 0 changed, 0 destroyed\.' <<<"${results}"; then
               echo "Every Apply job reported no changes; nothing to post."
               exit 0
             fi

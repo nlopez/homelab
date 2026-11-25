@@ -74,8 +74,21 @@ jobs:
         with:
           tofu_version: 1.13.2
 
-      - name: Apply
+      - name: Plan
+        id: plan
         working-directory: aws/${{ matrix.dir }}
         run: |-
           tofu init -input=false
-          tofu apply -input=false -auto-approve
+          # 0 planned nothing, 2 planned changes, 1 is an error.
+          status=0
+          tofu plan -input=false -detailed-exitcode -out=tfplan || status=$?
+          case "${status}" in
+            0) echo "changed=false" >>"${GITHUB_OUTPUT}" ;;
+            2) echo "changed=true" >>"${GITHUB_OUTPUT}" ;;
+            *) exit "${status}" ;;
+          esac
+
+      - name: Apply
+        if: steps.plan.outputs.changed == 'true'
+        working-directory: aws/${{ matrix.dir }}
+        run: tofu apply -input=false tfplan

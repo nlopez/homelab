@@ -69,8 +69,21 @@ jobs:
       # The role can change its own trust policy and the OIDC provider. If an
       # apply locks it out, apply locally with the AdministratorAccess
       # permission set.
-      - name: Apply
+      - name: Plan
+        id: plan
         working-directory: aws/state-bucket
         run: |-
           tofu init -input=false
-          tofu apply -input=false -auto-approve
+          # 0 planned nothing, 2 planned changes, 1 is an error.
+          status=0
+          tofu plan -input=false -detailed-exitcode -out=tfplan || status=$?
+          case "${status}" in
+            0) echo "changed=false" >>"${GITHUB_OUTPUT}" ;;
+            2) echo "changed=true" >>"${GITHUB_OUTPUT}" ;;
+            *) exit "${status}" ;;
+          esac
+
+      - name: Apply
+        if: steps.plan.outputs.changed == 'true'
+        working-directory: aws/state-bucket
+        run: tofu apply -input=false tfplan
