@@ -17,3 +17,24 @@ data:
     EMAIL_HOST_PASSWORD = os.environ["SMTP_PASSWORD"]
     DEFAULT_FROM_EMAIL = os.environ["SMTP_FROM"]
     SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+    ENABLE_OAUTH = True
+    OAUTH_ENABLE_INSECURE_TRANSPORT = False
+    OAUTH_CREATE_UNKNOWN_USER = True
+    OAUTH_ACTIVATE_USER_AFTER_CREATION = True
+    OAUTH_CLIENT_ID = "seafile"
+    OAUTH_CLIENT_SECRET = os.environ["OAUTH_CLIENT_SECRET"]
+    OAUTH_REDIRECT_URL = "https://dogen.desertbluffs.com/oauth/callback/"
+    OAUTH_PROVIDER = "authentik"
+    OAUTH_PROVIDER_DOMAIN = "arsox.desertbluffs.com"
+    OAUTH_AUTHORIZATION_URL = "https://arsox.desertbluffs.com/application/o/authorize/"
+    OAUTH_TOKEN_URL = "https://arsox.desertbluffs.com/application/o/token/"
+    OAUTH_USER_INFO_URL = "https://arsox.desertbluffs.com/application/o/userinfo/"
+    OAUTH_SCOPE = ["openid", "profile", "email"]
+    # "email" -> "email" finds an account created before SSO and links its
+    # sub on first sign-in; "sub" -> "uid" is the lasting identity.
+    OAUTH_ATTRIBUTE_MAP = {
+        "email": (True, "email"),
+        "sub": (True, "uid"),
+        "name": (False, "name"),
+    }
