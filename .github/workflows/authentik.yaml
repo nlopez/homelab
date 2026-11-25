@@ -32,6 +32,8 @@ jobs:
 
       - name: Load read-only credentials
         uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
+        with:
+          export-env: true
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_CI_PR_SERVICE_ACCOUNT_TOKEN }}
           AUTHENTIK_TOKEN: op://6foq5pqns6uslgstwbfoyyyftu/f7ceoathkg6nmchaqt2im5ntay/credential
@@ -43,6 +45,7 @@ jobs:
           TF_VAR_pixivfe_client_secret: op://6foq5pqns6uslgstwbfoyyyftu/czockr5sqqjzdgzlmy7nwnip6y/client-secret
           TF_VAR_shaarli_client_secret: op://6foq5pqns6uslgstwbfoyyyftu/7sjfe5z7j5fk33at5t3eymvbpm/client-secret
           TF_VAR_karakeep_client_secret: op://6foq5pqns6uslgstwbfoyyyftu/ih3qcxa6ihzyypajyx7llhyb4u/client-secret
+          TF_VAR_seafile_client_secret: op://6foq5pqns6uslgstwbfoyyyftu/nmqdkmk7mmxzyocfobmvoedwfm/client-secret
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
@@ -55,6 +58,10 @@ jobs:
         with:
           working-directory: authentik
           title: Authentik
+          # The read-only token can't see OAuth2 client secrets, so a refresh
+          # would show every provider's secret changing. The plan compares
+          # against state instead; applies refresh.
+          plan-args: -refresh=false
 
   apply:
     name: Apply

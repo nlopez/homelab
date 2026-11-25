@@ -11,6 +11,10 @@ inputs:
   title:
     description: Heading of the comment; also identifies it across pushes
     required: true
+  plan-args:
+    description: Extra arguments for tofu plan
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -25,11 +29,14 @@ runs:
       id: plan
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      env:
+        PLAN_ARGS: ${{ inputs.plan-args }}
       run: |-
         set -o pipefail
         tofu init -input=false -no-color 2>&1 | tee plan.log
         # The state lock needs write access, which pull requests don't get.
-        tofu plan -input=false -lock=false -no-color -out=tfplan 2>&1 | tee -a plan.log
+        # shellcheck disable=SC2086
+        tofu plan -input=false -lock=false -no-color ${PLAN_ARGS} -out=tfplan 2>&1 | tee -a plan.log
         tofu show -no-color tfplan > plan.txt
 
     - name: Comment plan
@@ -45,7 +52,7 @@ runs:
       run: |-
         marker="<!-- tofu-plan: ${TITLE} -->"
         if [ "$OUTCOME" = success ]; then out=plan.txt; else out=plan.log; fi
-        summary="$(grep -E '^(Plan:|No changes\.)' plan.log | tail -n 1)"
+        summary="$(grep -E '^(Plan:|No changes\.)' plan.log | tail -n 1 || true)"
         {
           echo "$marker"
           echo "### ${TITLE} plan (${OUTCOME})"

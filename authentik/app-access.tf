@@ -36,6 +36,7 @@ locals {
       forgejo  = authentik_application.forgejo
       argocd   = authentik_application.argocd
       immich   = authentik_application.immich
+      seafile  = authentik_application.seafile
     },
   )
 }
