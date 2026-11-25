@@ -81,11 +81,12 @@ resource "github_repository_environment_deployment_policy" "production_main" {
   branch_pattern = "main"
 }
 
-# Rulesets are only available on public repositories (or a paid plan), so this
-# is off until var.public is set. Repository admins bypass, which keeps the
-# `wt merge` flow of pushing straight to main working.
+# Rulesets are only available on public repositories or on a paid plan, so
+# this is off until var.public or var.rulesets is set. Every change reaches
+# main through a pull request whose ci-ok check passed
+# (.github/workflows/ci-gate.yaml). Nobody bypasses it, admins included.
 resource "github_repository_ruleset" "main" {
-  count = var.public ? 1 : 0
+  count = var.public || var.rulesets ? 1 : 0
 
   name        = "main"
   repository  = github_repository.homelab.name
@@ -99,9 +100,12 @@ resource "github_repository_ruleset" "main" {
     }
   }
 
+  # The GitHub Actions app, for the media-toolbox workflow's nightly version
+  # bump, which pushes an unsigned commit straight to main. Any workflow with
+  # contents: write can use this, so drop it once that bump opens a PR instead.
   bypass_actors {
-    actor_id    = 5 # Repository admin role
-    actor_type  = "RepositoryRole"
+    actor_id    = 15368
+    actor_type  = "Integration"
     bypass_mode = "always"
   }
 
@@ -110,5 +114,18 @@ resource "github_repository_ruleset" "main" {
     non_fast_forward        = true
     required_linear_history = true
     required_signatures     = true
+
+    # No approval is required, so agents can merge their own PRs once ci-ok
+    # passes. AGENTS.md says when a human must approve.
+    pull_request {
+      required_approving_review_count = 0
+    }
+
+    required_status_checks {
+      required_check {
+        context        = "ci-ok"
+        integration_id = 15368 # GitHub Actions
+      }
+    }
   }
 }
