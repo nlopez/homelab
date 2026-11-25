@@ -143,17 +143,18 @@ resource "sonarr_indexer_newznab" "nzbgeek" {
 resource "sonarr_indexer_newznab" "animetosho" {
   anime_categories             = [5070]
   anime_standard_format_search = false
-  api_key                      = var.animetosho_api_key
-  api_path                     = "/nabapi"
-  base_url                     = "https://feed.animetosho.xyz/api"
-  categories                   = []
-  download_client_id           = 0
-  enable_automatic_search      = true
-  enable_interactive_search    = true
-  enable_rss                   = true
-  name                         = "AnimeTosho Usenet"
-  priority                     = 25
-  tags                         = [sonarr_tag.anime.id]
+  # AnimeTosho has no accounts; its feed takes 0 as the API key.
+  api_key                   = "0"
+  api_path                  = "/nabapi"
+  base_url                  = "https://feed.animetosho.xyz/api"
+  categories                = []
+  download_client_id        = 0
+  enable_automatic_search   = true
+  enable_interactive_search = true
+  enable_rss                = true
+  name                      = "AnimeTosho Usenet"
+  priority                  = 25
+  tags                      = [sonarr_tag.anime.id]
 }
 
 resource "sonarr_indexer_torznab" "animetosho" {

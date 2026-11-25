@@ -23,11 +23,6 @@ variable "nzbgeek_api_key" {
   sensitive = true
 }
 
-variable "animetosho_api_key" {
-  type      = string
-  sensitive = true
-}
-
 variable "plex_token" {
   type      = string
   sensitive = true
