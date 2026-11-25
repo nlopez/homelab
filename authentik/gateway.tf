@@ -23,6 +23,11 @@ variable "shaarli_client_secret" {
   sensitive = true
 }
 
+variable "karakeep_client_secret" {
+  type      = string
+  sensitive = true
+}
+
 locals {
   gateway_apps = {
     sonarr = {
@@ -75,4 +80,29 @@ resource "authentik_application" "gateway" {
   slug              = each.key
   protocol_provider = authentik_provider_oauth2.gateway[each.key].id
   meta_launch_url   = "https://${each.value.host}/"
+}
+
+resource "authentik_provider_oauth2" "karakeep" {
+  name               = "Karakeep"
+  client_type        = "confidential"
+  client_id          = "karakeep"
+  client_secret      = var.karakeep_client_secret
+  authorization_flow = data.authentik_flow.default_authorization.id
+  invalidation_flow  = data.authentik_flow.default_invalidation.id
+  signing_key        = data.authentik_certificate_key_pair.default.id
+  property_mappings  = data.authentik_property_mapping_provider_scope.oidc.ids
+  grant_types        = ["authorization_code"]
+
+  allowed_redirect_uris = [{
+    matching_mode     = "strict"
+    redirect_uri_type = "authorization"
+    url               = "https://kxxx.desertbluffs.com/api/auth/callback/custom"
+  }]
+}
+
+resource "authentik_application" "karakeep" {
+  name              = "Karakeep"
+  slug              = "karakeep"
+  protocol_provider = authentik_provider_oauth2.karakeep.id
+  meta_launch_url   = "https://kxxx.desertbluffs.com/"
 }
