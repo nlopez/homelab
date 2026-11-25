@@ -1,0 +1,53 @@
+name: Stack overlap
+
+# Comments on a pull request while another open PR changes the same stack, and
+# updates both PRs' comments as they change or close. Only a warning: the
+# check always passes. See .github/scripts/stack-overlap.sh.
+on:
+  pull_request:
+    branches: [ "main" ]
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: read
+
+# One at a time, so two PRs updating each other's comments don't race.
+concurrency:
+  group: stack-overlap
+  cancel-in-progress: false
+
+jobs:
+  overlap:
+    name: Stack overlap
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      # A closed PR's merge ref may be gone, so read the script from main then.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.action == 'closed' && github.event.repository.default_branch || '' }}
+          sparse-checkout: .github/scripts
+
+      - name: Update the overlap comments
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          ACTION: ${{ github.event.action }}
+        run: |-
+          set -euo pipefail
+          if [ "${ACTION}" = closed ]; then
+            # The closed PR no longer counts; refresh everyone it overlapped.
+            .github/scripts/stack-overlap.sh update-all
+          else
+            for other in $(.github/scripts/stack-overlap.sh update "${PR}"); do
+              .github/scripts/stack-overlap.sh update "${other}" >/dev/null
+            done
+          fi
