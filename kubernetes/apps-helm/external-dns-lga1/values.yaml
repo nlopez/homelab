@@ -43,6 +43,8 @@ dnsConfig:
   options:
   - name: ndots
     value: "1"
+deploymentAnnotations:
+  reloader.stakater.com/auto: "true"
 podLabels:
   tags.datadoghq.com/env: homelab
   tags.datadoghq.com/service: external-dns-lga1

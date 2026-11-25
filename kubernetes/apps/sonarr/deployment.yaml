@@ -9,6 +9,8 @@ metadata:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: sonarr
     tags.datadoghq.com/version: v1
+  annotations:
+    reloader.stakater.com/auto: "true"
 spec:
   strategy:
     type: Recreate
