@@ -5,10 +5,6 @@ resource "sonarr_tag" "anime" {
   label = "anime"
 }
 
-resource "sonarr_tag" "unused" {
-  label = "unused"
-}
-
 resource "sonarr_root_folder" "anime" {
   path = "/media/anime"
 }
