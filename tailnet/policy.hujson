@@ -136,6 +136,22 @@
         "443"
       ]
     },
+    // The split DNS resolvers for desertbluffs.com and radoncanyon.com
+    // (tailnet/tofu/dns.tf). A runner on the tailnet sends every lookup for
+    // those domains here, so without this grant they time out.
+    {
+      "src": [
+        "tag:ci"
+      ],
+      "dst": [
+        "100.83.144.88",
+        "100.86.37.97"
+      ],
+      "ip": [
+        "tcp:53",
+        "udp:53"
+      ]
+    },
     // The Ansible workflow needs the packet filter to allow 22 as well as the
     // ssh rule below, which is what authorises the login as nlopez.
     {
@@ -268,6 +284,13 @@
       "src": "tag:ci",
       "accept": [
         "tag:ansible:22"
+      ]
+    },
+    {
+      "src": "tag:ci",
+      "accept": [
+        "100.83.144.88:53",
+        "100.86.37.97:53"
       ]
     }
   ]
