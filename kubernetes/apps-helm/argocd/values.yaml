@@ -10,15 +10,17 @@ configs:
   # The authentik side lives in authentik/argocd.tf. The local admin account
   # stays enabled for when authentik is down.
   rbac:
+    # authentik group names from the OIDC groups claim.
     policy.csv: |
-      g, argocd-admins, role:admin
+      g, admin, role:admin
+      g, users, role:readonly
   cm:
     oidc.config: |
       name: authentik
       issuer: https://arsox.desertbluffs.com/application/o/argocd/
       clientID: argocd
       enablePKCEAuthentication: true
-      requestedScopes: ["openid", "profile", "email"]
+      requestedScopes: ["openid", "profile", "email", "groups"]
     resource.exclusions: |
       - apiGroups:
           - velero.io

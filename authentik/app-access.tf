@@ -7,7 +7,7 @@
 #            set in its own UI).
 # akadmin is an admin member but not a users member, so a future users-only
 # addition (e.g. a household member) never picks up admin rights by accident.
-# Argo CD keeps its own argocd-admins group for the rbac role mapping.
+# Argo CD maps the admin and users groups in its rbac policy.csv.
 
 data "authentik_user" "akadmin" {
   username = "akadmin"
