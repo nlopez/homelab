@@ -3,10 +3,10 @@ name: AWS
 on:
   push:
     branches: [ "main" ]
-    paths: ['aws/**', '.github/workflows/aws.yaml']
+    paths: ['aws/**', '.github/workflows/aws.yaml', '.github/workflows/_tofu-stack.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
   pull_request:
     branches: [ "main" ]
-    paths: ['aws/**', '.github/workflows/aws.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
+    paths: ['aws/**', '.github/workflows/aws.yaml', '.github/workflows/_tofu-stack.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
   workflow_dispatch:
 
 permissions:
@@ -17,92 +17,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  plan:
-    name: Plan ${{ matrix.dir }}
-    if: github.event_name == 'pull_request'
+  aws:
+    uses: ./.github/workflows/_tofu-stack.yaml
     strategy:
       fail-fast: false
       matrix:
         dir: [ses, authentik-smtp, forgejo-smtp, seafile-smtp, nas-smtp, immich-smtp]
-    runs-on: ubuntu-24.04
     permissions:
       contents: read
       id-token: write
       pull-requests: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
-        with:
-          role-to-assume: arn:aws:iam::546422192262:role/homelab-aws-plan
-          aws-region: us-east-1
-
-      - name: Plan
-        uses: ./.github/actions/tofu-plan
-        with:
-          working-directory: aws/${{ matrix.dir }}
-          title: AWS ${{ matrix.dir }}
-
-  apply:
-    name: Apply ${{ matrix.dir }}
-    if: github.event_name != 'pull_request'
-    strategy:
-      fail-fast: false
-      matrix:
-        dir: [ses, authentik-smtp, forgejo-smtp, seafile-smtp, nas-smtp, immich-smtp]
-    environment: production
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
-        with:
-          role-to-assume: arn:aws:iam::546422192262:role/homelab-aws-apply
-          aws-region: us-east-1
-
-      - name: Set up OpenTofu
-        uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
-        with:
-          tofu_version: 1.13.2
-
-      - name: Plan
-        id: plan
-        working-directory: aws/${{ matrix.dir }}
-        run: |-
-          tofu init -input=false
-          # 0 planned nothing, 2 planned changes, 1 is an error.
-          status=0
-          tofu plan -input=false -detailed-exitcode -out=tfplan || status=$?
-          case "${status}" in
-            0) echo "changed=false" >>"${GITHUB_OUTPUT}" ;;
-            2) echo "changed=true" >>"${GITHUB_OUTPUT}" ;;
-            *) exit "${status}" ;;
-          esac
-
-      - name: Apply
-        if: steps.plan.outputs.changed == 'true'
-        working-directory: aws/${{ matrix.dir }}
-        run: tofu apply -input=false tfplan
-
-      - uses: ./.github/actions/discord-notify
-        if: success() && steps.plan.outputs.changed == 'true'
-        with:
-          result: applied
-          subject: AWS ${{ matrix.dir }}
-          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-
-      - uses: ./.github/actions/discord-notify
-        if: failure() || cancelled()
-        with:
-          result: failed
-          subject: AWS ${{ matrix.dir }}
-          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+    secrets: inherit
+    with:
+      directory: aws/${{ matrix.dir }}
+      title: AWS ${{ matrix.dir }}
+      plan-role: homelab-aws-plan
+      apply-role: homelab-aws-apply
+      notify-subject: AWS ${{ matrix.dir }}
