@@ -1076,10 +1076,10 @@ locals {
       sequence         = 45
       interface        = ["lan"]
     }
-    "46-lga2 LAN to lga1 subnets via odroid.lga2 (sloppy state for same-LAN hairpin)" = {
+    "46-lga2 LAN to lga1 subnets and tailnet (sloppy state for odroid.lga2 hairpin)" = {
       uuid             = "5b9ac6df-35c0-49df-be68-f04dc48daa79"
       action           = "pass"
-      description      = "lga2 LAN to lga1 subnets via odroid.lga2 (sloppy state for same-LAN hairpin)"
+      description      = "lga2 LAN to lga1 subnets and tailnet (sloppy state for odroid.lga2 hairpin)"
       destination_net  = "LGA1_NETS"
       direction        = "in"
       ip_protocol      = "inet"
@@ -1099,33 +1099,10 @@ locals {
       sequence         = 46
       interface        = ["lan"]
     }
-    "47-lga1 subnets to lga2 LAN via odroid.lga2 (sloppy state for same-LAN hairpin)" = {
-      uuid             = "fc8979cb-569c-416e-9c98-538fab9b73d0"
-      action           = "pass"
-      description      = "lga1 subnets to lga2 LAN via odroid.lga2 (sloppy state for same-LAN hairpin)"
-      destination_net  = "lan"
-      direction        = "in"
-      ip_protocol      = "inet"
-      protocol         = "TCP"
-      source_net       = "LGA1_NETS"
-      state_type       = "sloppy"
-      allow_options    = false
-      destination_not  = false
-      disable_reply_to = false
-      enabled          = true
-      interface_not    = false
-      log              = false
-      no_pfsync        = false
-      no_xmlrpc_sync   = false
-      quick            = true
-      source_not       = false
-      sequence         = 47
-      interface        = ["lan"]
-    }
-    "48-lga2 LAN to lga1 subnets via odroid.lga2, non-TCP" = {
+    "48-lga2 LAN to lga1 subnets and tailnet, non-TCP" = {
       uuid             = "7009f7aa-7dd4-4824-85f1-f5f566f7f84a"
       action           = "pass"
-      description      = "lga2 LAN to lga1 subnets via odroid.lga2, non-TCP"
+      description      = "lga2 LAN to lga1 subnets and tailnet, non-TCP"
       destination_net  = "LGA1_NETS"
       direction        = "in"
       ip_protocol      = "inet"
@@ -1143,29 +1120,6 @@ locals {
       quick            = true
       source_not       = false
       sequence         = 48
-      interface        = ["lan"]
-    }
-    "49-lga1 subnets to lga2 LAN via odroid.lga2, non-TCP" = {
-      uuid             = "6757f16c-7421-436c-9305-b0921096df98"
-      action           = "pass"
-      description      = "lga1 subnets to lga2 LAN via odroid.lga2, non-TCP"
-      destination_net  = "lan"
-      direction        = "in"
-      ip_protocol      = "inet"
-      protocol         = "any"
-      source_net       = "LGA1_NETS"
-      state_type       = "sloppy"
-      allow_options    = false
-      destination_not  = false
-      disable_reply_to = false
-      enabled          = true
-      interface_not    = false
-      log              = false
-      no_pfsync        = false
-      no_xmlrpc_sync   = false
-      quick            = true
-      source_not       = false
-      sequence         = 49
       interface        = ["lan"]
     }
     "51-Default allow LAN to any rule" = {
@@ -1284,4 +1238,14 @@ moved {
 moved {
   from = opnsense_firewall_filter_rule.lga2_firewall_rules["171-WireGuard: private gateway to lga2 LAN"]
   to   = opnsense_firewall_filter_rule.lga2_firewall_rules["171-WireGuard: lga1 site networks to lga2 site networks"]
+}
+
+moved {
+  from = opnsense_firewall_filter_rule.lga2_firewall_rules["46-lga2 LAN to lga1 subnets via odroid.lga2 (sloppy state for same-LAN hairpin)"]
+  to   = opnsense_firewall_filter_rule.lga2_firewall_rules["46-lga2 LAN to lga1 subnets and tailnet (sloppy state for odroid.lga2 hairpin)"]
+}
+
+moved {
+  from = opnsense_firewall_filter_rule.lga2_firewall_rules["48-lga2 LAN to lga1 subnets via odroid.lga2, non-TCP"]
+  to   = opnsense_firewall_filter_rule.lga2_firewall_rules["48-lga2 LAN to lga1 subnets and tailnet, non-TCP"]
 }
