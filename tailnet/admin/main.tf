@@ -17,7 +17,7 @@ terraform {
   }
 }
 
-# Reads its credentials from the environment. Applies use an admin API key
-# (secrets.env); pull-request plans use the read-only ci_pr_admin OAuth
+# Reads its credentials from the environment. Applies use the ci_admin OAuth
+# client (secrets.env); pull-request plans use the read-only ci_pr_admin
 # client.
 provider "tailscale" {}

@@ -35,8 +35,8 @@ output "ci_pr_admin_oauth_client_key" {
 # Write client for the Tailnet admin apply workflow and local applies. This
 # project manages trust credentials, which can mint other credentials, so a
 # narrower scope would not limit it; it gets all. Its ID and key live in the
-# 1Password vault ci, item "tailnet-admin-api-key". The admin console's API
-# access token stays the way back in if this client is revoked.
+# 1Password vault ci, item "tailnet-admin-api-key". An API access token from
+# the admin console is the way back in if this client is revoked.
 resource "tailscale_oauth_client" "ci_admin" {
   description = "homelab-ci-tailnet-admin-apply"
   scopes      = ["all"]
