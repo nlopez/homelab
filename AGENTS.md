@@ -86,10 +86,11 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 | `datadog/` | `tofu plan` comment | `tofu apply` |
 | `dns/` | `tofu plan` comment | `tofu apply` |
 | `gateway/` | `tofu plan` comment | `tofu apply` |
+| `github/` | `tofu plan` comment (against state, no refresh; webhook excluded) | nothing; a human applies it locally |
 | `kubernetes/` | yamlfmt, schema, kubeconform hooks; rendered manifest diff comment | Argo CD syncs; `Kubernetes sync check` waits for the changed Applications to be Synced and Healthy |
 | `tailnet/` | ACL tests, `tofu plan` comment | `tofu apply` |
 | `tailnet/admin` | `tofu plan` comment | `tofu apply` |
 
 Every OpenTofu stack's workflow is a short caller of `.github/workflows/_tofu-stack.yaml`, which plans on PRs and applies on `main`. To add a stack, copy `dns.yaml`, give it plan and apply roles in `aws/state-bucket/iam.tf`, and put its read-only plan credentials in `<stack>/secrets.plan.env` ([SECRETS.md](SECRETS.md) says which vault each kind of credential goes in).
 
-`github` has no CI. A human applies it; open the PR anyway and say in it that it needs a local apply.
+`github/` plans on pull requests but never applies from CI, since it manages this repository's own protections. A human applies it after the merge; say in the PR that it needs a local apply.

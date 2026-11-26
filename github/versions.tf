@@ -17,7 +17,10 @@ terraform {
   }
 }
 
-# Reads GITHUB_TOKEN from the environment.
+# Locally the token comes from GITHUB_TOKEN (gh auth token; see README): with
+# github_token unset, the provider reads that. A pull-request plan sets
+# github_token to the read-only token in secrets.plan.env.
 provider "github" {
   owner = "nlopez"
+  token = var.github_token
 }

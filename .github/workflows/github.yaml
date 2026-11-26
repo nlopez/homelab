@@ -1,0 +1,52 @@
+name: GitHub
+
+# Plans github/ on pull requests only. It manages this repository's own
+# settings and protections, so CI never applies it: an operator applies it
+# locally after the merge (github/README.md), and the plan uses a read-only
+# token. No push or schedule trigger, so _tofu-stack.yaml's apply job never
+# runs here.
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths: ['github/**', '.github/workflows/github.yaml', '.github/workflows/_tofu-stack.yaml', '.github/actions/tofu-plan/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+# shell: bash runs steps with -eo pipefail; the default (bash -e) lets a
+# failing command before a pipe pass, as `script 2>&1 | tee log` once let the
+# ci-ok gate pass with failed checks.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # The plan compares the PR's config with the last applied state, without
+  # refreshing: the read-only token can't see the merge settings (the API
+  # returns them as null), so a refresh would always show them changing.
+  # Drift shows in the operator's own plan before an apply. The webhook secret
+  # is the one secret the stack holds; a placeholder would show the webhook as
+  # changed, so the plan excludes it.
+  github:
+    uses: ./.github/workflows/_tofu-stack.yaml
+    permissions:
+      contents: read
+      id-token: write
+      issues: write
+      pull-requests: write
+    secrets: inherit
+    with:
+      directory: github
+      title: GitHub
+      plan-role: homelab-github-plan
+      # Unused: the workflow has no trigger that applies.
+      apply-role: homelab-github-plan
+      plan-env: |-
+        TF_VAR_webhook_secret=placeholder
+      plan-args: >-
+        -refresh=false
+        -exclude=github_repository_webhook.argocd
