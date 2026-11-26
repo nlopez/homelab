@@ -39,10 +39,6 @@ on:
         description: Join the tailnet first, for stacks whose API is only on the LAN
         type: boolean
         default: false
-      hosts:
-        description: Lines to add to /etc/hosts after joining the tailnet
-        type: string
-        default: ""
       plan-args:
         description: Extra arguments for tofu plan on a pull request
         type: string
@@ -100,12 +96,6 @@ jobs:
           oauth-client-id: ${{ vars.TAILSCALE_PR_CLIENT_ID }}
           audience: api.tailscale.com/${{ vars.TAILSCALE_PR_CLIENT_ID }}
           tags: tag:ci
-
-      - name: Add hosts entries
-        if: inputs.hosts != ''
-        env:
-          HOSTS: ${{ inputs.hosts }}
-        run: printf '%s\n' "${HOSTS}" | sudo tee -a /etc/hosts
 
       - name: Install 1Password CLI
         if: hashFiles(format('{0}/secrets.plan.env', inputs.directory)) != ''
@@ -172,12 +162,6 @@ jobs:
           oauth-client-id: ${{ env.TAILSCALE_APPLY_CLIENT_ID }}
           audience: api.tailscale.com/${{ env.TAILSCALE_APPLY_CLIENT_ID }}
           tags: tag:ci
-
-      - name: Add hosts entries
-        if: inputs.hosts != ''
-        env:
-          HOSTS: ${{ inputs.hosts }}
-        run: printf '%s\n' "${HOSTS}" | sudo tee -a /etc/hosts
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0

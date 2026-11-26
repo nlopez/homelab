@@ -45,9 +45,6 @@ jobs:
       plan-role: homelab-gateway-plan
       apply-role: homelab-gateway-apply
       tailnet: true
-      hosts: |-
-        192.168.222.1 gw.lga1.radoncanyon.com
-        192.168.239.254 gw.lga2.radoncanyon.com
       plan-env: |-
         TF_VAR_lga1_wg_private_key=placeholder
         TF_VAR_lga2_wg_private_key=placeholder
