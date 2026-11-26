@@ -1,0 +1,30 @@
+name: Script tests
+
+# Tests for the scripts CI depends on (.github/scripts, scripts/). They run in
+# seconds, so on every pull request; ci-ok waits for them.
+on:
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: script-tests-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Script tests
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Shellcheck
+        run: shellcheck .github/scripts/*.sh .github/scripts/tests/*.sh .claude/hooks/*.sh
+
+      - name: Run the tests
+        run: |-
+          python3 -c 'import yaml' 2>/dev/null || python3 -m pip install --quiet pyyaml
+          .github/scripts/tests/run.sh

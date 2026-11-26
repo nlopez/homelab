@@ -55,10 +55,7 @@ runs:
         REPO: ${{ github.repository }}
       run: |-
         set -euo pipefail
-        # Only addresses and actions leave the JSON plan, which can hold secrets.
-        tofu show -json tfplan | jq -r '.resource_changes[]?
-          | select(.change.actions | index("delete"))
-          | "\(.address) (\(.change.actions | join(" then ")))"' > destroys.txt
+        tofu show -json tfplan | "${GITHUB_WORKSPACE}/.github/scripts/plan-destroys.sh" > destroys.txt
         if [ -s destroys.txt ]; then
           echo "::warning title=plan-destroys::${TITLE}: $(paste -sd ',' destroys.txt)"
           gh label create destroy-approved --repo "${REPO}" --color B60205 \
