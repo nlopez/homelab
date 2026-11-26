@@ -54,11 +54,16 @@ spec:
     # Most internet hostnames are DNS-only, so clients connect directly without
     # a certificate. Proxied routes check for Cloudflare's Authenticated Origin
     # Pulls certificate themselves (see the timekeeper EnvoyExtensionPolicy).
+    # Every zone with AOP on needs its CA here: a presented certificate that
+    # doesn't validate fails the connection, which Cloudflare reports as a 520.
     clientValidation:
       mode: VerifyIfGiven
       caCertificateRefs:
       - kind: ConfigMap
         name: timekeeper-aop-ca
+        group: ""
+      - kind: ConfigMap
+        name: desertbluffs-aop-ca
         group: ""
   headers:
     lateResponseHeaders:
