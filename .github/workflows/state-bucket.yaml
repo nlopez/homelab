@@ -24,6 +24,13 @@ concurrency:
   group: ${{ github.event_name == 'pull_request' && format('state-bucket-pr-{0}', github.event.pull_request.number) || 'state-bucket' }}
   cancel-in-progress: false
 
+# shell: bash runs steps with -eo pipefail; the default (bash -e) lets a
+# failing command before a pipe pass, as `script 2>&1 | tee log` once let the
+# ci-ok gate pass with failed checks.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   # The apply role can change its own trust policy and the OIDC provider. If an
   # apply locks it out, apply locally with the AdministratorAccess permission set.

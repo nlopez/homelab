@@ -13,6 +13,13 @@ concurrency:
   group: pre-commit-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+# shell: bash runs steps with -eo pipefail; the default (bash -e) lets a
+# failing command before a pipe pass, as `script 2>&1 | tee log` once let the
+# ci-ok gate pass with failed checks.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   pre-commit:
     name: pre-commit

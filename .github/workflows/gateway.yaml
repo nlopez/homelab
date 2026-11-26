@@ -24,6 +24,13 @@ concurrency:
   group: ${{ github.event_name == 'pull_request' && format('gateway-pr-{0}', github.event.pull_request.number) || 'gateway' }}
   cancel-in-progress: false
 
+# shell: bash runs steps with -eo pipefail; the default (bash -e) lets a
+# failing command before a pipe pass, as `script 2>&1 | tee log` once let the
+# ci-ok gate pass with failed checks.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   # The WireGuard keys are deliberately kept out of pull requests: the plan user
   # has no WireGuard page privilege, so the PR plan excludes every WireGuard
