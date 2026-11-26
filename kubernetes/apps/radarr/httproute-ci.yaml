@@ -89,11 +89,10 @@ spec:
         name: radarr-api-key
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/onepassword.com/onepassworditem_v1.json
-# radarr-api-key-gateway: a copy of the Radarr API Key item's RADARR_API_KEY
-# field, stored as credential, the key credential injection reads.
+# The "Radarr API Key" item; its credential field is the key.
 apiVersion: onepassword.com/v1
 kind: OnePasswordItem
 metadata:
   name: radarr-api-key
 spec:
-  itemPath: "vaults/evjh25ux2mnoufaut6qhvm2pdi/items/44vy5etucnnxu6jxludosdbfle"
+  itemPath: "vaults/evjh25ux2mnoufaut6qhvm2pdi/items/rew6y2gls5fmc5npr3da6inrge"
