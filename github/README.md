@@ -25,9 +25,11 @@ tofu apply
 ```
 
 No CI applies this stack: an operator runs `tofu plan` and `tofu apply` after a
-change merges. Pull requests do get a plan (`.github/workflows/github.yaml`), made with a
-read-only fine-grained token from the `ci-pr` vault (`secrets.plan.env`), with the webhook
-excluded since its secret isn't readable there. The webhook secret is the 1Password item argocd-server verifies
+change merges. Pull requests do get a plan (`.github/workflows/github.yaml`): the change against
+the last applied state, with `-refresh=false`, so it shows what the PR changes but not drift.
+The read-only token in `secrets.plan.env` can't see the repository's merge settings, so a
+refreshing plan would always show them changing. The webhook is excluded, since its secret
+isn't readable there. Run `tofu plan` yourself before applying to see drift. The webhook secret is the 1Password item argocd-server verifies
 against.
 
 # Public by default

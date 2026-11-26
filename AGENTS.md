@@ -86,7 +86,7 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 | `datadog/` | `tofu plan` comment | `tofu apply` |
 | `dns/` | `tofu plan` comment | `tofu apply` |
 | `gateway/` | `tofu plan` comment | `tofu apply` |
-| `github/` | `tofu plan` comment (read-only token, webhook excluded) | nothing; a human applies it locally |
+| `github/` | `tofu plan` comment (against state, no refresh; webhook excluded) | nothing; a human applies it locally |
 | `kubernetes/` | yamlfmt, schema, kubeconform hooks; rendered manifest diff comment | Argo CD syncs; `Kubernetes sync check` waits for the changed Applications to be Synced and Healthy |
 | `tailnet/` | ACL tests, `tofu plan` comment | `tofu apply` |
 | `tailnet/admin` | `tofu plan` comment | `tofu apply` |

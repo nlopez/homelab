@@ -18,8 +18,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # The webhook secret is the one secret the stack holds; a placeholder
-  # would show the webhook as changed, so the plan excludes it.
+  # The plan compares the PR's config with the last applied state, without
+  # refreshing: the read-only token can't see the merge settings (the API
+  # returns them as null), so a refresh would always show them changing.
+  # Drift shows in the operator's own plan before an apply. The webhook secret
+  # is the one secret the stack holds; a placeholder would show the webhook as
+  # changed, so the plan excludes it.
   github:
     uses: ./.github/workflows/_tofu-stack.yaml
     permissions:
@@ -37,4 +41,5 @@ jobs:
       plan-env: |-
         TF_VAR_webhook_secret=placeholder
       plan-args: >-
+        -refresh=false
         -exclude=github_repository_webhook.argocd
