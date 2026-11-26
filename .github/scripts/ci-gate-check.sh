@@ -9,7 +9,7 @@
 # and BASE_REF (the PR's base branch).
 set -euo pipefail
 # Give the other workflows of this push time to register their runs.
-sleep 30
+sleep "${GATE_SETTLE:-30}"
 quiet=0
 while :; do
   runs="$(gh api --paginate "repos/${REPO}/commits/${SHA}/check-runs?per_page=100" \
@@ -30,7 +30,7 @@ while :; do
   else
     quiet=0
   fi
-  sleep 20
+  sleep "${GATE_POLL:-20}"
 done
 echo "All other checks passed on ${SHA:0:8}:"
 jq -r '.[] | "\(.name): \(.conclusion)"' <<<"${runs}"

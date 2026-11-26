@@ -56,17 +56,9 @@ jobs:
           echo "::add-mask::${token}"
           echo "APP_TOKEN=${token}" >> "${GITHUB_ENV}"
 
-      - name: Start the ci-ok check
-        env:
-          GH_TOKEN: ${{ env.APP_TOKEN }}
-          REPO: ${{ github.repository }}
-          SHA: ${{ github.event.pull_request.head.sha }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |-
-          id="$(gh api -X POST "repos/${REPO}/check-runs" -f name=ci-ok -f head_sha="${SHA}" \
-            -f status=in_progress -f details_url="${RUN_URL}" --jq .id)"
-          echo "CHECK_RUN_ID=${id}" >> "${GITHUB_ENV}"
-
+      # Starts ci-ok, runs the gate, posts the summary comment, and completes
+      # ci-ok with the result; it exits with the gate's status. Tested end to
+      # end in .github/scripts/tests/run.sh.
       - name: Gate
         id: gate
         env:
@@ -75,54 +67,16 @@ jobs:
           SHA: ${{ github.event.pull_request.head.sha }}
           PR: ${{ github.event.pull_request.number }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
-        run: .github/scripts/ci-gate-check.sh 2>&1 | tee gate.log
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: .github/scripts/ci-gate-run.sh
 
-      # One comment per PR, updated on every run, summing up every check and
-      # plan. Not on a cancelled run: a newer push replaced it.
-      - name: Post the summary comment
-        if: ${{ !cancelled() && env.APP_TOKEN != '' }}
+      # Fails closed: if the job was cancelled, or the script stopped before
+      # completing ci-ok, complete it here as cancelled or failed. A run whose
+      # gate failed already completed it as failed; this only repeats that.
+      - name: Complete ci-ok if the gate didn't
+        if: ${{ always() && env.CHECK_RUN_ID != '' && steps.gate.outcome != 'success' }}
         env:
           GH_TOKEN: ${{ env.APP_TOKEN }}
           REPO: ${{ github.repository }}
-          SHA: ${{ github.event.pull_request.head.sha }}
-          PR: ${{ github.event.pull_request.number }}
-          GATE: ${{ steps.gate.outcome }}
-        run: |-
-          set -euo pipefail
-          gh api --paginate "repos/${REPO}/issues/${PR}/comments?per_page=100" \
-            --jq '.[] | select(.user.type == "Bot")' | jq -s . > comments.json
-          gh api --paginate "repos/${REPO}/commits/${SHA}/check-runs?per_page=100" \
-            --jq '.check_runs[]' | jq -s . > runs.json
-          jq -r '.[] | select(.name != "ci-ok" and .name != "Protected gate" and .output.annotations_count > 0)
-            | "\(.id)\t\(.name)\t\(.html_url)"' runs.json |
-            while IFS=$'\t' read -r id name url; do
-              gh api --paginate "repos/${REPO}/check-runs/${id}/annotations?per_page=100" \
-                --jq ".[] | select(.title == \"plan-result\" or .title == \"plan-destroys\")
-                  | {check: \"${name}\", url: \"${url}\", title, message}"
-            done | jq -s . > annotations.json
-          .github/scripts/ci-summary.sh runs.json annotations.json comments.json "${SHA}" "${GATE}" > summary.md
-          cat summary.md >> "${GITHUB_STEP_SUMMARY}"
-          # Only the app's own summary is updated; one left by the old GitHub Actions gate stays as is.
-          id="$(jq -r '[.[] | select(.user.login == "nlopez-homelab-ci-gate[bot]")
-            | select(.body | startswith("<!-- ci-summary -->"))] | last | .id // empty' comments.json)"
-          if [ -n "${id}" ]; then
-            gh api -X PATCH "repos/${REPO}/issues/comments/${id}" -F body=@summary.md >/dev/null
-          else
-            gh api -X POST "repos/${REPO}/issues/${PR}/comments" -F body=@summary.md >/dev/null
-          fi
-
-      - name: Finish the ci-ok check
-        if: ${{ always() && env.CHECK_RUN_ID != '' }}
-        env:
-          GH_TOKEN: ${{ env.APP_TOKEN }}
-          REPO: ${{ github.repository }}
-          OUTCOME: ${{ job.status == 'cancelled' && 'cancelled' || steps.gate.outcome }}
-        run: |-
-          case "${OUTCOME}" in
-            success) conclusion=success; title="Every other check passed" ;;
-            cancelled) conclusion=cancelled; title="Cancelled" ;;
-            *) conclusion=failure; title="The gate failed" ;;
-          esac
-          jq -n --arg c "${conclusion}" --arg t "${title}" --rawfile s <(tail -c 60000 gate.log 2>/dev/null || true) \
-            '{status: "completed", conclusion: $c, output: {title: $t, summary: ("```\n" + $s + "\n```")}}' |
-            gh api -X PATCH "repos/${REPO}/check-runs/${CHECK_RUN_ID}" --input - >/dev/null
+          CONCLUSION: ${{ job.status == 'cancelled' && 'cancelled' || 'failure' }}
+        run: gh api -X PATCH "repos/${REPO}/check-runs/${CHECK_RUN_ID}" -f status=completed -f conclusion="${CONCLUSION}" >/dev/null

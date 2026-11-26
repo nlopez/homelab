@@ -295,6 +295,94 @@ contains "credential-expiry says when none is close" "No credential expires with
 echo '- {name: Bad, vault: ci, item: d, expires: soon, used_by: x, rotate: y}' > "${work}/bad.yaml"
 expect "credential-expiry rejects an entry without a date" "2" "$(python3 "${expiry}" "${work}/bad.yaml" 2>/dev/null; echo $?)"
 expect "the repo's credentials.yaml is complete" "0" "$(TODAY=2000-01-01 python3 "${expiry}" >/dev/null; echo $?)"
+### ci-gate-run.sh (end to end, against a fake gh)
+
+# The fake gh serves GETs from ${GH_FIXTURES}/<path with / as _>.json (query
+# dropped), applies --jq as gh does, and logs every POST and PATCH, with its
+# body, to ${GH_FIXTURES}/calls.log.
+mkdir -p "${work}/ghbin"
+cat > "${work}/ghbin/gh" <<'SH'
+#!/usr/bin/env bash
+[ "$1" = api ] || exit 2; shift
+method=GET url="" jqexpr="" input=0 fields=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -X) method="$2"; shift 2 ;;
+    --jq) jqexpr="$2"; shift 2 ;;
+    --paginate) shift ;;
+    --input) input=1; shift 2 ;;
+    -f|-F) fields+=("$2"); shift 2 ;;
+    *) url="$1"; shift ;;
+  esac
+done
+path="${url%%\?*}"
+if [ "${method}" != GET ]; then
+  { echo "${method} ${path}"; printf '  %s\n' "${fields[@]}"; [ "${input}" = 1 ] && jq -c .; echo; } >> "${GH_FIXTURES}/calls.log"
+  body='{"id": 999}'
+else
+  f="${GH_FIXTURES}/$(tr / _ <<<"${path}").json"
+  [ -f "${f}" ] || { echo "fake gh: no fixture ${f}" >&2; exit 1; }
+  body="$(cat "${f}")"
+fi
+if [ -n "${jqexpr}" ]; then jq -r "${jqexpr}" <<<"${body}"; else echo "${body}"; fi
+SH
+chmod +x "${work}/ghbin/gh"
+
+# gate_fixtures <dir> <pre-commit conclusion> <destroys: yes|no> <label: none|owner|app>
+gate_fixtures() {
+  local d="$1" pc="$2" destroys="$3" label="$4" n=0
+  rm -rf "${d}" && mkdir -p "${d}"
+  [ "${destroys}" = yes ] && n=1
+  cat > "${d}/repos_o_r_commits_${head}_check-runs.json" <<JSON
+{"check_runs": [
+  {"id": 1, "name": "ci-ok", "status": "in_progress", "conclusion": null, "output": {"annotations_count": 0}},
+  {"id": 2, "name": "Protected gate", "status": "in_progress", "conclusion": null, "output": {"annotations_count": 0}},
+  {"id": 3, "name": "pre-commit", "status": "completed", "conclusion": "${pc}", "output": {"annotations_count": 0}},
+  {"id": 4, "name": "dns / Plan", "status": "completed", "conclusion": "success", "html_url": "u/dns", "output": {"annotations_count": ${n}}}
+]}
+JSON
+  echo '[{"title": "plan-destroys", "message": "DNS: aws_route53_record.x (delete)"}]' > "${d}/repos_o_r_check-runs_4_annotations.json"
+  printf '{"content": "%s"}' "$(echo '* @owner' | base64)" > "${d}/repos_o_r_contents_.github_CODEOWNERS.json"
+  case "${label}" in
+    none) echo '[]' > "${d}/repos_o_r_issues_7_labels.json"; echo '[]' > "${d}/repos_o_r_issues_7_events.json" ;;
+    owner|app)
+      echo '[{"name": "destroy-approved"}]' > "${d}/repos_o_r_issues_7_labels.json"
+      if [ "${label}" = app ]; then app='{"slug": "some-app"}'; else app=null; fi
+      echo "[{\"event\": \"labeled\", \"label\": {\"name\": \"destroy-approved\"}, \"actor\": {\"login\": \"owner\"}, \"performed_via_github_app\": ${app}}]" \
+        > "${d}/repos_o_r_issues_7_events.json" ;;
+  esac
+  echo '[]' > "${d}/repos_o_r_issues_7_comments.json"
+}
+gaterun() { # <fixtures dir>; prints the exit status
+  PATH="${work}/ghbin:${PATH}" GH_FIXTURES="$1" GATE_SETTLE=0 GATE_POLL=0 GITHUB_ENV="$1/env" \
+    REPO=o/r SHA="${head}" PR=7 BASE_REF=main RUN_URL=u/run "${scripts}/ci-gate-run.sh" >"$1/out.log" 2>&1
+  echo $?
+}
+conclusion() { jq -rs '[.[] | select(.conclusion)] | last | .conclusion' < <(sed -n '/^PATCH repos\/o\/r\/check-runs\/999/,/^$/p' "$1/calls.log" | grep '^{'); }
+
+g="${work}/gate"
+gate_fixtures "${g}" success no none
+expect "gate passes when every check passed" "0" "$(gaterun "${g}")"
+expect "gate completes ci-ok as success" "success" "$(conclusion "${g}")"
+contains "gate starts ci-ok as in_progress first" "status=in_progress" "$(sed -n '1,/^$/p' "${g}/calls.log")"
+contains "gate posts the summary comment" "POST repos/o/r/issues/7/comments" "$(cat "${g}/calls.log")"
+contains "gate records the check run for the cancel step" "CHECK_RUN_ID=999" "$(cat "${g}/env")"
+
+gate_fixtures "${g}" failure no none
+expect "gate fails when a check failed" "1" "$(gaterun "${g}")"
+expect "gate completes ci-ok as failure when a check failed" "failure" "$(conclusion "${g}")"
+contains "gate names the failed check" "pre-commit: failure" "$(cat "${g}/out.log")"
+
+gate_fixtures "${g}" success yes none
+expect "gate fails a destroy without destroy-approved" "1" "$(gaterun "${g}")"
+expect "gate completes ci-ok as failure for an unapproved destroy" "failure" "$(conclusion "${g}")"
+
+gate_fixtures "${g}" success yes app
+expect "gate fails destroy-approved added through an app" "1" "$(gaterun "${g}")"
+
+gate_fixtures "${g}" success yes owner
+expect "gate passes a destroy a code owner approved" "0" "$(gaterun "${g}")"
+expect "gate completes ci-ok as success for an approved destroy" "success" "$(conclusion "${g}")"
 
 ### workflows
 
