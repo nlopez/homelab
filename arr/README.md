@@ -35,3 +35,27 @@ AWS_PROFILE=admin tofu apply
 
 The apps return secrets masked, so tofu cannot detect drift in them. Every secret comes from
 1Password through `secrets.env`, and an apply writes those values to the apps.
+
+## Pull-request plans
+
+A pull-request plan holds no Sonarr or Radarr key. It passes the job's GitHub Actions OIDC token as
+both API keys, with the app's hostname as the token's audience. The `sonarr-api-ci` and
+`radarr-api-ci` routes (`kubernetes/apps/{sonarr,radarr}/httproute-ci.yaml`) accept only `GET`s
+under `/api` carrying a valid token from this repository, and replace the token with the real key.
+Any other request carrying the token reaches the app unchanged and fails its key check.
+
+The other four secrets (qBittorrent password, SABnzbd and NZBgeek keys, Plex token) are compared
+against state, so the plan passes placeholders and excludes the eight resources that use them:
+
+```
+-exclude=sonarr_download_client_qbittorrent.nas2
+-exclude=sonarr_download_client_sabnzbd.sabnzbd
+-exclude=sonarr_indexer_newznab.nzbgeek
+-exclude=sonarr_notification_plex.plex
+-exclude=radarr_download_client_qbittorrent.nas2
+-exclude=radarr_download_client_sabnzbd.sabnzbd
+-exclude=radarr_indexer_newznab.nzbgeek
+-exclude=radarr_notification_plex.plex
+```
+
+A change to those resources is first planned by the apply on `main`.

@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.networking.k8s.io/httproute_v1.json
+# Read-only API access for pull-request plans of arr/, with no Sonarr key in
+# CI. The plan sends its GitHub Actions OIDC token as X-Api-Key. A GET whose
+# X-Api-Key looks like a JWT matches this rule ahead of sonarr-api-private
+# (same path, plus method and header matches); sonarr-api-ci-jwt checks the
+# token, and sonarr-api-key swaps it for the real key. Any other method falls
+# through to sonarr-api-private, where Sonarr rejects the token as a key.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: sonarr-api-ci
+spec:
+  parentRefs:
+  - name: private
+    namespace: envoy-gateway-system
+    group: gateway.networking.k8s.io
+    kind: Gateway
+  hostnames:
+  - jolthog.desertbluffs.com
+  rules:
+  - backendRefs:
+    - name: sonarr
+      port: 80
+      group: ''
+      kind: Service
+      weight: 1
+    matches:
+    - path:
+        type: PathPrefix
+        value: /api
+      method: GET
+      headers:
+      - name: X-Api-Key
+        type: RegularExpression
+        value: eyJ[A-Za-z0-9_.-]+
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        group: gateway.envoyproxy.io
+        kind: HTTPRouteFilter
+        name: sonarr-api-key
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
+# Only GitHub Actions jobs of nlopez/homelab that request this audience.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: sonarr-api-ci-jwt
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: sonarr-api-ci
+  jwt:
+    providers:
+    - name: github-actions
+      issuer: https://token.actions.githubusercontent.com
+      audiences:
+      - jolthog.desertbluffs.com
+      remoteJWKS:
+        uri: https://token.actions.githubusercontent.com/.well-known/jwks
+      extractFrom:
+        headers:
+        - name: X-Api-Key
+  authorization:
+    defaultAction: Deny
+    rules:
+    - name: homelab-repository
+      action: Allow
+      principal:
+        jwt:
+          provider: github-actions
+          claims:
+          - name: repository
+            values:
+            - nlopez/homelab
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.envoyproxy.io/httproutefilter_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: HTTPRouteFilter
+metadata:
+  name: sonarr-api-key
+spec:
+  credentialInjection:
+    header: X-Api-Key
+    overwrite: true
+    credential:
+      valueRef:
+        name: sonarr-api-key
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/onepassword.com/onepassworditem_v1.json
+# The "Sonarr API Key" item; its credential field is the key.
+apiVersion: onepassword.com/v1
+kind: OnePasswordItem
+metadata:
+  name: sonarr-api-key
+spec:
+  itemPath: "vaults/evjh25ux2mnoufaut6qhvm2pdi/items/cv67vypui34bw3qfy4zxthneva"
