@@ -24,6 +24,13 @@ concurrency:
   group: ${{ github.event_name == 'pull_request' && format('truenas-pr-{0}', github.event.pull_request.number) || 'truenas' }}
   cancel-in-progress: false
 
+# shell: bash runs steps with -eo pipefail; the default (bash -e) lets a
+# failing command before a pipe pass, as `script 2>&1 | tee log` once let the
+# ci-ok gate pass with failed checks.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   # The pull-request plan uses the ci-pr user's keys (secrets.plan.env), which
   # hold only READONLY_ADMIN. That role sees keychain attributes redacted, so

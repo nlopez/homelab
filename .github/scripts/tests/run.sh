@@ -277,6 +277,25 @@ expect "sync-check exits 1 when a sync fails" "1" "$(synccheck >/dev/null; echo 
 contains "sync-check skips a push with no Application change" "No Argo CD Application changed" \
   "$(REPO_ROOT="${s}" ARGOCD_APPS_JSON="${work}/apps.json" python3 "${sync}" wait "${pushed}" "${later}")"
 
+### workflows
+
+# Every workflow runs its steps with pipefail. Under the default shell
+# (bash -e), `ci-gate-check.sh 2>&1 | tee gate.log` passed whatever the gate
+# found, so ci-ok passed with failed checks.
+nopipefail="$(python3 - "${repo}"/.github/workflows/*.yaml <<'PY'
+import sys, yaml
+for path in sys.argv[1:]:
+    w = yaml.safe_load(open(path))
+    if ((w.get("defaults") or {}).get("run") or {}).get("shell") != "bash":
+        print(path.rsplit("/", 1)[1])
+    for name, job in (w.get("jobs") or {}).items():
+        for step in job.get("steps") or []:
+            if "run" in step and step.get("shell") not in (None, "bash"):
+                print(f"{path.rsplit('/', 1)[1]}: {name}: shell {step['shell']}")
+PY
+)"
+expect "every workflow defaults to bash with pipefail" "" "${nopipefail}"
+
 ### scripts/plan
 
 plan="${repo}/scripts/plan"

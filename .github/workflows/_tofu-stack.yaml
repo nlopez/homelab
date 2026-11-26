@@ -73,6 +73,13 @@ env:
   # repository variable.
   TAILSCALE_APPLY_CLIENT_ID: TX3ajrU7JY71CNTRL-kQaJB6AVyQ11CNTRL
 
+# shell: bash runs steps with -eo pipefail; the default (bash -e) lets a
+# failing command before a pipe pass, as `script 2>&1 | tee log` once let the
+# ci-ok gate pass with failed checks.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   plan:
     name: Plan
