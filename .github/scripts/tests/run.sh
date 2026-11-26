@@ -277,6 +277,25 @@ expect "sync-check exits 1 when a sync fails" "1" "$(synccheck >/dev/null; echo 
 contains "sync-check skips a push with no Application change" "No Argo CD Application changed" \
   "$(REPO_ROOT="${s}" ARGOCD_APPS_JSON="${work}/apps.json" python3 "${sync}" wait "${pushed}" "${later}")"
 
+### credential-expiry.py
+
+expiry="${scripts}/credential-expiry.py"
+cat > "${work}/creds.yaml" <<'YAML'
+- {name: Soon, vault: ci, item: a, expires: 2030-01-20, used_by: x, rotate: y}
+- {name: Later, vault: ci, item: b, expires: 2030-06-01, used_by: x, rotate: y}
+- {name: Gone, vault: ci-pr, item: c, expires: 2029-12-25, used_by: x, rotate: y}
+YAML
+out="$(TODAY=2030-01-01 python3 "${expiry}" "${work}/creds.yaml")"
+expect "credential-expiry exits 1 when one is close" "1" "$(TODAY=2030-01-01 python3 "${expiry}" "${work}/creds.yaml" >/dev/null; echo $?)"
+contains "credential-expiry lists one expiring within 30 days" "**Soon** expires in 19 days" "${out}"
+contains "credential-expiry lists an expired one" "**Gone** expired 7 days ago" "${out}"
+if grep -q Later <<<"${out}"; then fail "credential-expiry leaves out a distant one"; else pass "credential-expiry leaves out a distant one"; fi
+contains "credential-expiry says when none is close" "No credential expires within 30 days" \
+  "$(TODAY=2029-01-01 python3 "${expiry}" "${work}/creds.yaml")"
+echo '- {name: Bad, vault: ci, item: d, expires: soon, used_by: x, rotate: y}' > "${work}/bad.yaml"
+expect "credential-expiry rejects an entry without a date" "2" "$(python3 "${expiry}" "${work}/bad.yaml" 2>/dev/null; echo $?)"
+expect "the repo's credentials.yaml is complete" "0" "$(TODAY=2000-01-01 python3 "${expiry}" >/dev/null; echo $?)"
+
 ### workflows
 
 # Every workflow runs its steps with pipefail. Under the default shell
