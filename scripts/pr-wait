@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Waits for a pull request's ci-ok check, then prints the ci-ok summary
+# comment and whether the PR can merge. Saves agents from polling by hand.
+#
+#   scripts/pr-wait <pr number>
+#
+# Exit status: 0 ci-ok passed and the PR is up to date with main; 1 ci-ok
+# failed; 2 usage or API error; 3 ci-ok passed but main moved (rebase, push,
+# and wait again); 4 timed out (45 minutes).
+# Needs `gh` authenticated for the repository (GH_TOKEN works too).
+set -euo pipefail
+
+pr="${1:?usage: scripts/pr-wait <pr number>}"
+repo="${GH_REPO:-$(git remote get-url origin | sed -E 's#(\.git)?$##; s#^.*github\.com[:/]##')}"
+api() { gh api "$@"; }
+
+head="$(api "repos/${repo}/pulls/${pr}" --jq .head.sha)"
+echo "PR #${pr} (${repo}): waiting for ci-ok on ${head:0:8}" >&2
+
+deadline=$((SECONDS + 45 * 60))
+conclusion=""
+while [ "${SECONDS}" -lt "${deadline}" ]; do
+  now="$(api "repos/${repo}/pulls/${pr}" --jq .head.sha)"
+  if [ "${now}" != "${head}" ]; then
+    echo "The PR's head moved to ${now:0:8}; waiting for that commit instead." >&2
+    head="${now}"
+  fi
+  run="$(api "repos/${repo}/commits/${head}/check-runs?check_name=ci-ok" \
+    --jq '[.check_runs[]] | sort_by(.started_at) | last // empty | "\(.status) \(.conclusion)"')"
+  case "${run}" in
+    "completed "*) conclusion="${run#completed }"; break ;;
+  esac
+  sleep 20
+done
+if [ -z "${conclusion}" ]; then
+  echo "Timed out waiting for ci-ok on ${head:0:8}." >&2
+  exit 4
+fi
+
+api --paginate "repos/${repo}/issues/${pr}/comments?per_page=100" \
+  --jq '.[] | select(.user.login == "github-actions[bot]") | select(.body | startswith("<!-- ci-summary -->")) | .body' |
+  tail -n +2
+echo
+
+if [ "${conclusion}" != success ]; then
+  echo "ci-ok: ${conclusion}. Fix the failing checks above before merging." >&2
+  exit 1
+fi
+base="$(api "repos/${repo}/pulls/${pr}" --jq .base.sha)"
+main="$(api "repos/${repo}/branches/main" --jq .commit.sha)"
+if [ "${base}" != "${main}" ]; then
+  echo "ci-ok passed, but main moved since this PR's base (${base:0:8} -> ${main:0:8})." >&2
+  echo "Rebase onto origin/main, push with --force-with-lease, and run scripts/pr-wait again." >&2
+  exit 3
+fi
+echo "ci-ok passed on ${head:0:8} and the PR is up to date with main. Compare the plans with the PR's description, then merge." >&2

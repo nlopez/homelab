@@ -2,7 +2,7 @@
 
 Several agents and people work in this repo at the same time. Every change lands through a pull request, and every stack that applies on `main` posts a plan on the PR first. Agents need no production credentials locally: CI plans with read-only credentials and applies after merge.
 
-`kubernetes/`, `gateway/`, and `aws/` each have their own `AGENTS.md`. Read it before you change files there.
+`kubernetes/`, `gateway/`, and `aws/` each have their own `AGENTS.md`. Read it before you change files there. Claude Code agents: the `ship` skill (`.claude/skills/ship/`) walks through landing a change, and `.claude/settings.json` pre-approves the read-only commands it uses.
 
 ## Setup
 
@@ -29,7 +29,7 @@ GitHub API (or the GitHub tools your agent has):
 | Start a task | `wt switch --create <branch>` | `git fetch origin main && git worktree add -b <branch> ../<branch> origin/main`, then work in `../<branch>` |
 | Find PRs on a stack | `gh pr list --search '<dir>'` | List open PRs and their changed files (`GET /repos/{owner}/{repo}/pulls`, then `/pulls/{n}/files`) |
 | Open a PR | `gh pr create --fill` | Create a pull request against `main` with the description step 2 asks for |
-| Wait for checks | `gh pr checks --watch` | Poll the head commit's check runs (`GET /repos/{owner}/{repo}/commits/{sha}/check-runs`) until `ci-ok` completes; it takes 2–6 minutes when stacks plan |
+| Wait for checks | `scripts/pr-wait <pr>` (or `gh pr checks --watch`) | Poll the head commit's check runs (`GET /repos/{owner}/{repo}/commits/{sha}/check-runs`) until `ci-ok` completes; it takes 2–6 minutes when stacks plan |
 | Read the plans | `gh pr view --comments` | Read the PR's comment that starts with `<!-- ci-summary -->`; each row links to its plan job, whose summary holds the full plan |
 | Merge | `gh pr merge --squash --delete-branch` | Squash-merge with the head commit's SHA as the expected head; the repository deletes the branch |
 | Check the apply | `gh run list --branch main --limit 5` | List workflow runs for the merge commit (`GET /repos/{owner}/{repo}/actions/runs?head_sha=<sha>`) |
@@ -48,7 +48,7 @@ a session without them can't use it, and CI's plan on the PR stays the one that 
 
 1. Commit in your worktree. The pre-commit hooks run on each commit.
 2. Push the branch and open a PR: `git push -u origin HEAD`, then `gh pr create --fill`. Say in the description what the plan should show, for example "adds one A record, changes nothing else".
-3. Wait for the checks: `gh pr checks --watch`. The `ci-ok` check (`.github/workflows/ci-gate.yaml`) runs on every PR, waits for all the others, and fails if any of them failed. If you re-run a failed check, re-run `ci-ok` too.
+3. Wait for the checks: `scripts/pr-wait <pr>` waits for `ci-ok` and prints its summary (or `gh pr checks --watch`). The `ci-ok` check (`.github/workflows/ci-gate.yaml`) runs on every PR, waits for all the others, and fails if any of them failed. If you re-run a failed check, re-run `ci-ok` too.
 4. Read the `ci-ok` summary comment on the PR (`gh pr view --comments`), the one comment CI posts. It has one row per stack planned on the current commit: its plan result, and whether it destroys anything, plus failing checks and the Kubernetes manifest diff result. For any row that isn't `No changes`, follow its link: the full plan is in that plan job's summary.
 5. Compare each plan with what the description says it should show.
    - It matches and `ci-ok` passed: merge with `gh pr merge --squash --delete-branch`. To merge as soon as `ci-ok` passes, add `--auto` right after opening the PR instead of waiting.
