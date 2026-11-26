@@ -31,5 +31,13 @@ jobs:
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
+      # A pull request's save only reaches that PR's own cache scope; main's
+      # entry comes from the push runs.
+      - name: Cache the Galaxy collections
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.ansible/collections
+          key: ansible-collections-v1-${{ hashFiles('ansible/requirements.yaml') }}
+
       - name: Run ansible-lint
         run: nix develop "${GITHUB_WORKSPACE}" -c bash -c 'ansible-galaxy collection install -r requirements.yaml && ansible-lint'
