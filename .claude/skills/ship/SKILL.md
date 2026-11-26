@@ -12,7 +12,7 @@ Read the `AGENTS.md` of any directory you change (`kubernetes/`, `gateway/`, `aw
 
 - `git fetch origin main`, then a worktree on a new branch off `origin/main` (AGENTS.md's table
   has the commands with and without `wt`). Never edit the main clone.
-- Check open PRs for the same stack first. The `Stack overlap` check will also warn you.
+- Check open PRs for the same stack first. The `ci-ok` summary comment lists any that overlap.
 - One concern per PR. Several small PRs merge faster than one large one, because each only plans
   the stacks it touches.
 

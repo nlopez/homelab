@@ -317,7 +317,11 @@ while [ $# -gt 0 ]; do
 done
 path="${url%%\?*}"
 if [ "${method}" != GET ]; then
-  { echo "${method} ${path}"; printf '  %s\n' "${fields[@]}"; [ "${input}" = 1 ] && jq -c .; echo; } >> "${GH_FIXTURES}/calls.log"
+  { echo "${method} ${path}"
+    for f in "${fields[@]}"; do
+      case "${f}" in *=@*) echo "  ${f%%=@*}:"; sed 's/^/    /' "${f#*=@}" ;; *) echo "  ${f}" ;; esac
+    done
+    [ "${input}" = 1 ] && jq -c .; echo; } >> "${GH_FIXTURES}/calls.log"
   body='{"id": 999}'
 else
   f="${GH_FIXTURES}/$(tr / _ <<<"${path}").json"
@@ -352,6 +356,11 @@ JSON
         > "${d}/repos_o_r_issues_7_events.json" ;;
   esac
   echo '[]' > "${d}/repos_o_r_issues_7_comments.json"
+  # Open PRs: this one (#7, dns), #8 also on dns, #9 on gateway only.
+  echo '[{"number": 7, "title": "this"}, {"number": 8, "title": "other | dns"}, {"number": 9, "title": "gw"}]' > "${d}/repos_o_r_pulls.json"
+  echo '[{"filename": "dns/main.tf"}]' > "${d}/repos_o_r_pulls_7_files.json"
+  echo '[{"filename": "dns/records.tf"}, {"filename": "README.md"}]' > "${d}/repos_o_r_pulls_8_files.json"
+  echo '[{"filename": "gateway/main.tf"}]' > "${d}/repos_o_r_pulls_9_files.json"
 }
 gaterun() { # <fixtures dir>; prints the exit status
   PATH="${work}/ghbin:${PATH}" GH_FIXTURES="$1" GATE_SETTLE=0 GATE_POLL=0 GITHUB_ENV="$1/env" \
@@ -367,6 +376,20 @@ expect "gate completes ci-ok as success" "success" "$(conclusion "${g}")"
 contains "gate starts ci-ok as in_progress first" "status=in_progress" "$(sed -n '1,/^$/p' "${g}/calls.log")"
 contains "gate posts the summary comment" "POST repos/o/r/issues/7/comments" "$(cat "${g}/calls.log")"
 contains "gate records the check run for the cancel step" "CHECK_RUN_ID=999" "$(cat "${g}/env")"
+
+summary="$(sed -n '/^POST repos\/o\/r\/issues\/7\/comments/,/^$/p' "${g}/calls.log")"
+contains "gate's summary names an open PR on the same stack" '| `dns` | #8 other \| dns |' "${summary}"
+if grep -q '#9' <<<"${summary}"; then fail "gate's summary leaves out a PR on another stack"; else pass "gate's summary leaves out a PR on another stack"; fi
+rm "${g}/repos_o_r_pulls_8_files.json"
+: > "${g}/calls.log"
+gaterun "${g}" >/dev/null
+contains "gate's summary says so when it can't read another PR's files" "Couldn't check other open PRs" \
+  "$(sed -n '/^POST repos\/o\/r\/issues\/7\/comments/,/^$/p' "${g}/calls.log")"
+rm "${g}/repos_o_r_pulls.json"
+: > "${g}/calls.log"
+expect "gate still passes when it can't list open PRs" "0" "$(gaterun "${g}")"
+contains "gate's summary says it couldn't check for overlap" "Couldn't check other open PRs" \
+  "$(sed -n '/^POST repos\/o\/r\/issues\/7\/comments/,/^$/p' "${g}/calls.log")"
 
 gate_fixtures "${g}" failure no none
 expect "gate fails when a check failed" "1" "$(gaterun "${g}")"
