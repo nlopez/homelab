@@ -1,5 +1,9 @@
 ---
+# ansible.posix and community.general come with the dev shell's Ansible
+# package, so nixpkgs sets their versions. Collections the package doesn't
+# bundle are pinned here, and Renovate's ansible-galaxy manager updates them.
 collections:
   - ansible.posix
   - community.general
-  - datadog.dd
+  - name: datadog.dd
+    version: 6.5.0
