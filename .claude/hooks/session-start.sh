@@ -1,9 +1,9 @@
 #!/bin/bash
 # Gives a Claude Code cloud session the tools the pre-commit hooks need.
 #
-# The dev shell (devenv) is the normal way to get them, but cloud sessions
-# can't build it: devenv fetches its pinned nixpkgs from GitHub, which the
-# session's proxy refuses. This installs the same tools from the Nix binary
+# The dev shell (`nix develop`, flake.nix) is the normal way to get them, but
+# cloud sessions can't build it: Nix fetches the pinned nixpkgs from GitHub as
+# a tarball, which the session's proxy refuses. This installs the same tools from the Nix binary
 # cache and PyPI instead, then installs the git hooks and their environments,
 # so commits there run the same checks as everywhere else (AGENTS.md).
 set -euo pipefail

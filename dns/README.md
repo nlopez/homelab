@@ -2,13 +2,13 @@
 [OpenTofu](https://opentofu.org) management of the DNS zones and records for my personal domains on Cloudflare.
 
 # Dependencies
-* [Nix](https://nixos.org) + [devenv](https://devenv.sh)
+* [Nix](https://nixos.org) with flakes
 * [direnv](https://direnv.net)
 * `op` -- 1Password CLI
 * AWS credentials for the S3 state bucket (`aws/state-bucket`)
 
 # Usage
-`direnv allow` once at the repo root to load the devenv shell. Its `tofu` wrapper
+`direnv allow` once at the repo root to load the dev shell (`flake.nix`). Its `tofu` wrapper
 resolves the Cloudflare credentials in `secrets.env` from 1Password for each run.
 
 ```sh

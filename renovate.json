@@ -18,6 +18,7 @@
     "custom.regex",
     "helm-values",
     "github-actions",
+    "nix",
     "pre-commit",
     "terraform"
   ],
@@ -245,5 +246,10 @@
       ],
       "groupName": "github actions updates"
     }
-  ]
+  ],
+  "nix": {
+    "lockFileMaintenance": {
+      "enabled": true
+    }
+  }
 }

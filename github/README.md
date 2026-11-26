@@ -6,14 +6,14 @@ the Argo CD push webhook (which makes a push to `main` refresh the Applications
 instead of waiting for Argo's poller).
 
 # Dependencies
-* [Nix](https://nixos.org) + [devenv](https://devenv.sh)
+* [Nix](https://nixos.org) with flakes
 * [direnv](https://direnv.net)
 * `op` -- 1Password CLI, for the webhook secret
 * `gh` -- authenticated as a user that can administer the repository's hooks
 * AWS credentials for the S3 state bucket (`aws/state-bucket`)
 
 # Usage
-`direnv allow` once at the repo root to load the devenv shell. Its `tofu` wrapper
+`direnv allow` once at the repo root to load the dev shell (`flake.nix`). Its `tofu` wrapper
 resolves the webhook secret in `secrets.env` from 1Password for each run. The
 GitHub token comes from `gh`:
 

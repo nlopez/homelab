@@ -1,4 +1,2 @@
-.devenv/
 .direnv/
-devenv.local.nix
 .terraform/
