@@ -55,6 +55,25 @@ c.gone (delete)" "${out}"
 expect "plan-destroys prints nothing for a plan with no resource changes" "" \
   "$(echo '{"format_version": "1.2"}' | "${scripts}/plan-destroys.sh")"
 
+### app-token.sh
+
+openssl genrsa -out "${work}/app.pem" 2048 2>/dev/null
+openssl rsa -in "${work}/app.pem" -pubout -out "${work}/app.pub" 2>/dev/null
+token="$("${scripts}/app-token.sh" jwt 5930324 "${work}/app.pem")"
+IFS=. read -r jwt_header jwt_payload jwt_signature <<<"${token}"
+b64url_decode() { local s="${1//-/+}"; s="${s//_//}"; while [ $(( ${#s} % 4 )) -ne 0 ]; do s="${s}="; done; openssl base64 -d -A <<<"${s}"; }
+expect "app-token jwt has an RS256 header" '{"alg":"RS256","typ":"JWT"}' "$(b64url_decode "${jwt_header}")"
+claims="$(b64url_decode "${jwt_payload}")"
+expect "app-token jwt names the app as issuer" "5930324" "$(jq -r .iss <<<"${claims}")"
+expect "app-token jwt lasts ten minutes, backdated one" "600" "$(jq '.exp - .iat' <<<"${claims}")"
+b64url_decode "${jwt_signature}" > "${work}/jwt.sig"
+if printf '%s.%s' "${jwt_header}" "${jwt_payload}" |
+  openssl dgst -sha256 -verify "${work}/app.pub" -signature "${work}/jwt.sig" >/dev/null 2>&1; then
+  pass "app-token jwt signature verifies with the app's public key"
+else
+  fail "app-token jwt signature verifies with the app's public key"
+fi
+
 ### load-plan-credentials.sh
 
 mkdir -p "${work}/bin"
