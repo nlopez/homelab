@@ -125,16 +125,62 @@ locals {
       sequence         = 91
       interface        = ["wan"]
     }
-    # Cilium nodes share the LAN and answer LB-pool traffic directly, so pf sees only the client
-    # half of these connections; keep state drops client data past the unscaled 64 KB window.
-    "98-LAN to the Cilium LB pool (sloppy state for same-LAN asymmetric replies)" = {
+    # The Kubernetes nodes share the LAB network and answer LB-pool traffic directly, so pf sees
+    # only the client half of these connections, both on the way in and on the way back out to the
+    # node; keep state drops client data past the first 64 KB.
+    "96-LAB to the Cilium LB pool, outbound leg (sloppy state for same-LAB asymmetric replies)" = {
       action           = "pass"
-      description      = "LAN to the Cilium LB pool (sloppy state for same-LAN asymmetric replies)"
+      description      = "LAB to the Cilium LB pool, outbound leg (sloppy state for same-LAB asymmetric replies)"
+      destination_net  = "10.43.64.0/24"
+      direction        = "out"
+      ip_protocol      = "inet"
+      protocol         = "TCP"
+      source_net       = "opt2"
+      state_type       = "sloppy"
+      allow_options    = false
+      destination_not  = false
+      disable_reply_to = false
+      enabled          = true
+      interface_not    = false
+      log              = false
+      no_pfsync        = false
+      no_xmlrpc_sync   = false
+      quick            = true
+      source_not       = false
+      sequence         = 96
+      interface        = ["opt2"]
+    }
+    "97-LAB IPv6 to the Cilium LB pool, outbound leg (sloppy state for same-LAB asymmetric replies)" = {
+      action           = "pass"
+      description      = "LAB IPv6 to the Cilium LB pool, outbound leg (sloppy state for same-LAB asymmetric replies)"
+      destination_net  = "fd54:571b:560a:4364::/64"
+      direction        = "out"
+      ip_protocol      = "inet6"
+      protocol         = "TCP"
+      source_net       = "opt2"
+      state_type       = "sloppy"
+      allow_options    = false
+      destination_not  = false
+      disable_reply_to = false
+      enabled          = true
+      interface_not    = false
+      log              = false
+      no_pfsync        = false
+      no_xmlrpc_sync   = false
+      quick            = true
+      source_not       = false
+      sequence         = 97
+      interface        = ["opt2"]
+    }
+    "98-LAB to the Cilium LB pool (sloppy state for same-LAB asymmetric replies)" = {
+      uuid             = "1bfcf710-d6b9-42ee-8dcc-293be488313a"
+      action           = "pass"
+      description      = "LAB to the Cilium LB pool (sloppy state for same-LAB asymmetric replies)"
       destination_net  = "10.43.64.0/24"
       direction        = "in"
       ip_protocol      = "inet"
       protocol         = "TCP"
-      source_net       = "lan"
+      source_net       = "opt2"
       state_type       = "sloppy"
       allow_options    = false
       destination_not  = false
@@ -147,16 +193,17 @@ locals {
       quick            = true
       source_not       = false
       sequence         = 98
-      interface        = ["lan"]
+      interface        = ["opt2"]
     }
-    "99-LAN IPv6 to the Cilium LB pool (sloppy state for same-LAN asymmetric replies)" = {
+    "99-LAB IPv6 to the Cilium LB pool (sloppy state for same-LAB asymmetric replies)" = {
+      uuid             = "992ebb02-ca65-488b-9b23-e3d1cd6b8fb7"
       action           = "pass"
-      description      = "LAN IPv6 to the Cilium LB pool (sloppy state for same-LAN asymmetric replies)"
+      description      = "LAB IPv6 to the Cilium LB pool (sloppy state for same-LAB asymmetric replies)"
       destination_net  = "fd54:571b:560a:4364::/64"
       direction        = "in"
       ip_protocol      = "inet6"
       protocol         = "TCP"
-      source_net       = "lan"
+      source_net       = "opt2"
       state_type       = "sloppy"
       allow_options    = false
       destination_not  = false
@@ -169,7 +216,7 @@ locals {
       quick            = true
       source_not       = false
       sequence         = 99
-      interface        = ["lan"]
+      interface        = ["opt2"]
     }
     "101-Default allow LAN to any rule" = {
       uuid             = "21fefa5f-e4bd-49cd-888d-c54fb358e95e"
@@ -1294,4 +1341,14 @@ moved {
 moved {
   from = opnsense_firewall_filter_rule.lga2_firewall_rules["48-lga2 LAN to lga1 subnets via odroid.lga2, non-TCP"]
   to   = opnsense_firewall_filter_rule.lga2_firewall_rules["48-lga2 LAN to lga1 subnets and tailnet, non-TCP"]
+}
+
+moved {
+  from = opnsense_firewall_filter_rule.lga1_firewall_rules["98-LAN to the Cilium LB pool (sloppy state for same-LAN asymmetric replies)"]
+  to   = opnsense_firewall_filter_rule.lga1_firewall_rules["98-LAB to the Cilium LB pool (sloppy state for same-LAB asymmetric replies)"]
+}
+
+moved {
+  from = opnsense_firewall_filter_rule.lga1_firewall_rules["99-LAN IPv6 to the Cilium LB pool (sloppy state for same-LAN asymmetric replies)"]
+  to   = opnsense_firewall_filter_rule.lga1_firewall_rules["99-LAB IPv6 to the Cilium LB pool (sloppy state for same-LAB asymmetric replies)"]
 }
