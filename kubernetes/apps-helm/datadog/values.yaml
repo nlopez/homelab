@@ -15,7 +15,9 @@ datadog:
     enabled: true
     containerCollectAll: true
   containerExcludeLogs: "kube_namespace:.*"
-  containerIncludeLogs: "kube_namespace:cert-manager"
+  # Everything is excluded except these. image:envoyproxy/envoy matches only the
+  # Envoy Gateway proxy containers (the controller runs envoyproxy/gateway).
+  containerIncludeLogs: "kube_namespace:cert-manager image:envoyproxy/envoy"
   processAgent:
     enabled: true
     processCollection: true

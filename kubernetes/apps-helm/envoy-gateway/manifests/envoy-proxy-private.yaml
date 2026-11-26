@@ -6,6 +6,72 @@ metadata:
   namespace: envoy-gateway-system
 spec:
   ipFamily: DualStack
+  telemetry:
+    accessLog:
+      settings:
+      # One line per HTTP request.
+      - type: Route
+        format:
+          type: JSON
+          json:
+            log_type: "%ACCESS_LOG_TYPE%"
+            start_time: "%START_TIME%"
+            connection_id: "%CONNECTION_ID%"
+            request_id: "%REQ(X-REQUEST-ID)%"
+            method: "%REQ(:METHOD)%"
+            authority: "%REQ(:AUTHORITY)%"
+            path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+            protocol: "%PROTOCOL%"
+            response_code: "%RESPONSE_CODE%"
+            response_code_details: "%RESPONSE_CODE_DETAILS%"
+            response_flags: "%RESPONSE_FLAGS%"
+            connection_termination_details: "%CONNECTION_TERMINATION_DETAILS%"
+            route_name: "%ROUTE_NAME%"
+            upstream_cluster: "%UPSTREAM_CLUSTER%"
+            upstream_host: "%UPSTREAM_HOST%"
+            upstream_transport_failure_reason: "%UPSTREAM_TRANSPORT_FAILURE_REASON%"
+            upstream_service_time: "%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%"
+            requested_server_name: "%REQUESTED_SERVER_NAME%"
+            downstream_tls_version: "%DOWNSTREAM_TLS_VERSION%"
+            downstream_tls_cipher: "%DOWNSTREAM_TLS_CIPHER%"
+            downstream_peer_subject: "%DOWNSTREAM_PEER_SUBJECT%"
+            bytes_received: "%BYTES_RECEIVED%"
+            bytes_sent: "%BYTES_SENT%"
+            duration: "%DURATION%"
+            downstream_remote_address: "%DOWNSTREAM_REMOTE_ADDRESS%"
+            downstream_direct_remote_address: "%DOWNSTREAM_DIRECT_REMOTE_ADDRESS%"
+            x_forwarded_for: "%REQ(X-FORWARDED-FOR)%"
+            cf_connecting_ip: "%REQ(CF-CONNECTING-IP)%"
+            cf_ray: "%REQ(CF-RAY)%"
+            user_agent: "%REQ(USER-AGENT)%"
+        sinks:
+        - type: File
+          file:
+            path: /dev/stdout
+      # One line per downstream connection, including ones that fail the TLS
+      # handshake or close before a request completes.
+      - type: Listener
+        format:
+          type: JSON
+          json:
+            log_type: "%ACCESS_LOG_TYPE%"
+            start_time: "%START_TIME%"
+            connection_id: "%CONNECTION_ID%"
+            requested_server_name: "%REQUESTED_SERVER_NAME%"
+            downstream_tls_version: "%DOWNSTREAM_TLS_VERSION%"
+            downstream_peer_subject: "%DOWNSTREAM_PEER_SUBJECT%"
+            downstream_transport_failure_reason: "%DOWNSTREAM_TRANSPORT_FAILURE_REASON%"
+            connection_termination_details: "%CONNECTION_TERMINATION_DETAILS%"
+            response_flags: "%RESPONSE_FLAGS%"
+            bytes_received: "%BYTES_RECEIVED%"
+            bytes_sent: "%BYTES_SENT%"
+            duration: "%DURATION%"
+            downstream_remote_address: "%DOWNSTREAM_REMOTE_ADDRESS%"
+            downstream_local_address: "%DOWNSTREAM_LOCAL_ADDRESS%"
+        sinks:
+        - type: File
+          file:
+            path: /dev/stdout
   provider:
     type: Kubernetes
     kubernetes:
