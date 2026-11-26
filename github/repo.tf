@@ -84,7 +84,7 @@ resource "github_repository_environment_deployment_policy" "production_main" {
 # Rulesets are only available on public repositories or on a paid plan, so
 # this is off until var.public or var.rulesets is set. Every change reaches
 # main through a pull request whose ci-ok check passed
-# (.github/workflows/ci-gate.yaml). Nobody bypasses it, admins included.
+# (.github/workflows/ci-gate-protected.yaml). Nobody bypasses it, admins included.
 resource "github_repository_ruleset" "main" {
   count = var.public || var.rulesets ? 1 : 0
 

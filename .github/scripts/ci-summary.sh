@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds the one-comment summary of a pull request's checks, so a reviewer
 # (person or agent) reads one table instead of each stack's plan.
-# Run by ci-ok (.github/workflows/ci-gate.yaml).
+# Run by the protected ci-ok gate (.github/workflows/ci-gate-protected.yaml).
 #
 #   ci-summary.sh <runs.json> <annotations.json> <comments.json> <head sha> <gate outcome>
 #

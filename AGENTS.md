@@ -48,7 +48,7 @@ a session without them can't use it, and CI's plan on the PR stays the one that 
 
 1. Commit in your worktree. The pre-commit hooks run on each commit.
 2. Push the branch and open a PR: `git push -u origin HEAD`, then `gh pr create --fill`. Say in the description what the plan should show, for example "adds one A record, changes nothing else".
-3. Wait for the checks: `scripts/pr-wait <pr>` waits for `ci-ok` and prints its summary (or `gh pr checks --watch`). The `ci-ok` check (`.github/workflows/ci-gate.yaml`) runs on every PR, waits for all the others, and fails if any of them failed. If you re-run a failed check, re-run `ci-ok` too.
+3. Wait for the checks: `scripts/pr-wait <pr>` waits for `ci-ok` and prints its summary (or `gh pr checks --watch`). The `ci-ok` check runs on every PR, waits for all the others, and fails if any of them failed. The ci-gate GitHub App posts it, from `main`'s copy of `.github/workflows/ci-gate-protected.yaml`, so a PR can't change or fake it. If you re-run a failed check, re-run the `CI gate (protected)` workflow too.
 4. Read the `ci-ok` summary comment on the PR (`gh pr view --comments`), the one comment CI posts. It has one row per stack planned on the current commit: its plan result, and whether it destroys anything, plus failing checks and the Kubernetes manifest diff result. For any row that isn't `No changes`, follow its link: the full plan is in that plan job's summary.
 5. Compare each plan with what the description says it should show.
    - It matches and `ci-ok` passed: merge with `gh pr merge --squash --delete-branch`. To merge as soon as `ci-ok` passes, add `--auto` right after opening the PR instead of waiting.
