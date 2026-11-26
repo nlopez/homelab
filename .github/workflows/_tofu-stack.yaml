@@ -194,6 +194,7 @@ jobs:
         working-directory: ${{ inputs.directory }}
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          TITLE: ${{ inputs.title }}
         run: |-
           run() { if [ -f secrets.env ]; then op run --env-file secrets.env -- "$@"; else "$@"; fi; }
           tofu init -input=false
@@ -205,6 +206,11 @@ jobs:
             2) echo "changed=true" >>"${GITHUB_OUTPUT}" ;;
             *) exit "${status}" ;;
           esac
+          {
+            echo "### ${TITLE} plan"
+            echo
+            tofu show -no-color tfplan | "${GITHUB_WORKSPACE}/.github/scripts/plan-diff.sh"
+          } >>"${GITHUB_STEP_SUMMARY}"
 
       - name: Apply
         if: steps.plan.outputs.changed == 'true' && github.event_name != 'schedule' && !inputs.drift-only
