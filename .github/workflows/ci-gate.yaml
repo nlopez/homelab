@@ -32,11 +32,18 @@ jobs:
     permissions:
       checks: read
       contents: read
-      issues: read
-      pull-requests: read
+      # The summary comment.
+      issues: write
+      pull-requests: write
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/scripts
+
       - name: Wait for the other checks on this commit
+        id: gate
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -105,3 +112,30 @@ jobs:
             exit 1
           fi
           echo "${actor} approved the destroys and replaces."
+
+      # One comment per PR, updated on every run, that sums up every check and
+      # plan, so nobody has to read each stack's plan comment to see that
+      # nothing unexpected changes. Not on a cancelled run: a newer push
+      # replaced it.
+      - name: Post the summary comment
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          PR: ${{ github.event.pull_request.number }}
+          GATE: ${{ steps.gate.outcome }}
+        run: |-
+          set -euo pipefail
+          gh api --paginate "repos/${REPO}/issues/${PR}/comments?per_page=100" \
+            --jq '.[] | select(.user.login == "github-actions[bot]")' | jq -s . > comments.json
+          gh api --paginate "repos/${REPO}/commits/${SHA}/check-runs?per_page=100" \
+            --jq '.check_runs[]' | jq -s . > runs.json
+          .github/scripts/ci-summary.sh comments.json runs.json "${SHA}" "${GATE}" > summary.md
+          cat summary.md >> "${GITHUB_STEP_SUMMARY}"
+          id="$(jq -r '[.[] | select(.body | startswith("<!-- ci-summary -->"))] | last | .id // empty' comments.json)"
+          if [ -n "${id}" ]; then
+            gh api -X PATCH "repos/${REPO}/issues/comments/${id}" -F body=@summary.md >/dev/null
+          else
+            gh api -X POST "repos/${REPO}/issues/${PR}/comments" -F body=@summary.md >/dev/null
+          fi
