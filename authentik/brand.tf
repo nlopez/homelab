@@ -31,7 +31,7 @@ resource "authentik_brand" "desert_bluffs" {
   EOT
 
   flow_authentication = data.authentik_flow.default_authentication.id
-  flow_invalidation   = data.authentik_flow.default_invalidation.id
+  flow_invalidation   = data.authentik_flow.default_logout.id
   flow_user_settings  = data.authentik_flow.default_user_settings.id
 }
 
