@@ -113,9 +113,12 @@ resource "github_repository_ruleset" "main" {
     }
 
     required_status_checks {
+      # ci-ok as posted by the ci-gate app (ci-gate.tf), from main's copy of
+      # the gate. A PR's own workflows can only post as GitHub Actions, so
+      # they can't satisfy this.
       required_check {
         context        = "ci-ok"
-        integration_id = 15368 # GitHub Actions
+        integration_id = var.ci_gate_app_id
       }
 
       # A PR must contain the latest main before it merges, so its plans
