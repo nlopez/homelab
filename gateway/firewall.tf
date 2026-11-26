@@ -1192,6 +1192,30 @@ locals {
       sequence         = 46
       interface        = ["lan"]
     }
+    # The hop back out to odroid.lga2 gets its own pf state, which never sees odroid.lga2's direct
+    # replies either; keep state there drops client data past the first 64 KB.
+    "47-lga2 LAN to the tailnet via odroid.lga2, outbound leg (sloppy state for the hairpin)" = {
+      action           = "pass"
+      description      = "lga2 LAN to the tailnet via odroid.lga2, outbound leg (sloppy state for the hairpin)"
+      destination_net  = "100.64.0.0/10"
+      direction        = "out"
+      ip_protocol      = "inet"
+      protocol         = "TCP"
+      source_net       = "lan"
+      state_type       = "sloppy"
+      allow_options    = false
+      destination_not  = false
+      disable_reply_to = false
+      enabled          = true
+      interface_not    = false
+      log              = false
+      no_pfsync        = false
+      no_xmlrpc_sync   = false
+      quick            = true
+      source_not       = false
+      sequence         = 47
+      interface        = ["lan"]
+    }
     "48-lga2 LAN to lga1 subnets and tailnet, non-TCP" = {
       uuid             = "7009f7aa-7dd4-4824-85f1-f5f566f7f84a"
       action           = "pass"
@@ -1318,7 +1342,7 @@ resource "opnsense_firewall_filter_rule" "lga2_firewall_rules" {
 
 import {
   provider = opnsense.lga2
-  for_each = local.lga2_firewall_rules
+  for_each = { for k, v in local.lga2_firewall_rules : k => v if can(v.uuid) }
   to       = opnsense_firewall_filter_rule.lga2_firewall_rules[each.key]
   id       = each.value.uuid
 }
