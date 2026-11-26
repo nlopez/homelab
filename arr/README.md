@@ -23,8 +23,12 @@ Sonarr (`jolthog`) and Radarr (`dumud`) settings, managed with the
 
 ## Applying
 
-Operators apply from a machine on the LAN or tailnet, since the app hostnames only resolve there.
-The API routes skip the gateway's OIDC policy, so the app API keys are enough.
+The `Arr` workflow (`.github/workflows/arr.yaml`) plans on pull requests and applies on `main`,
+from a runner on the tailnet (`tag:ci` reaches the private gateway on 443). The apply reads the
+CI copies of the six secrets from the `ci` vault (`secrets.env`).
+
+Break-glass, an operator applies from a machine on the LAN or tailnet, since the app hostnames
+only resolve there. The API routes skip the gateway's OIDC policy, so the app API keys are enough.
 
 ```bash
 cd arr
@@ -32,6 +36,9 @@ tofu init
 tofu plan
 AWS_PROFILE=admin tofu apply
 ```
+
+`scripts/plan arr` plans as a pull request does, but it can't mint the OIDC token: set
+`TF_VAR_sonarr_api_key` and `TF_VAR_radarr_api_key` to the real keys first.
 
 The apps return secrets masked, so tofu cannot detect drift in them. Every secret comes from
 1Password through `secrets.env`, and an apply writes those values to the apps.

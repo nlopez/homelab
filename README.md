@@ -21,7 +21,7 @@ workflow, which people and agents both follow.
 | [`media-toolbox/`](media-toolbox) | Container image for media tools | Image build (on any branch push) | Image push; nightly build of new yt-dlp releases |
 | [`github/`](github) | This repository's settings | None | **Local apply by a human** |
 | [`truenas/`](truenas) | `nas1` and `nas2`: datasets, shares, users, apps, snapshots | None | **Local apply by a human** |
-| [`arr/`](arr) | Sonarr and Radarr settings | None | **Local apply by a human** |
+| [`arr/`](arr) | Sonarr and Radarr settings | `tofu plan` (secret-holding resources excluded) | `tofu apply` |
 
 Every PR also runs `pre-commit` (the commit hooks) and `ci-ok`, which passes only when every other
 check passed. Every OpenTofu stack also plans nightly on `main`, and keeps a `Drift in <stack>`
