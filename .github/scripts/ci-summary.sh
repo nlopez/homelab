@@ -1,15 +1,18 @@
 #!/usr/bin/env bash
 # Builds the one-comment summary of a pull request's checks, so a reviewer
-# (person or agent) reads one table instead of a plan comment per stack.
+# (person or agent) reads one table instead of each stack's plan.
 # Run by ci-ok (.github/workflows/ci-gate.yaml).
 #
-#   ci-summary.sh <comments.json> <check-runs.json> <head sha> <gate outcome>
+#   ci-summary.sh <runs.json> <annotations.json> <comments.json> <head sha> <gate outcome>
 #
-# comments.json is the PR's issue comments; check-runs.json is the head
-# commit's check runs (both as JSON arrays). Prints the comment body.
+# runs.json: the head commit's check runs. annotations.json: the plan-result
+# and plan-destroys annotations of those runs, as [{check, url, title,
+# message}]; each plan job adds them (.github/actions/tofu-plan). Since both
+# belong to the head commit, every row is this push's plan. comments.json: the
+# PR's bot comments, for the Kubernetes manifest diff. Prints the comment body.
 set -euo pipefail
 
-comments="$1" runs="$2" head="$3" gate="$4"
+runs="$1" annotations="$2" comments="$3" head="$4" gate="$5"
 
 echo "<!-- ci-summary -->"
 case "${gate}" in
@@ -30,35 +33,27 @@ if [ -n "${failed}${pending}" ]; then
   echo
 fi
 
-plans="$(jq -r --arg head "${head}" '
-  [.[] | select(.body | startswith("<!-- tofu-plan: "))
-   | (.body | split("\n")) as $l
-   | {
-       stack: ($l[0] | capture("<!-- tofu-plan: (?<s>.*) -->").s),
-       fresh: (.body | contains("<!-- head: " + $head + " -->")),
-       outcome: ($l | map(select(startswith("### "))) | first // "" | capture("\\((?<o>[a-z]+)\\)$").o // "unknown"),
-       summary: ($l | map(select(startswith("Plan:") or startswith("No changes.")
-                       or test("^(Plan: |No changes\\.)"))) | first // ""),
-       destroys: (.body | contains("**Destroys or replaces:**")),
-       url: .html_url
-     }]
+plans="$(jq -r '
+  (map(select(.title == "plan-destroys") | .check) | unique) as $destroying
+  | [.[] | select(.title == "plan-result")
+     | (.message | fromjson) as $r
+     | {stack: $r.stack, outcome: $r.outcome, summary: $r.summary, url, destroys: (.check | IN($destroying[]))}]
   | sort_by(.stack)
   | .[]
-  | "| [\(.stack)](\(.url)) | \(if .fresh then
-        (if .outcome != "success" then "❌ plan \(.outcome)"
-         elif (.summary | startswith("No changes")) then "No changes"
-         else (.summary | capture("Plan: (?<p>[^.]*)").p // .summary) end)
-      else "⚪ not planned on this commit" end) | \(if .fresh and .destroys then "⚠️ yes" elif .fresh then "no" else "" end) |"
-' "${comments}")"
+  | "| [\(.stack)](\(.url)) | \(
+        if .outcome != "success" then "❌ plan \(.outcome)"
+        elif (.summary | startswith("No changes")) then "No changes"
+        else (.summary | capture("Plan: (?<p>[^.]*)").p // .summary) end) | \(if .destroys then "⚠️ yes" else "no" end) |"
+' "${annotations}")"
 
 if [ -n "${plans}" ]; then
   echo "| Stack | Plan | Destroys |"
   echo "| --- | --- | --- |"
   echo "${plans}"
   echo
-  echo "Stacks marked not planned were planned on an earlier commit and this push didn't touch them."
+  echo "Each stack links to its plan job; the full plan is in that job's summary."
 else
-  echo "No OpenTofu stack planned on this PR."
+  echo "No OpenTofu stack planned on this commit."
 fi
 
 diff="$(jq -r '[.[] | select(.body | startswith("<!-- manifest-diff -->"))] | last // empty

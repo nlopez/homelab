@@ -64,28 +64,24 @@ runs:
           gh api -X DELETE "repos/${REPO}/issues/${PR}/labels/destroy-approved" >/dev/null 2>&1 || true
         fi
 
-    - name: Comment plan
+    # The full plan goes to the job summary. One line about it goes on the
+    # check run as a plan-result annotation, which ci-ok's summary comment
+    # reads, so the PR gets one comment rather than one per stack (each new
+    # comment emails the PR's author).
+    - name: Report plan
       if: always()
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
-        GH_TOKEN: ${{ github.token }}
         OUTCOME: ${{ steps.plan.outcome }}
-        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         TITLE: ${{ inputs.title }}
-        PR: ${{ github.event.pull_request.number }}
-        REPO: ${{ github.repository }}
       run: |-
-        marker="<!-- tofu-plan: ${TITLE} -->"
         if [ "$OUTCOME" = success ]; then out=plan.txt; else out=plan.log; fi
-        summary="$(grep -E '^(Plan:|No changes\.)' plan.log | tail -n 1 || true)"
+        summary="$(grep -E '^(Plan:|No changes\.)' plan.log 2>/dev/null | tail -n 1 || true)"
         {
-          echo "$marker"
-          # ci-ok's summary matches this to tell this push's plans from older ones.
-          echo "<!-- head: ${HEAD_SHA} -->"
           echo "### ${TITLE} plan (${OUTCOME})"
           echo
-          echo "${summary:-See the run log.} Commit \`${GITHUB_SHA:0:8}\`, [run](${GITHUB_SERVER_URL}/${REPO}/actions/runs/${GITHUB_RUN_ID})."
+          echo "${summary:-See the run log.}"
           echo
           if [ -s destroys.txt ]; then
             echo "**Destroys or replaces:** \`ci-ok\` fails until a code owner adds the \`destroy-approved\` label."
@@ -96,12 +92,8 @@ runs:
           echo '```hcl'
           tail -c 60000 "$out" 2>/dev/null
           echo '```'
-        } > comment.md
-        cat comment.md >> "$GITHUB_STEP_SUMMARY"
-        id="$(gh api --paginate "repos/${REPO}/issues/${PR}/comments" \
-          --jq ".[] | select(.user.login == \"github-actions[bot]\") | select(.body | startswith(\"${marker}\")) | .id" | tail -n 1)"
-        if [ -n "$id" ]; then
-          gh api -X PATCH "repos/${REPO}/issues/comments/${id}" -F body=@comment.md >/dev/null
-        else
-          gh api -X POST "repos/${REPO}/issues/${PR}/comments" -F body=@comment.md >/dev/null
-        fi
+        } >> "$GITHUB_STEP_SUMMARY"
+        # A workflow command's message is one line, with % escaped.
+        result="$(jq -cn --arg stack "$TITLE" --arg outcome "$OUTCOME" --arg summary "$summary" \
+          '{stack: $stack, outcome: $outcome, summary: $summary}')"
+        echo "::notice title=plan-result::${result//%/%25}"
