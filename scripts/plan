@@ -58,6 +58,13 @@ def commands(stack):
         if "=" in line:
             name, value = line.split("=", 1)
             env[name.strip()] = value
+    # CI passes a GitHub OIDC token for these, which this machine can't mint:
+    # the operator supplies the real values (arr/README.md).
+    missing = [
+        line.split("=", 1)[0].strip()
+        for line in str(stack.get("plan-oidc-env") or "").splitlines()
+        if "=" in line and not os.environ.get(line.split("=", 1)[0].strip())
+    ]
     # -chdir from the repo root: the dev shell's tofu wrapper switches to the
     # apply credentials when it runs inside a directory with a secrets.env.
     tofu = ["tofu", f"-chdir={directory}"]
@@ -70,7 +77,7 @@ def commands(stack):
             env["OP_APP_AUTH"] = "1"
             op += ["--account", "my.1password.com"]
         plan = op + ["--"] + plan
-    return env, [init, plan]
+    return env, [init, plan], missing
 
 
 def main():
@@ -92,14 +99,20 @@ def main():
         print(f"unknown stack {args.stack!r}; scripts/plan --list shows them", file=sys.stderr)
         return 2
 
-    env, steps = commands(stack)
+    env, steps, missing = commands(stack)
     if args.dry_run:
+        for name in missing:
+            print(f"# set {name}: CI uses a GitHub OIDC token here")
         for name, value in sorted(env.items()):
             print(f"export {name}={shlex.quote(value)}")
         for step in steps:
             print(shlex.join(step))
         return 0
 
+    if missing:
+        print(f"set {', '.join(missing)} first: CI passes a GitHub OIDC token there, "
+              "which only a workflow can mint; see the stack's README.", file=sys.stderr)
+        return 2
     if stack.get("tailnet"):
         print(f"{args.stack} talks to hosts on the tailnet; this machine must reach them.", file=sys.stderr)
     full_env = {**os.environ, **env}

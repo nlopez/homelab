@@ -214,6 +214,29 @@ else
   pass "ansible-drift-summary leaves out the --diff output"
 fi
 
+### oidc-plan-env.sh
+
+# A curl that answers the OIDC token request with a token naming its audience.
+cat > "${work}/bin/curl" <<'SH'
+#!/usr/bin/env bash
+for a in "$@"; do case "$a" in audience=*) aud="${a#audience=}" ;; esac; done
+printf '{"value":"eyJtoken-for-%s"}' "${aud}"
+SH
+chmod +x "${work}/bin/curl"
+: > "${work}/oidc_env"
+oidc_out="$(printf 'TF_VAR_a=a.example.com\n# comment\n\nTF_VAR_b=b.example.com\n' |
+  PATH="${work}/bin:${PATH}" GITHUB_ENV="${work}/oidc_env" ACTIONS_ID_TOKEN_REQUEST_URL=https://t.example \
+  ACTIONS_ID_TOKEN_REQUEST_TOKEN=x "${scripts}/oidc-plan-env.sh")"
+expect "oidc-plan-env exports one token per NAME=audience line" \
+"TF_VAR_a=eyJtoken-for-a.example.com
+TF_VAR_b=eyJtoken-for-b.example.com" "$(cat "${work}/oidc_env")"
+expect "oidc-plan-env masks every token" \
+"::add-mask::eyJtoken-for-a.example.com
+::add-mask::eyJtoken-for-b.example.com" "${oidc_out}"
+GITHUB_ENV="${work}/oidc_env" "${scripts}/oidc-plan-env.sh" </dev/null >/dev/null 2>&1
+expect "oidc-plan-env fails without id-token: write" "1" "$?"
+rm "${work}/bin/curl"
+
 ### scripts/plan
 
 plan="${repo}/scripts/plan"
@@ -232,6 +255,11 @@ if grep -q "secrets.env " <<<"${gateway}"; then fail "plan never uses the apply 
 contains "plan runs tofu from the repo root, past the apply wrapper" "tofu -chdir=gateway" "${gateway}"
 expect "plan uses a service account token instead of the app when one is set" "" \
   "$(OP_SERVICE_ACCOUNT_TOKEN=x python3 "${plan}" dns --dry-run | grep -E 'OP_APP_AUTH|--account')"
+arr="$(python3 "${plan}" arr --dry-run)"
+contains "plan arr says which keys CI passes as OIDC tokens" "# set TF_VAR_sonarr_api_key: CI uses a GitHub OIDC token here" "${arr}"
+contains "plan arr uses the PR plan's excludes" "-exclude=radarr_notification_plex.plex" "${arr}"
+python3 "${plan}" arr >/dev/null 2>&1
+expect "plan arr refuses to run without the real keys" "2" "$?"
 python3 "${plan}" no-such-stack >/dev/null 2>&1
 expect "plan rejects an unknown stack" "2" "$?"
 

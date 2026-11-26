@@ -30,7 +30,7 @@ vault, the vault `tailnet/tofu/secrets.env` reads it from. The `Automation` name
 - **Applies on `main`** run in the `production` environment with `OP_SERVICE_ACCOUNT_TOKEN`, which
   reads `ci`. `_tofu-stack.yaml` resolves the stack's `secrets.env` with it, and the
   `Ansible` workflow resolves `ansible/secrets.env`.
-- **Local applies** (`github/`, `truenas/`, `arr/`, and break-glass for the rest) go through the
+- **Local applies** (`github/`, `truenas/`, and break-glass for the rest) go through the
   dev shell's `tofu` wrapper, which runs `op run --env-file secrets.env` with the operator's
   1Password app (`OP_APP_AUTH=1`). Agents have no operator session, so they can't run these.
 - **The cluster** reads `evjh…` through 1Password Connect. Each `OnePasswordItem` names its item by

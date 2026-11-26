@@ -1,0 +1,63 @@
+name: Arr
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: ['arr/**', '.github/workflows/arr.yaml', '.github/workflows/_tofu-stack.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
+  pull_request:
+    branches: [ "main" ]
+    paths: ['arr/**', '.github/workflows/arr.yaml', '.github/workflows/_tofu-stack.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
+  workflow_dispatch:
+    inputs:
+      drift-only:
+        description: Only plan and report drift, as the nightly run does; don't apply
+        type: boolean
+        default: false
+  schedule:
+    # Nightly drift check; see _tofu-stack.yaml.
+    - cron: '39 7 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('arr-pr-{0}', github.event.pull_request.number) || 'arr' }}
+  cancel-in-progress: false
+
+jobs:
+  # A pull-request plan holds no Sonarr or Radarr key: it passes its OIDC token,
+  # which the gateway's *-api-ci routes swap for the real key on GETs only. The
+  # other four secrets are compared against state, so the plan passes
+  # placeholders and excludes the resources that use them (arr/README.md).
+  arr:
+    uses: ./.github/workflows/_tofu-stack.yaml
+    permissions:
+      contents: read
+      id-token: write
+      issues: write
+      pull-requests: write
+    secrets: inherit
+    with:
+      drift-only: ${{ inputs.drift-only == true }}
+      directory: arr
+      title: Arr
+      plan-role: homelab-arr-plan
+      apply-role: homelab-arr-apply
+      tailnet: true
+      plan-oidc-env: |-
+        TF_VAR_sonarr_api_key=jolthog.desertbluffs.com
+        TF_VAR_radarr_api_key=dumud.desertbluffs.com
+      plan-env: |-
+        TF_VAR_qbittorrent_password=placeholder
+        TF_VAR_sabnzbd_api_key=placeholder
+        TF_VAR_nzbgeek_api_key=placeholder
+        TF_VAR_plex_token=placeholder
+      plan-args: >-
+        -exclude=sonarr_download_client_qbittorrent.nas2
+        -exclude=sonarr_download_client_sabnzbd.sabnzbd
+        -exclude=sonarr_indexer_newznab.nzbgeek
+        -exclude=sonarr_notification_plex.plex
+        -exclude=radarr_download_client_qbittorrent.nas2
+        -exclude=radarr_download_client_sabnzbd.sabnzbd
+        -exclude=radarr_indexer_newznab.nzbgeek
+        -exclude=radarr_notification_plex.plex

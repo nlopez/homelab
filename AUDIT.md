@@ -43,15 +43,15 @@ through the `os-gdrive-backup` plugin, keeping 60 copies; that plugin setting is
 Gap: the backup lives outside this repo and nothing checks that it still runs. A restore test, or an
 alert when the newest copy is more than a day old, would close it.
 
-### 3. Three OpenTofu projects have no CI
+### 3. Two OpenTofu projects have no CI
 
-`github/`, `truenas/`, and `arr/` have no workflow, so a human plans and applies them locally. Every
+`github/` and `truenas/` have no workflow, so a human plans and applies them locally. Every
 other OpenTofu stack plans on pull requests and applies on `main`.
 
-Fix: add a workflow per project. `truenas/` and `arr/` reach LAN hosts, so their jobs need to join
-the tailnet as the `gateway/` jobs do. Their plan and apply roles already exist in
-`aws/state-bucket/iam.tf`; what's missing is their credentials in 1Password (read-only keys in `ci-pr`,
-CI copies in `ci`). `github/` needs a token that can administer the repository.
+Fix: add a workflow per project, as `arr/` has (`.github/workflows/arr.yaml`). `truenas/` reaches
+LAN hosts, so its jobs need to join the tailnet as the `gateway/` and `arr/` jobs do. Its plan and
+apply roles already exist in `aws/state-bucket/iam.tf`; what's missing is its credentials in
+1Password (read-only keys in `ci-pr`, CI copies in `ci`). `github/` needs a token that can administer the repository.
 
 ### 4. Renovate covers every dependency type
 

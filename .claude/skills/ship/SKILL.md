@@ -31,7 +31,7 @@ Read the `AGENTS.md` of any directory you change (`kubernetes/`, `gateway/`, `aw
 - Fill in the template: what changes, why, and **what each stack's plan should show** ("adds one
   A record, changes nothing else"; "No changes" for stacks the PR touches only incidentally).
   Writing it before CI runs is what makes the comparison in step 5 honest.
-- Say if the change needs a human: a local apply (`github/`, `truenas/`, `arr/`), a destroy
+- Say if the change needs a human: a local apply (`github/`, `truenas/`), a destroy
   approval, or a decision only the owner can make.
 
 ## 4. Wait for CI

@@ -51,6 +51,12 @@ on:
         description: Non-secret NAME=value lines set for a pull-request plan
         type: string
         default: ""
+      plan-oidc-env:
+        description: >-
+          NAME=audience lines; a pull-request plan sets each NAME to a GitHub
+          OIDC token for that audience (arr/README.md)
+        type: string
+        default: ""
       notify-subject:
         description: Subject of the Discord message; defaults to the workflow name
         type: string
@@ -122,6 +128,12 @@ jobs:
         env:
           PLAN_ENV: ${{ inputs.plan-env }}
         run: printf '%s\n' "${PLAN_ENV}" >>"${GITHUB_ENV}"
+
+      - name: Set OIDC token plan variables
+        if: inputs.plan-oidc-env != ''
+        env:
+          PLAN_OIDC_ENV: ${{ inputs.plan-oidc-env }}
+        run: .github/scripts/oidc-plan-env.sh <<<"${PLAN_OIDC_ENV}"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
