@@ -11,9 +11,8 @@ spec:
   - type: IPAddress
     value: fd54:571b:560a:4364::10
   listeners:
-  # One listener for every hostname the gateway serves. Envoy Gateway builds one
-  # filter chain per Gateway listener, so a single listener keeps the HTTP/2
-  # websocket patch at a fixed /filter_chains/0. Certificates are selected by SNI.
+  # One listener for every hostname the gateway serves. Certificates are selected
+  # by SNI.
   - name: https
     protocol: HTTPS
     port: 443
