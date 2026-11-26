@@ -5,6 +5,12 @@ resource "sonarr_tag" "anime" {
   label = "anime"
 }
 
+# Unused. Added by the first change CI applied here, to prove the Arr
+# workflow's apply on main can write to Sonarr.
+resource "sonarr_tag" "homelab_ci" {
+  label = "homelab-ci"
+}
+
 resource "sonarr_root_folder" "anime" {
   path = "/media/anime"
 }
