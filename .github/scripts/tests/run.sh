@@ -144,6 +144,7 @@ JSON
 cat > "${work}/runs.json" <<'JSON'
 [
   {"name": "ci-ok", "status": "in_progress", "conclusion": null},
+  {"name": "Protected gate", "status": "in_progress", "conclusion": null},
   {"name": "pre-commit", "status": "completed", "conclusion": "success"},
   {"name": "datadog / Plan", "status": "completed", "conclusion": "failure"},
   {"name": "dns / Apply", "status": "completed", "conclusion": "skipped"},
