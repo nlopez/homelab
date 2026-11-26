@@ -61,7 +61,22 @@ if [[ "${answer}" == *state=* && "${answer}" != *"state=${state}"* ]]; then
   exit 1
 fi
 
-app="$(gh api -X POST "app-manifests/${code}/conversions")"
+# Unauthenticated on purpose: GitHub rejects this endpoint for some token types
+# (fine-grained and GitHub App tokens) with a 404, and it needs no token.
+if ! app="$(curl -fsS -X POST -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/app-manifests/${code}/conversions")"; then
+  cat >&2 <<MSG
+GitHub didn't accept that code: it is used up, expired (after an hour), or mistyped.
+The app may exist anyway, since clicking Create made it; the code only fetches its key.
+- If https://github.com/settings/apps lists ${name}: open it, note the App ID, click
+  "Generate a private key", then
+    gh secret set CI_GATE_APP_KEY --env ci-gate --repo ${repo} < <downloaded .pem>
+    op document create <downloaded .pem> --vault operator --title "GitHub App ${name} private key"
+  delete the downloaded file, and continue with the install link and tofu apply below.
+- If it doesn't: run this script again and paste the new code right away.
+MSG
+  exit 1
+fi
 id="$(jq -r .id <<<"${app}")"
 slug="$(jq -r .slug <<<"${app}")"
 
