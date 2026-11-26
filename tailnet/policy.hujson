@@ -167,6 +167,21 @@
         "443"
       ]
     },
+    // The TrueNAS APIs on nas1 and nas2 (wss on 443), for the truenas stack.
+    // Pull-request plans use the ci-pr user's keys, which hold only the
+    // READONLY_ADMIN role (truenas/users.tf).
+    {
+      "src": [
+        "tag:ci"
+      ],
+      "dst": [
+        "192.168.222.149",
+        "192.168.222.114"
+      ],
+      "ip": [
+        "443"
+      ]
+    },
     // The Ansible workflow needs the packet filter to allow 22 as well as the
     // ssh rule below, which is what authorises the login as nlopez.
     {
@@ -316,6 +331,17 @@
       "deny": [
         "10.43.64.10:80",
         "10.43.64.20:443"
+      ]
+    },
+    {
+      "src": "tag:ci",
+      "accept": [
+        "192.168.222.149:443",
+        "192.168.222.114:443"
+      ],
+      "deny": [
+        "192.168.222.149:22",
+        "192.168.222.114:80"
       ]
     }
   ]
