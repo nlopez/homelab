@@ -58,6 +58,7 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 - Rebase conflict: resolve it in your worktree, re-run the hooks, and continue. If another agent's change is involved, keep both intents.
 - A plan shows changes you did not make: look for an open `Drift in <stack>` issue. Every OpenTofu stack plans nightly on `main`, and Ansible runs in check mode nightly, and each keeps that issue open while the live state differs from `main`. Do not fold a fix for the drift into an unrelated PR; leave it for a human, or fix it in its own PR that links the issue.
 - A hook fails: fix the cause and commit again. Do not bypass it.
+- You changed a script in `.github/scripts/` or `scripts/`: run `.github/scripts/tests/run.sh` before pushing, and add a case for the behaviour you changed.
 - A plan job fails before it plans (credentials, network): say so in the PR and leave it for a human. Do not merge without a plan.
 
 ## Where checks run
@@ -66,6 +67,7 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 | --- | --- | --- |
 | every PR | `ci-ok`, which passes only when every other check passed | nothing |
 | every PR | `pre-commit`: the commit hooks, on the files the PR changes | nothing |
+| every PR | `Script tests`: `.github/scripts/tests/run.sh` and shellcheck, for the scripts CI runs | nothing |
 | `ansible/` | `ansible-lint` | nothing; a nightly check-mode drift run, and apply is a manual `Ansible` dispatch |
 | `authentik/` | `tofu plan` comment | `tofu apply` |
 | `aws/` (SES and SMTP stacks) | `tofu plan` comment per stack | `tofu apply` |

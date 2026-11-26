@@ -111,17 +111,7 @@ jobs:
             {
               echo "The nightly check-mode run of \`${GITHUB_SHA:0:8}\` on \`main\` found hosts that differ from the playbooks ([run](${RUN_URL}); the full diff is in its log)."
               echo
-              echo "Changed tasks:"
-              echo
-              echo '```'
-              awk '/^TASK \[/ { task = $0 } /^changed: / { print task; print "  " $0 }' check.log | head -c 30000
-              echo '```'
-              echo
-              echo "Recap:"
-              echo
-              echo '```'
-              grep -E '^[A-Za-z0-9.-]+ +: ok=' check.log
-              echo '```'
+              .github/scripts/ansible-drift-summary.sh check.log
             } > drift.md
             if [ -n "${issue}" ]; then
               gh issue comment "${issue}" --body-file drift.md
