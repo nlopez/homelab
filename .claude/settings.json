@@ -1,4 +1,28 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(scripts/plan:*)",
+      "Bash(scripts/pr-wait:*)",
+      "Bash(.github/scripts/tests/run.sh)",
+      "Bash(python3 scripts/check-hostnames.py)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git fetch:*)",
+      "Bash(git worktree list:*)",
+      "Bash(tofu fmt:*)",
+      "Bash(tofu validate:*)",
+      "Bash(pre-commit run:*)",
+      "Bash(actionlint:*)",
+      "Bash(shellcheck:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {
