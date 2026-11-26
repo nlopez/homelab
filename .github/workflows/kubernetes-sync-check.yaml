@@ -58,7 +58,7 @@ jobs:
       - name: Load the Argo CD token
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-        run: '.github/scripts/load-plan-credentials.sh <(echo "ARGOCD_TOKEN=op://kjgjpiwjlognsprl7qxsonrqoi/ITEM_ID/token")'
+        run: '.github/scripts/load-plan-credentials.sh <(echo "ARGOCD_TOKEN=op://kjgjpiwjlognsprl7qxsonrqoi/zgcjjnf42rmm75gsktjnim4ega/token")'
 
       - name: Wait for the changed Applications
         env:
