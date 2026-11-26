@@ -315,9 +315,8 @@ locals {
     # The plan for tailnet/admin reads the tailnet with its own all:read
     # OAuth client, so the role only needs the state.
     tailnet-admin = ["tailnet-admin"]
-    # No workflow uses these yet; see lan_apply_state_prefixes.
-    truenas = ["truenas"]
-    arr     = ["arr"]
+    truenas       = ["truenas"]
+    arr           = ["arr"]
   }
 }
 
@@ -455,11 +454,9 @@ resource "aws_iam_role_policy" "state_bucket_plan_deny" {
   policy = data.aws_iam_policy_document.state_bucket_plan_deny.json
 }
 
-# truenas/ and arr/ manage LAN hosts and are still applied locally. These roles
-# exist ahead of their workflows, which also need read-only API keys in the
-# ci-pr vault, CI copies of the apply keys in the ci vault (SECRETS.md), and the
-# runner on the tailnet, as gateway's has. Each reads and writes only its own
-# state; the providers talk to the hosts, not to AWS.
+# truenas/ and arr/ manage LAN hosts, from runners on the tailnet as gateway's
+# are. Each reads and writes only its own state; the providers talk to the
+# hosts, not to AWS.
 locals {
   lan_apply_state_prefixes = {
     truenas = "truenas"

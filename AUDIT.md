@@ -12,7 +12,7 @@ itself were corrected against the repo; the claims about live systems were not r
 | `charon-0/1`, `heimdall-0/1`, `exit-lga1` | Argo CD (Tailscale operator proxy pods) | None. |
 | `gw-lga1`, `gw-lga2` | `gateway/` OpenTofu | Only Unbound, routes, and gateways. |
 | `akane` (laptop) | chezmoi (`nlopez/dotfiles`) | Separate repo. No nix-darwin. |
-| `nas1`, `nas2` | `truenas/` OpenTofu, applied locally | No CI apply, no config backup, no Datadog agent. |
+| `nas1`, `nas2` | `truenas/` OpenTofu, applied on `main` | No config backup, no Datadog agent. |
 | `uos` (UniFi OS Server, DigitalOcean) | Nothing | No IaC, no config backup, no monitoring. |
 | `nas1-ipmi`, `electabuzz` (PDU) | Nothing | BMC and PDU with no management. |
 
@@ -43,15 +43,13 @@ through the `os-gdrive-backup` plugin, keeping 60 copies; that plugin setting is
 Gap: the backup lives outside this repo and nothing checks that it still runs. A restore test, or an
 alert when the newest copy is more than a day old, would close it.
 
-### 3. Two OpenTofu projects have no CI
+### 3. One OpenTofu project has no CI
 
-`github/` and `truenas/` have no workflow, so a human plans and applies them locally. Every
-other OpenTofu stack plans on pull requests and applies on `main`.
+`github/` has no workflow, so a human plans and applies it locally. Every other OpenTofu stack
+plans on pull requests and applies on `main`.
 
-Fix: add a workflow per project, as `arr/` has (`.github/workflows/arr.yaml`). `truenas/` reaches
-LAN hosts, so its jobs need to join the tailnet as the `gateway/` and `arr/` jobs do. Its plan and
-apply roles already exist in `aws/state-bucket/iam.tf`; what's missing is its credentials in
-1Password (read-only keys in `ci-pr`, CI copies in `ci`). `github/` needs a token that can administer the repository.
+Fix: a workflow like the others. It needs a token that can administer the repository, which
+would make CI able to change its own protections.
 
 ### 4. Renovate covers every dependency type
 

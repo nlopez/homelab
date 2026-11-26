@@ -80,6 +80,7 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 | `arr/` | `tofu plan` comment (secret-holding resources excluded) | `tofu apply` |
 | `ansible/` | `ansible-lint` | nothing; a nightly check-mode drift run, and apply is a manual `Ansible` dispatch |
 | `authentik/` | `tofu plan` comment | `tofu apply` |
+| `truenas/` | `tofu plan` comment (replication keychain excluded) | `tofu apply` |
 | `aws/` (SES and SMTP stacks) | `tofu plan` comment per stack | `tofu apply` |
 | `aws/state-bucket` | `tofu plan` comment | `tofu apply` |
 | `datadog/` | `tofu plan` comment | `tofu apply` |
@@ -91,4 +92,4 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 
 Every OpenTofu stack's workflow is a short caller of `.github/workflows/_tofu-stack.yaml`, which plans on PRs and applies on `main`. To add a stack, copy `dns.yaml`, give it plan and apply roles in `aws/state-bucket/iam.tf`, and put its read-only plan credentials in `<stack>/secrets.plan.env` ([SECRETS.md](SECRETS.md) says which vault each kind of credential goes in).
 
-`github` and `truenas` have no CI. A human applies them; open the PR anyway and say in it that it needs a local apply.
+`github` has no CI. A human applies it; open the PR anyway and say in it that it needs a local apply.
