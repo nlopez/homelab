@@ -1,0 +1,27 @@
+---
+# Keeps each saved NetworkManager connection down and off autoconnect, without deleting it.
+- name: Read whether each connection autoconnects and is active
+  ansible.builtin.command:
+    cmd: nmcli --get-values connection.autoconnect,GENERAL.STATE connection show {{ item }}
+  loop: "{{ nm_disabled_connections_uuids }}"
+  register: nm_disabled_connections_current
+  changed_when: false
+  check_mode: false
+
+- name: Turn off autoconnect
+  ansible.builtin.command:
+    cmd: nmcli connection modify {{ item.item }} connection.autoconnect no
+  loop: "{{ nm_disabled_connections_current.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.stdout_lines[0] != "no"
+  changed_when: true
+
+- name: Bring active connections down
+  ansible.builtin.command:
+    cmd: nmcli connection down {{ item.item }}
+  loop: "{{ nm_disabled_connections_current.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.stdout_lines | length > 1 and item.stdout_lines[1] != ""
+  changed_when: true

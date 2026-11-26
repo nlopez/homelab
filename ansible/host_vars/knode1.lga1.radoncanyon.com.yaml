@@ -3,8 +3,9 @@ netplan_addresses:
   - 192.168.222.143/24
 netplan_ipv6_token: "::143"
 
-# Wi-Fi to the WLAN VLAN; eno1 carries the node's IPv4 and IPv6 default routes.
-nm_ipv6_never_default_connections:
+# Wi-Fi to the WLAN VLAN, kept down: a node on a client subnet answers LB-pool traffic around
+# the gateway, and pf drops the one-sided connections. eno1 carries all traffic.
+nm_disabled_connections_uuids:
   - eeb4493a-efc0-48a7-9e70-dad5806188a4
 
 kubernetes_node_ips:
