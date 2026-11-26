@@ -1,3 +1,10 @@
+variable "github_token" {
+  type        = string
+  default     = null
+  sensitive   = true
+  description = "GitHub token; unset, the provider reads GITHUB_TOKEN."
+}
+
 variable "webhook_secret" {
   type      = string
   sensitive = true

@@ -19,7 +19,7 @@ workflow, which people and agents both follow.
 | [`tailnet/`](tailnet) | Tailnet policy (`policy.hujson`) and DNS (`tofu/`) | ACL tests, `tofu plan` | `tofu apply` |
 | [`tailnet/admin/`](tailnet/admin) | Tailscale OAuth clients and CI federated identities | `tofu plan` | `tofu apply` |
 | [`media-toolbox/`](media-toolbox) | Container image for media tools | Image build (on any branch push) | Image push; nightly build of new yt-dlp releases |
-| [`github/`](github) | This repository's settings | None | **Local apply by a human** |
+| [`github/`](github) | This repository's settings | `tofu plan` (read-only token, webhook excluded) | **Local apply by a human** |
 | [`truenas/`](truenas) | `nas1` and `nas2`: datasets, shares, users, apps, snapshots | `tofu plan` (replication keychain excluded) | `tofu apply` |
 | [`arr/`](arr) | Sonarr and Radarr settings | `tofu plan` (secret-holding resources excluded) | `tofu apply` |
 

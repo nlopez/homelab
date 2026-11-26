@@ -25,7 +25,9 @@ tofu apply
 ```
 
 No CI applies this stack: an operator runs `tofu plan` and `tofu apply` after a
-change merges. The webhook secret is the 1Password item argocd-server verifies
+change merges. Pull requests do get a plan (`.github/workflows/github.yaml`), made with a
+read-only fine-grained token from the `ci-pr` vault (`secrets.plan.env`), with the webhook
+excluded since its secret isn't readable there. The webhook secret is the 1Password item argocd-server verifies
 against.
 
 # Public by default

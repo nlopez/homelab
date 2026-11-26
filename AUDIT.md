@@ -43,13 +43,11 @@ through the `os-gdrive-backup` plugin, keeping 60 copies; that plugin setting is
 Gap: the backup lives outside this repo and nothing checks that it still runs. A restore test, or an
 alert when the newest copy is more than a day old, would close it.
 
-### 3. One OpenTofu project has no CI
+### 3. One OpenTofu project applies locally
 
-`github/` has no workflow, so a human plans and applies it locally. Every other OpenTofu stack
-plans on pull requests and applies on `main`.
-
-Fix: a workflow like the others. It needs a token that can administer the repository, which
-would make CI able to change its own protections.
+`github/` plans on pull requests with a read-only token but is applied by a human, since an apply
+token could change the repository's own protections. Every other OpenTofu stack plans on pull
+requests and applies on `main`.
 
 ### 4. Renovate covers every dependency type
 
