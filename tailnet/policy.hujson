@@ -152,6 +152,21 @@
         "udp:53"
       ]
     },
+    // The private Envoy gateway (envoy-proxy-private.yaml), for the arr
+    // stack's Sonarr and Radarr APIs. The apps behind it still require their
+    // API keys or authentik; a pull-request plan's only key is its GitHub OIDC
+    // token, which the sonarr-api-ci and radarr-api-ci routes accept for GETs.
+    {
+      "src": [
+        "tag:ci"
+      ],
+      "dst": [
+        "10.43.64.10"
+      ],
+      "ip": [
+        "443"
+      ]
+    },
     // The Ansible workflow needs the packet filter to allow 22 as well as the
     // ssh rule below, which is what authorises the login as nlopez.
     {
@@ -291,6 +306,16 @@
       "accept": [
         "100.83.144.88:53",
         "100.86.37.97:53"
+      ]
+    },
+    {
+      "src": "tag:ci",
+      "accept": [
+        "10.43.64.10:443"
+      ],
+      "deny": [
+        "10.43.64.10:80",
+        "10.43.64.20:443"
       ]
     }
   ]
