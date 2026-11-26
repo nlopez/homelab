@@ -37,5 +37,6 @@ resource "authentik_application" "argocd" {
   name              = "Argo CD"
   slug              = "argocd"
   protocol_provider = authentik_provider_oauth2.argocd.id
-  meta_launch_url   = "https://flopie.desertbluffs.com/"
+  # /auth/login starts SSO directly, skipping Argo CD's "Log in via authentik" page.
+  meta_launch_url = "https://flopie.desertbluffs.com/auth/login"
 }
