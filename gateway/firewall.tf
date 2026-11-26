@@ -125,6 +125,52 @@ locals {
       sequence         = 91
       interface        = ["wan"]
     }
+    # Cilium nodes share the LAN and answer LB-pool traffic directly, so pf sees only the client
+    # half of these connections; keep state drops client data past the unscaled 64 KB window.
+    "98-LAN to the Cilium LB pool (sloppy state for same-LAN asymmetric replies)" = {
+      action           = "pass"
+      description      = "LAN to the Cilium LB pool (sloppy state for same-LAN asymmetric replies)"
+      destination_net  = "10.43.64.0/24"
+      direction        = "in"
+      ip_protocol      = "inet"
+      protocol         = "TCP"
+      source_net       = "lan"
+      state_type       = "sloppy"
+      allow_options    = false
+      destination_not  = false
+      disable_reply_to = false
+      enabled          = true
+      interface_not    = false
+      log              = false
+      no_pfsync        = false
+      no_xmlrpc_sync   = false
+      quick            = true
+      source_not       = false
+      sequence         = 98
+      interface        = ["lan"]
+    }
+    "99-LAN IPv6 to the Cilium LB pool (sloppy state for same-LAN asymmetric replies)" = {
+      action           = "pass"
+      description      = "LAN IPv6 to the Cilium LB pool (sloppy state for same-LAN asymmetric replies)"
+      destination_net  = "fd54:571b:560a:4364::/64"
+      direction        = "in"
+      ip_protocol      = "inet6"
+      protocol         = "TCP"
+      source_net       = "lan"
+      state_type       = "sloppy"
+      allow_options    = false
+      destination_not  = false
+      disable_reply_to = false
+      enabled          = true
+      interface_not    = false
+      log              = false
+      no_pfsync        = false
+      no_xmlrpc_sync   = false
+      quick            = true
+      source_not       = false
+      sequence         = 99
+      interface        = ["lan"]
+    }
     "101-Default allow LAN to any rule" = {
       uuid             = "21fefa5f-e4bd-49cd-888d-c54fb358e95e"
       action           = "pass"
@@ -692,7 +738,7 @@ resource "opnsense_firewall_filter_rule" "lga1_firewall_rules" {
 
 import {
   provider = opnsense.lga1
-  for_each = local.lga1_firewall_rules
+  for_each = { for k, v in local.lga1_firewall_rules : k => v if can(v.uuid) }
   to       = opnsense_firewall_filter_rule.lga1_firewall_rules[each.key]
   id       = each.value.uuid
 }
