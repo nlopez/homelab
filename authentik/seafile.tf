@@ -26,5 +26,6 @@ resource "authentik_application" "seafile" {
   name              = "Seafile"
   slug              = "seafile"
   protocol_provider = authentik_provider_oauth2.seafile.id
-  meta_launch_url   = "https://dogen.desertbluffs.com/"
+  # /oauth/login/ starts SSO directly, skipping Seafile's login page.
+  meta_launch_url = "https://dogen.desertbluffs.com/oauth/login/"
 }

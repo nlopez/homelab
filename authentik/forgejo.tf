@@ -37,8 +37,9 @@ resource "authentik_application" "forgejo" {
   name              = "Forgejo"
   slug              = "forgejo"
   protocol_provider = authentik_provider_oauth2.forgejo.id
-  meta_launch_url   = "https://dazzi.desertbluffs.com/"
-  meta_icon         = "https://dazzi.desertbluffs.com/assets/img/logo.svg"
+  # /user/oauth2/authentik starts SSO directly, skipping Forgejo's sign-in page.
+  meta_launch_url = "https://dazzi.desertbluffs.com/user/oauth2/authentik"
+  meta_icon       = "https://dazzi.desertbluffs.com/assets/img/logo.svg"
 }
 
 output "forgejo_discovery_url" {
