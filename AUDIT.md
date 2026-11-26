@@ -60,7 +60,8 @@ Enabled managers: `ansible-galaxy`, `custom.regex`, `helm-values`, `github-actio
 container images, and the yt-dlp and bgutil pins in `media-toolbox/Makefile`. `ansible/requirements.yaml`
 pins the one collection Galaxy installs (`datadog.dd`); `ansible.posix` and `community.general` come
 with the dev shell's Ansible, so nixpkgs sets them. The `nix` manager relocks `flake.lock` (lock
-file maintenance, weekly).
+file maintenance, weekly). GitHub Actions and pre-commit hook updates (minor, patch,
+digest) merge on their own once `ci-ok` passes; everything else waits for a person.
 
 ### 5. Repo hygiene
 
