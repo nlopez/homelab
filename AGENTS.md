@@ -17,7 +17,7 @@ Several agents and people work in this repo at the same time. Every change lands
 - Keep the worktree directory and its branch matched. Never `git switch` or `git checkout` to another branch inside a worktree.
 - Keep each task small and touching few files. Small changes conflict less and plan faster.
 - Do not reformat or reorganize files you are not otherwise changing.
-- Before you start, check open PRs for the same stack: `gh pr list --search '<dir>'`. If another PR changes the same resources, coordinate in that PR instead of opening a competing one. The `Stack overlap` check also comments on both PRs while two open PRs change the same stack.
+- Before you start, check open PRs for the same stack: `gh pr list --search '<dir>'`. If another PR changes the same resources, coordinate in that PR instead of opening a competing one. The `ci-ok` summary comment also lists any other open PR that changes the same stacks, as of the gate's last run on your PR.
 
 ### Without `wt` or `gh`
 

@@ -38,6 +38,13 @@ jq -r '.[] | select(.name != "ci-ok" and .name != "Protected gate" and .output.a
   done | jq -s . > "${work}/annotations.json"
 "${here}/ci-summary.sh" "${work}/runs.json" "${work}/annotations.json" "${work}/comments.json" \
   "${SHA}" "${gate}" > "${work}/summary.md"
+# Overlap with other open PRs is advisory: a failure to work it out says so
+# instead of failing the gate.
+if overlap="$("${here}/stack-overlap.sh" report "${PR}" 2>"${work}/overlap.err")"; then
+  if [ -n "${overlap}" ]; then printf '\n%s\n' "${overlap}" >> "${work}/summary.md"; fi
+else
+  printf '\n_Couldn'"'"'t check other open PRs for the same stacks: %s_\n' "$(tail -n 1 "${work}/overlap.err")" >> "${work}/summary.md"
+fi
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then cat "${work}/summary.md" >> "${GITHUB_STEP_SUMMARY}"; fi
 comment="$(jq -r --arg login "${app_login}" '[.[] | select(.user.login == $login)
   | select(.body | startswith("<!-- ci-summary -->"))] | last | .id // empty' "${work}/comments.json")"
