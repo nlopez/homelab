@@ -56,7 +56,7 @@ update() { # <pr>; prints the numbers of the PRs it overlaps
   local pr="$1" mine rows="" overlaps="" body
   mine="$(pr_stacks "${pr}")"
   while IFS=$'\t' read -r number title; do
-    [ -n "${number}" ] && [ "${number}" != "${pr}" ] || continue
+    if [ -z "${number}" ] || [ "${number}" = "${pr}" ]; then continue; fi
     common="$(comm -12 <(echo "${mine}") <(pr_stacks "${number}"))"
     [ -n "${common}" ] || continue
     overlaps+="${number}"$'\n'
