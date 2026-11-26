@@ -245,6 +245,22 @@
         "github-actions"
       ],
       "groupName": "github actions updates"
+    },
+    {
+      "description": "Merge GitHub Actions and pre-commit hook updates on their own once ci-ok passes. They change only CI tooling, every PR re-runs the checks they affect, and the main ruleset still requires an up-to-date branch and a passing ci-ok. Majors still wait for dashboard approval; charts, images, providers, and flake.lock stay manual.",
+      "matchManagers": [
+        "github-actions",
+        "pre-commit"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest",
+        "pinDigest"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
     }
   ],
   "nix": {
