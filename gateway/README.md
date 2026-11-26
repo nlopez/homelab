@@ -64,7 +64,7 @@ has no resource for that setting either, so it is set in the GUI.
 
 Credentials are 1Password references in `secrets.env`: the API keys from the two items
 that `ansible/scripts/device_inventory.py` uses, the WireGuard keys, and the dns-webhook
-user passwords. The root devenv's `tofu` wrapper resolves them for each run:
+user passwords. The root dev shell's (`flake.nix`) `tofu` wrapper resolves them for each run:
 
 ```sh
 tofu init && tofu plan

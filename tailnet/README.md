@@ -5,7 +5,7 @@ tailnet-wide DNS settings, using the
 [tailscale Terraform provider](https://github.com/tailscale/terraform-provider-tailscale).
 
 # Dependencies
-* [Nix](https://nixos.org) + [devenv](https://devenv.sh)
+* [Nix](https://nixos.org) with flakes
 * [direnv](https://direnv.net)
 * `op` -- 1Password CLI
 * AWS CLI credentials with access to the S3 state bucket (`aws/state-bucket`).
@@ -20,7 +20,7 @@ tailnet-wide DNS settings, using the
   and stored as `Tailscale ACL test` in the `ci-pr` vault.
 
 # Usage
-`direnv allow` once at the repo root to load the devenv shell. Its `tofu` wrapper
+`direnv allow` once at the repo root to load the dev shell (`flake.nix`). Its `tofu` wrapper
 resolves the OAuth client credentials in `tofu/secrets.env` from 1Password for
 each run.
 

@@ -1,6 +1,6 @@
 # AWS CLI and SDK profiles for this repo. The dev shell points
 # AWS_CONFIG_FILE here. The default and admin profiles get credentials from
-# aws-sso-creds (devenv.nix), which opens the browser to sign in when the SSO
+# aws-sso-creds (flake.nix), which opens the browser to sign in when the SSO
 # session has expired, so no separate `aws sso login` step is needed.
 
 [sso-session homelab]

@@ -47,5 +47,5 @@ resources. [SECRETS.md](SECRETS.md) maps each vault ID to what it holds and who 
 
 ## Dev shell
 
-`direnv allow` (or `devenv shell`) at the root provides OpenTofu, Ansible, `ansible-lint`, and
+`direnv allow` (or `nix develop`) at the root enters the dev shell from `flake.nix`, which provides OpenTofu, Ansible, `ansible-lint`, and
 pre-commit, and installs the hooks.

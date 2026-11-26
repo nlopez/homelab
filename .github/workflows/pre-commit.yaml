@@ -28,17 +28,10 @@ jobs:
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
-        with:
-          name: devenv
-
-      - name: Install devenv
-        run: nix profile install nixpkgs#devenv
-
       - name: Run the hooks on the changed files
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
         run: |-
-          devenv shell -- pre-commit run --show-diff-on-failure --color always \
+          nix develop -c pre-commit run --show-diff-on-failure --color always \
             --from-ref "${BASE}" --to-ref "${HEAD}"

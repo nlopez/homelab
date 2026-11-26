@@ -3,10 +3,10 @@ My first foray into [ansible](http://www.ansible.com/) for managing a handful of
 
 # Usage
 ```bash
-direnv allow # or: devenv shell
+direnv allow # or: nix develop
 ```
 
-`ansible` and `ansible-lint` come from the root devenv. Collections still need installing once:
+`ansible` and `ansible-lint` come from the root dev shell (`flake.nix`). Collections still need installing once:
 ```bash
 ansible-galaxy collection install -r requirements.yaml
 ```
