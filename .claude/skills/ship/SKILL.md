@@ -55,6 +55,9 @@ Read the `AGENTS.md` of any directory you change (`kubernetes/`, `gateway/`, `aw
 - Confirm each stack's run on `main` for the merge commit passed, and for a stack that should
   change, that its Apply step ran (not just its Plan). A green run with a skipped Apply means
   nothing was applied.
+- For `kubernetes/`, confirm the `Kubernetes sync check` run passed: it fails if a changed
+  Application's sync fails or it isn't Synced and Healthy within 15 minutes, and lists each one's
+  state. A failure there is the change not working, not a flaky check.
 - Remove the worktree and the local branch.
 - Several PRs open at once: `main` requires each to be up to date, so after every merge, rebase
   the next one and wait for its fresh `ci-ok` before merging it. Merge the quickest checks first.

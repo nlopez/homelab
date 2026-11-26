@@ -11,7 +11,7 @@ Each vault's name is its name in 1Password.
 | Vault ID | Name | Read by | Holds | Referenced from |
 | --- | --- | --- | --- | --- |
 | `6foq5pqns6uslgstwbfoyyyftu` | `ci-pr` | `OP_CI_PR_SERVICE_ACCOUNT_TOKEN` (repository secret), in every PR | Read-only credentials for pull-request plans and the tailnet ACL test | `<stack>/secrets.plan.env`, `.github/workflows/tailnet.yaml` |
-| `kjgjpiwjlognsprl7qxsonrqoi` | `ci` | `OP_SERVICE_ACCOUNT_TOKEN` (`production` environment secret), on `main` only | CI copies of operator-vault items, for applies; the Discord webhook | `<stack>/secrets.env` of the CI-applied stacks, `ansible/secrets.env`, `.github/actions/discord-notify` |
+| `kjgjpiwjlognsprl7qxsonrqoi` | `ci` | `OP_SERVICE_ACCOUNT_TOKEN` (`production` environment secret), on `main` only | CI copies of operator-vault items, for applies; the Discord webhook; the read-only Argo CD `ci` token | `<stack>/secrets.env` of the CI-applied stacks, `ansible/secrets.env`, `.github/actions/discord-notify`, `.github/workflows/kubernetes-sync-check.yaml` |
 | `eirjdyavzyx7tegpglsc2udq3a` | `operator` | The operator, through the 1Password app | Originals of the items copied to `ci`; NAS, `arr`, and Ansible host credentials | `truenas/secrets.env`, `arr/secrets.env`, `ansible/group_vars/infra`, `ansible/scripts/device_inventory.py` |
 | `evjh25ux2mnoufaut6qhvm2pdi` | `Automation` | 1Password Connect in the cluster; the operator | Every Kubernetes secret (`OnePasswordItem`), plus a few operator-only items | `kubernetes/**` (`itemPath: vaults/…`), `github/secrets.env`, `arr/secrets.env` |
 | `bamv726zv6zbcfke3cnbwjtnuu` | `Private` | The operator | The 1Password Connect credentials and token, used once at cluster bootstrap | `kubernetes/README.md` |

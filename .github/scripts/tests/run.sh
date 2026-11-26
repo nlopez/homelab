@@ -238,6 +238,45 @@ GITHUB_ENV="${work}/oidc_env" "${scripts}/oidc-plan-env.sh" </dev/null >/dev/nul
 expect "oidc-plan-env fails without id-token: write" "1" "$?"
 rm "${work}/bin/curl"
 
+### argocd-sync-check.py
+
+sync="${scripts}/argocd-sync-check.py"
+expect "sync-check maps changed paths to Applications" \
+"argocd
+sonarr" "$(printf 'kubernetes/apps/sonarr/deployment.yaml\nkubernetes/apps-helm/argocd/values.yaml\nkubernetes/README.md\nkubernetes/apps-helm/_template/values.yaml\n' | python3 "${sync}" targets)"
+expect "sync-check checks every Application after a bootstrap change" "*" \
+  "$(echo kubernetes/bootstrap/apps.yaml | python3 "${sync}" targets)"
+
+# A repo with three commits: base, the pushed one, and a later one.
+s="${work}/syncrepo"
+git init -q "${s}" && mkdir -p "${s}/kubernetes/apps/web"
+gitc() { git -C "${s}" -c user.name=t -c user.email=t@t -c commit.gpgsign=false "$@"; }
+echo a > "${s}/kubernetes/apps/web/a.yaml"; gitc add -A; gitc commit -qm base
+base="$(gitc rev-parse HEAD)"
+echo b > "${s}/kubernetes/apps/web/a.yaml"; gitc commit -qam push
+pushed="$(gitc rev-parse HEAD)"
+echo c > "${s}/README.md"; gitc add -A; gitc commit -qm later
+later="$(gitc rev-parse HEAD)"
+app() { # <revision> <sync> <health> [<phase>]
+  printf '{"items":[{"metadata":{"name":"web"},"status":{"sync":{"status":"%s","revision":"%s"},"health":{"status":"%s"},"operationState":{"phase":"%s","message":"boom","syncResult":{"revision":"%s"}}}}]}' \
+    "$2" "$1" "$3" "${4:-Succeeded}" "$1" > "${work}/apps.json"
+}
+synccheck() { REPO_ROOT="${s}" ARGOCD_APPS_JSON="${work}/apps.json" SYNC_TIMEOUT=0 python3 "${sync}" wait "${base}" "${pushed}" 2>&1; }
+
+app "${pushed}" Synced Healthy
+contains "sync-check passes a Synced, Healthy app at the pushed commit" "Every changed Application is Synced and Healthy" "$(synccheck)"
+app "${later}" Synced Healthy
+contains "sync-check accepts an app already at a later commit" "Every changed Application is Synced and Healthy" "$(synccheck)"
+app "${base}" Synced Healthy
+contains "sync-check waits for an app still at an older commit" "Timed out after 0s waiting for web" "$(synccheck)"
+app "${pushed}" OutOfSync Healthy Running
+contains "sync-check waits for a running sync" "Timed out after 0s waiting for web" "$(synccheck)"
+app "${pushed}" OutOfSync Degraded Failed
+contains "sync-check fails a failed sync" "Sync failed for web" "$(synccheck)"
+expect "sync-check exits 1 when a sync fails" "1" "$(synccheck >/dev/null; echo $?)"
+contains "sync-check skips a push with no Application change" "No Argo CD Application changed" \
+  "$(REPO_ROOT="${s}" ARGOCD_APPS_JSON="${work}/apps.json" python3 "${sync}" wait "${pushed}" "${later}")"
+
 ### scripts/plan
 
 plan="${repo}/scripts/plan"
