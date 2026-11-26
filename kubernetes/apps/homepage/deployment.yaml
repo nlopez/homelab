@@ -41,7 +41,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: homepage-radarr
-              key: RADARR_API_KEY
+              key: credential
         - name: HOMEPAGE_VAR_SONARR_API_KEY
           valueFrom:
             secretKeyRef:

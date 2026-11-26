@@ -49,7 +49,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: radarr-api-key
-                  key: RADARR_API_KEY
+                  key: credential
             volumeMounts:
             - name: config
               mountPath: /config
