@@ -36,5 +36,6 @@ resource "authentik_application" "immich" {
   name              = "Immich"
   slug              = "immich"
   protocol_provider = authentik_provider_oauth2.immich.id
-  meta_launch_url   = "https://nox.desertbluffs.com/"
+  # autoLaunch=1 starts SSO directly, skipping Immich's login page.
+  meta_launch_url = "https://nox.desertbluffs.com/auth/login?autoLaunch=1"
 }
