@@ -1,10 +1,15 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.networking.k8s.io/httproute_v1.json
 # Read-only API access for pull-request plans of arr/, with no Sonarr key in
-# CI. The plan sends its GitHub Actions OIDC token as X-Api-Key. A GET whose
-# X-Api-Key looks like a JWT matches this rule ahead of sonarr-api-private
-# (same path, plus method and header matches); sonarr-api-ci-jwt checks the
-# token, and sonarr-api-key swaps it for the real key. Any other method falls
-# through to sonarr-api-private, where Sonarr rejects the token as a key.
+# CI. The plan sends its GitHub Actions OIDC token as X-Api-Key. A GET to one
+# of the endpoints the plan reads, whose X-Api-Key looks like a JWT, matches
+# this rule ahead of sonarr-api-private (a regular expression path outranks a
+# prefix); sonarr-api-ci-jwt checks the token, and sonarr-api-key swaps it for
+# the real key. Any other request falls through to sonarr-api-private, where
+# Sonarr rejects the token as a key.
+#
+# The path list is an allowlist, not "every GET": some GETs return secrets,
+# such as /api/v3/config/host, which holds Sonarr's own API key. Add an
+# endpoint here only if a plan needs it and its response holds no secret.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -26,8 +31,8 @@ spec:
       weight: 1
     matches:
     - path:
-        type: PathPrefix
-        value: /api
+        type: RegularExpression
+        value: /api/v3/(tag|delayprofile|downloadclient|indexer|notification|rootfolder|config/mediamanagement|config/naming|system/status)(/[0-9]+)?
       method: GET
       headers:
       - name: X-Api-Key
@@ -41,7 +46,12 @@ spec:
         name: sonarr-api-key
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.envoyproxy.io/securitypolicy_v1alpha1.json
-# Only GitHub Actions jobs of nlopez/homelab that request this audience.
+# Only the arr stack's plan job: a GitHub Actions token for this audience,
+# from this repository (by ID, which survives a rename), issued to
+# _tofu-stack.yaml called from arr.yaml. Claims match only exactly, and both
+# refs end in the git ref (refs/pull/<n>/merge on a PR), so the CEL
+# expression checks their prefixes in the payload the JWT filter verified.
+# A request the expression can't evaluate is denied.
 apiVersion: gateway.envoyproxy.io/v1alpha1
 kind: SecurityPolicy
 metadata:
@@ -65,15 +75,17 @@ spec:
   authorization:
     defaultAction: Deny
     rules:
-    - name: homelab-repository
+    - name: arr-plan-job
       action: Allow
       principal:
         jwt:
           provider: github-actions
           claims:
-          - name: repository
+          - name: repository_id
             values:
-            - nlopez/homelab
+            - "1466265485"
+      cel: >-
+        metadata.filter_metadata['envoy.filters.http.jwt_authn']['github-actions']['job_workflow_ref'].startsWith('nlopez/homelab/.github/workflows/_tofu-stack.yaml@') && metadata.filter_metadata['envoy.filters.http.jwt_authn']['github-actions']['workflow_ref'].startsWith('nlopez/homelab/.github/workflows/arr.yaml@')
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.envoyproxy.io/httproutefilter_v1alpha1.json
 apiVersion: gateway.envoyproxy.io/v1alpha1

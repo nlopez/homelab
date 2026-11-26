@@ -48,8 +48,13 @@ The apps return secrets masked, so tofu cannot detect drift in them. Every secre
 A pull-request plan holds no Sonarr or Radarr key. It passes the job's GitHub Actions OIDC token as
 both API keys, with the app's hostname as the token's audience. The `sonarr-api-ci` and
 `radarr-api-ci` routes (`kubernetes/apps/{sonarr,radarr}/httproute-ci.yaml`) accept only `GET`s
-under `/api` carrying a valid token from this repository, and replace the token with the real key.
-Any other request carrying the token reaches the app unchanged and fails its key check.
+to the endpoints this stack's resources read, carrying a valid token issued to `_tofu-stack.yaml`
+called from `arr.yaml` in this repository, and replace the token with the real key. Any other
+request carrying the token reaches the app unchanged and fails its key check.
+
+The endpoint list is an allowlist because some `GET`s return secrets: `/api/v3/config/host`
+returns the app's own API key. A new resource type that reads another endpoint needs that endpoint
+added to both routes first, in its own PR; until then the PR plan fails with a 401 from the app.
 
 The other four secrets (qBittorrent password, SABnzbd and NZBgeek keys, Plex token) are compared
 against state, so the plan passes placeholders and excludes the eight resources that use them:
