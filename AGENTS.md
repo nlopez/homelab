@@ -35,6 +35,15 @@ GitHub API (or the GitHub tools your agent has):
 | Check the apply | `gh run list --branch main --limit 5` | List workflow runs for the merge commit (`GET /repos/{owner}/{repo}/actions/runs?head_sha=<sha>`) |
 | Clean up | `wt remove -D` | `git worktree remove ../<branch> && git branch -D <branch>` |
 
+## Plan before you push (optional)
+
+`scripts/plan <stack>` plans a stack locally exactly as its PR plan does in CI: the same directory,
+plan arguments, and variables, read from the stack's workflow, with its read-only `secrets.plan.env`
+and no state lock. It can't change anything. `scripts/plan --list` shows the stacks and
+`--dry-run` the commands. It needs read access to the state bucket (an AWS profile) and to the
+`ci-pr` vault (your 1Password session, or `OP_SERVICE_ACCOUNT_TOKEN` for the ci-pr service account);
+a session without them can't use it, and CI's plan on the PR stays the one that counts.
+
 ## Open a PR and wait for the plan
 
 1. Commit in your worktree. The pre-commit hooks run on each commit.

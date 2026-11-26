@@ -45,6 +45,11 @@ resources. [SECRETS.md](SECRETS.md) maps each vault ID to what it holds and who 
 - [kubernetes/README.md](kubernetes/README.md): cluster bootstrap and disaster recovery.
 - [SECURITY.md](SECURITY.md): reporting a vulnerability.
 
+## Planning locally
+
+`scripts/plan <stack>` runs a stack's read-only pull-request plan on your machine; see
+[AGENTS.md](AGENTS.md).
+
 ## Dev shell
 
 `direnv allow` (or `nix develop`) at the root enters the dev shell from `flake.nix`, which provides OpenTofu, Ansible, `ansible-lint`, and
