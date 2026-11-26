@@ -38,6 +38,12 @@ data "authentik_flow" "default_invalidation" {
   slug = "default-provider-invalidation-flow"
 }
 
+# The brand logout flow, which ends the authentik session. Providers use
+# default_invalidation, which only signs out of the app.
+data "authentik_flow" "default_logout" {
+  slug = "default-invalidation-flow"
+}
+
 data "authentik_certificate_key_pair" "default" {
   name = "authentik Self-signed Certificate"
 
