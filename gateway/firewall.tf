@@ -1169,16 +1169,16 @@ locals {
       sequence         = 45
       interface        = ["lan"]
     }
-    "46-lga2 LAN to lga1 subnets and tailnet (sloppy state for odroid.lga2 hairpin)" = {
+    "46-lga2 LAN to lga1 subnets and tailnet" = {
       uuid             = "5b9ac6df-35c0-49df-be68-f04dc48daa79"
       action           = "pass"
-      description      = "lga2 LAN to lga1 subnets and tailnet (sloppy state for odroid.lga2 hairpin)"
+      description      = "lga2 LAN to lga1 subnets and tailnet"
       destination_net  = "LGA1_NETS"
       direction        = "in"
       ip_protocol      = "inet"
       protocol         = "TCP"
       source_net       = "lan"
-      state_type       = "sloppy"
+      state_type       = "keep"
       allow_options    = false
       destination_not  = false
       disable_reply_to = false
@@ -1201,7 +1201,7 @@ locals {
       ip_protocol      = "inet"
       protocol         = "any"
       source_net       = "lan"
-      state_type       = "sloppy"
+      state_type       = "keep"
       allow_options    = false
       destination_not  = false
       disable_reply_to = false
@@ -1351,4 +1351,9 @@ moved {
 moved {
   from = opnsense_firewall_filter_rule.lga1_firewall_rules["99-LAN IPv6 to the Cilium LB pool (sloppy state for same-LAN asymmetric replies)"]
   to   = opnsense_firewall_filter_rule.lga1_firewall_rules["99-LAB IPv6 to the Cilium LB pool (sloppy state for same-LAB asymmetric replies)"]
+}
+
+moved {
+  from = opnsense_firewall_filter_rule.lga2_firewall_rules["46-lga2 LAN to lga1 subnets and tailnet (sloppy state for odroid.lga2 hairpin)"]
+  to   = opnsense_firewall_filter_rule.lga2_firewall_rules["46-lga2 LAN to lga1 subnets and tailnet"]
 }
