@@ -111,14 +111,16 @@ tailnet/admin" "$(printf '%s\n' dns/main.tf dns/records.tf aws/ses/main.tf aws/A
 ### ci-summary.sh
 
 head=aaaa1111bbbb2222cccc3333dddd4444eeee5555
-cat > "${work}/comments.json" <<JSON
+cat > "${work}/annotations.json" <<'JSON'
 [
-  {"html_url": "u/dns", "body": "<!-- tofu-plan: DNS -->\n<!-- head: ${head} -->\n### DNS plan (success)\n\nNo changes. Your infrastructure matches the configuration. Commit \`11112222\`."},
-  {"html_url": "u/sb", "body": "<!-- tofu-plan: State bucket -->\n<!-- head: ${head} -->\n### State bucket plan (success)\n\nPlan: 1 to add, 0 to change, 1 to destroy. Commit \`11112222\`.\n\n**Destroys or replaces:** x"},
-  {"html_url": "u/gw", "body": "<!-- tofu-plan: Gateway -->\n<!-- head: 0000000000000000000000000000000000000000 -->\n### Gateway plan (success)\n\nNo changes."},
-  {"html_url": "u/dd", "body": "<!-- tofu-plan: Datadog -->\n<!-- head: ${head} -->\n### Datadog plan (failure)\n\nSee the run log."},
-  {"html_url": "u/k8s", "body": "<!-- manifest-diff -->\n## Argo CD Diff Preview\n\nNo changes found"}
+  {"check": "dns / Plan", "url": "u/dns", "title": "plan-result", "message": "{\"stack\":\"DNS\",\"outcome\":\"success\",\"summary\":\"No changes. Your infrastructure matches the configuration.\"}"},
+  {"check": "state-bucket / Plan", "url": "u/sb", "title": "plan-result", "message": "{\"stack\":\"State bucket\",\"outcome\":\"success\",\"summary\":\"Plan: 1 to add, 0 to change, 1 to destroy.\"}"},
+  {"check": "state-bucket / Plan", "url": "u/sb", "title": "plan-destroys", "message": "State bucket: aws_iam_user.x (delete then create)"},
+  {"check": "datadog / Plan", "url": "u/dd", "title": "plan-result", "message": "{\"stack\":\"Datadog\",\"outcome\":\"failure\",\"summary\":\"\"}"}
 ]
+JSON
+cat > "${work}/comments.json" <<'JSON'
+[{"html_url": "u/k8s", "body": "<!-- manifest-diff -->\n## Argo CD Diff Preview\n\nNo changes found"}]
 JSON
 cat > "${work}/runs.json" <<'JSON'
 [
@@ -142,20 +144,19 @@ expect "ci-summary renders the whole comment" \
 | --- | --- | --- |
 | [DNS](u/dns) | No changes | no |
 | [Datadog](u/dd) | ❌ plan failure | no |
-| [Gateway](u/gw) | ⚪ not planned on this commit |  |
 | [State bucket](u/sb) | 1 to add, 0 to change, 1 to destroy | ⚠️ yes |
 
-Stacks marked not planned were planned on an earlier commit and this push didn'"'"'t touch them.
+Each stack links to its plan job; the full plan is in that job'"'"'s summary.
 
 **Kubernetes manifest diff:** No changes' \
-  "$("${scripts}/ci-summary.sh" "${work}/comments.json" "${work}/runs.json" "${head}" failure)"
+  "$("${scripts}/ci-summary.sh" "${work}/runs.json" "${work}/annotations.json" "${work}/comments.json" "${head}" failure)"
 echo '[]' > "${work}/empty.json"
 expect "ci-summary says when no stack planned" \
 '<!-- ci-summary -->
 ### ✅ ci-ok passed on `aaaa1111`
 
-No OpenTofu stack planned on this PR.' \
-  "$("${scripts}/ci-summary.sh" "${work}/empty.json" "${work}/empty.json" "${head}" success)"
+No OpenTofu stack planned on this commit.' \
+  "$("${scripts}/ci-summary.sh" "${work}/empty.json" "${work}/empty.json" "${work}/empty.json" "${head}" success)"
 
 ### ansible-drift-summary.sh
 

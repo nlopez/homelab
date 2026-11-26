@@ -131,7 +131,13 @@ jobs:
             --jq '.[] | select(.user.login == "github-actions[bot]")' | jq -s . > comments.json
           gh api --paginate "repos/${REPO}/commits/${SHA}/check-runs?per_page=100" \
             --jq '.check_runs[]' | jq -s . > runs.json
-          .github/scripts/ci-summary.sh comments.json runs.json "${SHA}" "${GATE}" > summary.md
+          jq -r '.[] | select(.name != "ci-ok" and .output.annotations_count > 0) | "\(.id)\t\(.name)\t\(.html_url)"' runs.json |
+            while IFS=$'\t' read -r id name url; do
+              gh api --paginate "repos/${REPO}/check-runs/${id}/annotations?per_page=100" \
+                --jq ".[] | select(.title == \"plan-result\" or .title == \"plan-destroys\")
+                  | {check: \"${name}\", url: \"${url}\", title, message}"
+            done | jq -s . > annotations.json
+          .github/scripts/ci-summary.sh runs.json annotations.json comments.json "${SHA}" "${GATE}" > summary.md
           cat summary.md >> "${GITHUB_STEP_SUMMARY}"
           id="$(jq -r '[.[] | select(.body | startswith("<!-- ci-summary -->"))] | last | .id // empty' comments.json)"
           if [ -n "${id}" ]; then

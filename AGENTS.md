@@ -30,7 +30,7 @@ GitHub API (or the GitHub tools your agent has):
 | Find PRs on a stack | `gh pr list --search '<dir>'` | List open PRs and their changed files (`GET /repos/{owner}/{repo}/pulls`, then `/pulls/{n}/files`) |
 | Open a PR | `gh pr create --fill` | Create a pull request against `main` with the description step 2 asks for |
 | Wait for checks | `gh pr checks --watch` | Poll the head commit's check runs (`GET /repos/{owner}/{repo}/commits/{sha}/check-runs`) until `ci-ok` completes; it takes 2–6 minutes when stacks plan |
-| Read the plans | `gh pr view --comments` | Read the PR's issue comments; each plan comment starts with `<!-- tofu-plan: <stack> -->` |
+| Read the plans | `gh pr view --comments` | Read the PR's comment that starts with `<!-- ci-summary -->`; each row links to its plan job, whose summary holds the full plan |
 | Merge | `gh pr merge --squash --delete-branch` | Squash-merge with the head commit's SHA as the expected head; the repository deletes the branch |
 | Check the apply | `gh run list --branch main --limit 5` | List workflow runs for the merge commit (`GET /repos/{owner}/{repo}/actions/runs?head_sha=<sha>`) |
 | Clean up | `wt remove -D` | `git worktree remove ../<branch> && git branch -D <branch>` |
@@ -40,7 +40,7 @@ GitHub API (or the GitHub tools your agent has):
 1. Commit in your worktree. The pre-commit hooks run on each commit.
 2. Push the branch and open a PR: `git push -u origin HEAD`, then `gh pr create --fill`. Say in the description what the plan should show, for example "adds one A record, changes nothing else".
 3. Wait for the checks: `gh pr checks --watch`. The `ci-ok` check (`.github/workflows/ci-gate.yaml`) runs on every PR, waits for all the others, and fails if any of them failed. If you re-run a failed check, re-run `ci-ok` too.
-4. Read the `ci-ok` summary comment on the PR (`gh pr view --comments`). It has one row per stack: its plan result on the current commit, and whether it destroys anything, plus failing checks and the Kubernetes manifest diff result. Open the stack's own plan comment, which it updates on every push, for any row that isn't `No changes`.
+4. Read the `ci-ok` summary comment on the PR (`gh pr view --comments`), the one comment CI posts. It has one row per stack planned on the current commit: its plan result, and whether it destroys anything, plus failing checks and the Kubernetes manifest diff result. For any row that isn't `No changes`, follow its link: the full plan is in that plan job's summary.
 5. Compare each plan with what the description says it should show.
    - It matches and `ci-ok` passed: merge with `gh pr merge --squash --delete-branch`. To merge as soon as `ci-ok` passes, add `--auto` right after opening the PR instead of waiting.
    - It shows anything you did not intend (an extra replace, a destroy, drift from someone else's change): do not merge. Fix the change, or describe the unexpected diff in a PR comment and leave it for a human.
