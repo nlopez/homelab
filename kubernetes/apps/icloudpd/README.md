@@ -82,7 +82,7 @@ Once complete, edit `/config/icloudpd.conf` and set `single_pass=true` so each r
 
 ## Updating the Container Image
 
-The CronJob runs `ghcr.io/nlopez/docker-icloudpd`, a fork of `boredazfcuk/docker-icloudpd` (branch `icloudpd-1.33.0`) that bundles icloudpd 1.33.0. The upstream image still bundles 1.32.3, where `--xmp-sidecar` aborts the whole run on assets with malformed adjustment data. The image is pinned by digest in `cronjob.yaml`.
+The CronJob runs `ghcr.io/nlopez/docker-icloudpd`, a fork of `boredazfcuk/docker-icloudpd` (branch `icloudpd-1.33.0`) that bundles icloudpd 1.33.0. The upstream image still bundles 1.32.3, where `--xmp-sidecar` aborts the whole run on assets with malformed adjustment data. The image is pinned by tag and digest in `cronjob.yaml` and `auth-deployment.yaml`; Renovate follows the tags (`renovate.json`).
 
 Switch back to `docker.io/boredazfcuk/icloudpd` once its Dockerfile has `icloudpd_version` >= 1.33.0:
 
