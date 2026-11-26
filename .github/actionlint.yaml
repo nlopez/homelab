@@ -1,0 +1,5 @@
+# actionlint (the pre-commit hook) checks runs-on labels against GitHub's
+# hosted runners; these are the self-hosted ones.
+self-hosted-runner:
+  labels:
+  - home-runners

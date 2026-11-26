@@ -20,5 +20,6 @@ jobs:
       run: go install github.com/google/yamlfmt/cmd/yamlfmt@v0.21.0
     - name: 'Check YAML formatting'
       run: |-
-        export PATH="$(go env GOPATH)/bin:$PATH"
+        PATH="$(go env GOPATH)/bin:$PATH"
+        export PATH
         yamlfmt -conf kubernetes/.yamlfmt -lint -exclude 'kubernetes/bootstrap/apps.yaml' -exclude 'kubernetes/bootstrap/apps-helm.yaml' kubernetes

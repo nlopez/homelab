@@ -9,11 +9,26 @@ repos:
     # yamlfmt keeps a trailing blank line after the final `---` here and would undo this hook.
     exclude: ^kubernetes/apps/external-snapshotter/crds\.yaml$
   - id: check-yaml
-    files: ^kubernetes/
+    files: ^(kubernetes|\.github)/
     args: ["--allow-multiple-documents"]
     exclude: ^kubernetes/bootstrap/apps\.yaml$|^kubernetes/bootstrap/apps-helm\.yaml$
   - id: check-added-large-files
     files: ^kubernetes/
+  - id: check-json
+    files: ^renovate\.json$
+# The workflows, and the run: scripts in them (actionlint runs shellcheck on
+# those when it's on PATH).
+- repo: https://github.com/rhysd/actionlint
+  rev: v1.7.12
+  hooks:
+  - id: actionlint
+    files: ^\.github/workflows/
+# The scripts CI and agents run. script-tests.yaml lints the same set in CI.
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.11.0.1
+  hooks:
+  - id: shellcheck
+    files: ^(\.github/scripts|scripts|\.claude/hooks)/
 - repo: https://github.com/google/yamlfmt
   rev: v0.21.0
   hooks:
