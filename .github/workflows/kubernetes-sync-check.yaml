@@ -1,0 +1,72 @@
+name: Kubernetes sync check
+
+# After a push to main changes kubernetes/, waits for the Argo CD
+# Applications it changed to be Synced and Healthy at that commit or later,
+# so a merge's result shows on main the way an OpenTofu apply does
+# (.github/scripts/argocd-sync-check.py). Argo CD applies the change itself;
+# this only reads, with the read-only ci account's token.
+on:
+  push:
+    branches: [ "main" ]
+    paths: ['kubernetes/**', '.github/workflows/kubernetes-sync-check.yaml', '.github/scripts/argocd-sync-check.py']
+
+permissions:
+  contents: read
+
+# One run per commit, none cancelled: each checks its own push's Applications.
+concurrency:
+  group: kubernetes-sync-check-${{ github.sha }}
+  cancel-in-progress: false
+
+env:
+  ARGOCD_SERVER: flopie.desertbluffs.com
+  # tailscale_federated_identity.github_actions in tailnet/admin.
+  TAILSCALE_APPLY_CLIENT_ID: TX3ajrU7JY71CNTRL-kQaJB6AVyQ11CNTRL
+
+jobs:
+  sync:
+    name: Wait for Argo CD
+    # The production environment's identity joins the tailnet, and its
+    # service account reads the ci vault.
+    environment: production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      # Full history: an Application already at a later commit counts.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Argo CD's API is on the private gateway (10.43.64.10:443), which
+      # tag:ci reaches; split DNS resolves the hostname.
+      - name: Join the tailnet
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ env.TAILSCALE_APPLY_CLIENT_ID }}
+          audience: api.tailscale.com/${{ env.TAILSCALE_APPLY_CLIENT_ID }}
+          tags: tag:ci
+
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
+
+      - name: Load the Argo CD token
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+        run: '.github/scripts/load-plan-credentials.sh <(echo "ARGOCD_TOKEN=op://kjgjpiwjlognsprl7qxsonrqoi/ITEM_ID/token")'
+
+      - name: Wait for the changed Applications
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: .github/scripts/argocd-sync-check.py wait "${BEFORE}" "${GITHUB_SHA}"
+
+      - uses: ./.github/actions/discord-notify
+        if: failure() || cancelled()
+        with:
+          result: failed
+          op-service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}

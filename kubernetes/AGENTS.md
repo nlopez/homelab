@@ -49,6 +49,9 @@ Read the root [AGENTS.md](../AGENTS.md) first. This covers what is specific to t
   directory with no ApplicationSet entry).
 - Argo CD syncs on merge. `prune` is on and `selfHeal` is off: deleting a manifest deletes the
   resource, and a hand edit in the cluster stays until the next change to that app.
+- After a merge, the `Kubernetes sync check` workflow on `main` waits for the Applications the
+  change touched to be Synced and Healthy at that commit, and fails with each one's state if they
+  aren't within 15 minutes. Check it as you would an apply.
 
 ## Stateful apps
 
