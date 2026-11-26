@@ -18,7 +18,11 @@ configs:
     policy.csv: |
       g, admin, role:admin
       g, users, role:readonly
+      g, ci, role:readonly
   cm:
+    # Read-only API token for CI's post-merge sync check
+    # (.github/workflows/kubernetes-sync-check.yaml). No UI login.
+    accounts.ci: apiKey
     oidc.config: |
       name: authentik
       issuer: https://arsox.desertbluffs.com/application/o/argocd/
