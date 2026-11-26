@@ -63,6 +63,42 @@ that runs `main`'s code (see `ci-gate.tf`). Setting it up:
 4. Set `ci_gate_app_id` to the printed ID and apply, which sets the `CI_GATE_APP_ID`
    variable.
 
+## The Actions policy that lets it run
+Since December 2, 2026, GitHub blocks `pull_request_target` in public repositories
+unless an Actions event policy allows it. Without one, the protected gate never runs,
+`ci-ok` never posts, and no pull request can merge, including one that would fix it.
+The repository has a policy that allows `pull_request_target` for the gate's workflow
+only. The provider has no resource for Actions policies yet (checked at
+`integrations/github` 6.13.0), so it's set by hand, in Settings → Actions → Policies
+or with:
+
+```sh
+gh api -X POST repos/nlopez/homelab/actions/policies \
+  -H "X-GitHub-Api-Version: 2026-03-10" --input - <<'EOF'
+{
+  "name": "Allow the protected ci-ok gate",
+  "enforcement": "active",
+  "conditions": {
+    "workflow_path": {
+      "include": [".github/workflows/ci-gate-protected.yaml"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    {
+      "type": "restrict_action_events",
+      "parameters": { "allowed_events": ["pull_request_target"] }
+    }
+  ]
+}
+EOF
+```
+
+`gh api repos/nlopez/homelab/actions/policies` lists it. Renaming or moving the gate's
+workflow file needs the policy's `workflow_path` updated first. Move the policy into
+this stack once the provider supports it. See
+[Securely using pull_request_target](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target).
+
 # Recreating the repository
 The `dns` and `tailnet` AWS role trust policies in `aws/state-bucket/iam.tf` match
 the OIDC subject `repo:nlopez@20211302/homelab@<repository id>:environment:production`.
