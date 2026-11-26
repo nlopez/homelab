@@ -258,3 +258,46 @@ resource "truenas_user" "repl_nas1_nas2" {
   username               = "repl-nas1"
   webshare               = false
 }
+
+# Pull-request plans read both NAS with this user's API keys (truenas/secrets.plan.env).
+# Membership in the built-in truenas_readonly_administrators group grants the built-in
+# Read-Only Administrator privilege, whose only role is READONLY_ADMIN.
+resource "truenas_user" "ci_pr_nas1" {
+  provider               = truenas.nas1
+  email                  = ""
+  full_name              = "CI pull-request plans (read-only)"
+  group_create           = true
+  groups                 = [51]
+  home                   = "/var/empty"
+  locked                 = false
+  password_disabled      = true
+  shell                  = "/usr/sbin/nologin"
+  smb                    = false
+  ssh_password_enabled   = false
+  sshpubkey              = ""
+  sudo_commands          = []
+  sudo_commands_nopasswd = []
+  uid                    = 3002
+  username               = "ci-pr"
+  webshare               = false
+}
+
+resource "truenas_user" "ci_pr_nas2" {
+  provider               = truenas.nas2
+  email                  = ""
+  full_name              = "CI pull-request plans (read-only)"
+  group_create           = true
+  groups                 = [47]
+  home                   = "/var/empty"
+  locked                 = false
+  password_disabled      = true
+  shell                  = "/usr/sbin/nologin"
+  smb                    = false
+  ssh_password_enabled   = false
+  sshpubkey              = ""
+  sudo_commands          = []
+  sudo_commands_nopasswd = []
+  uid                    = 3002
+  username               = "ci-pr"
+  webshare               = false
+}
