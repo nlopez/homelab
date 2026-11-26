@@ -78,6 +78,11 @@ GitHub token's) has to be revoked if it can't be stored. Reference the item by I
 
 ## Rotating a secret
 
+Credentials that expire are listed in `.github/credentials.yaml`, with their expiry and how to
+rotate each. The weekly `Credential expiry` workflow keeps a "Credentials expiring" issue open
+from 30 days before an expiry. Add an entry when you create one, and update `expires` when you
+rotate it.
+
 Rotate the original, then every copy: the `ci` copy for CI, and the `ci-pr` credential if
 the plan has its own. The comments in each `secrets.env` say which items are copies. Rotating a
 service account token means updating the GitHub secret (`OP_CI_PR_SERVICE_ACCOUNT_TOKEN` on the
