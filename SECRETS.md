@@ -50,6 +50,32 @@ vault, the vault `tailnet/tofu/secrets.env` reads it from. The `Automation` name
    for the WireGuard keys, as long as the plan doesn't need the real value.
 4. Never put a credential value in the repo, in a workflow, or in a PR comment.
 
+## Asking for a credential
+
+Agents can't create credentials: most need an operator login (Argo CD admin, a NAS, the GitHub
+settings page), and writing to 1Password needs the operator's approval in the 1Password app. A
+cloud agent asks an agent on the operator's machine (a Remote Control session), and the operator
+approves its 1Password prompts. Ask once, for everything the task needs, so the operator approves
+one batch.
+
+Say for each credential:
+
+- what it's for (the workflow or stack), and that it must be read-only if it's for a plan;
+- exactly how to create it: the command, or for a token made in a browser, every permission and
+  its scope. Pre-filled token links don't always set every permission (a GitHub fine-grained
+  token link missed Variables and Webhooks), so the operator checks the page by hand;
+- the vault (`ci-pr` for pull-request plans, `ci` for applies and other runs on `main`), a new
+  item's title, and the field name;
+- an expiry (one year unless the provider forces less), written in the item's notes;
+- the checks to run with it: one read that must succeed, and one harmless write that must be
+  refused (a dry-run sync, an empty `PATCH`). A credential that can write where it should only
+  read is the failure that matters;
+- what to report back: item ID, field, expiry, and each check's result. Never the value.
+
+Don't generate a credential that has nowhere to go yet: a token shown only once (Argo CD's, a
+GitHub token's) has to be revoked if it can't be stored. Reference the item by ID in the stack's
+`secrets.plan.env` or `secrets.env`, or in the workflow, and record what it is in the table above.
+
 ## Rotating a secret
 
 Rotate the original, then every copy: the `ci` copy for CI, and the `ci-pr` credential if
