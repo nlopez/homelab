@@ -35,7 +35,7 @@ spec:
               value: "1"
           initContainers:
           - name: icloudpd
-            image: ghcr.io/nlopez/docker-icloudpd@sha256:74aa2c7fa2dd6c433d59532014190c2af96aae3f5f75437f45a877fe4d335a22
+            image: ghcr.io/nlopez/docker-icloudpd:1.0.1384_18-11-2026-icloudpd1.33.0@sha256:74aa2c7fa2dd6c433d59532014190c2af96aae3f5f75437f45a877fe4d335a22
             imagePullPolicy: Always
             command: ["/bin/sh", "-c"]
             args:
@@ -68,7 +68,7 @@ spec:
                 memory: "512Mi"
                 cpu: "500m"
           - name: xmp-changes
-            image: ghcr.io/nlopez/docker-icloudpd@sha256:74aa2c7fa2dd6c433d59532014190c2af96aae3f5f75437f45a877fe4d335a22
+            image: ghcr.io/nlopez/docker-icloudpd:1.0.1384_18-11-2026-icloudpd1.33.0@sha256:74aa2c7fa2dd6c433d59532014190c2af96aae3f5f75437f45a877fe4d335a22
             imagePullPolicy: Always
             command: ["/usr/local/bin/xmp-changes.sh"]
             volumeMounts:

@@ -182,6 +182,14 @@
       "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-(?<build>\\d+)$"
     },
     {
+      "description": "nlopez/docker-icloudpd CI publishes 1.0.<run>_<dd-mm-yyyy>-icloudpd<version> tags; the run number orders builds. Pinned by tag and digest, since a digest alone leaves Renovate looking up a latest tag that doesn't exist.",
+      "matchPackageNames": [
+        "ghcr.io/nlopez/docker-icloudpd"
+      ],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)_.*$",
+      "minimumReleaseAge": null
+    },
+    {
       "description": "We build the Timekeeper server image ourselves, so there is no supply-chain reason to wait before picking up new tags",
       "matchPackageNames": [
         "ghcr.io/kamotimestamps/timekeeper-server"
