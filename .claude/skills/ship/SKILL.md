@@ -21,7 +21,7 @@ Read the `AGENTS.md` of any directory you change (`kubernetes/`, `gateway/`, `aw
 - Commit with the hooks; never `--no-verify`. If a hook fails, fix the cause.
 - Changed a script in `.github/scripts/` or `scripts/`: run `.github/scripts/tests/run.sh`, add a
   case, and break the script on purpose once to see the new case fail.
-- Changed a workflow: lint it (`actionlint`).
+- Changed a workflow or a shell script: the hooks run `actionlint` and `shellcheck` on it.
 - Changed an OpenTofu stack: `scripts/plan <stack>` shows the PR plan before you push, if this
   machine has AWS and `ci-pr` access. `tofu fmt` runs in the hooks.
 - Don't commit build output or caches (`.direnv/`, `.terraform/`, anything a tool just created).
