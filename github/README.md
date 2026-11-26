@@ -50,6 +50,19 @@ bypass actor when the app belongs to the repository's owner, and on a user-owned
 repository the GitHub Actions app doesn't. So the media-toolbox schedule builds
 new releases without committing the new pins (see its workflow).
 
+# The ci-gate app
+A pull request's own workflows can post a passing `ci-ok` as GitHub Actions, so the
+protected gate reports as a GitHub App instead, from a `pull_request_target` workflow
+that runs `main`'s code (see `ci-gate.tf`). Setting it up:
+
+1. `tofu apply` here creates the `ci-gate` environment, deployable only from `main`.
+2. `scripts/create-ci-gate-app` creates the app through GitHub's manifest flow (one
+   click in the browser), puts its private key in the environment's `CI_GATE_APP_KEY`
+   secret and a copy in the `operator` vault, and prints its ID and install link.
+3. Install the app on this repository only.
+4. Set `ci_gate_app_id` to the printed ID and apply, which sets the `CI_GATE_APP_ID`
+   variable.
+
 # Recreating the repository
 The `dns` and `tailnet` AWS role trust policies in `aws/state-bucket/iam.tf` match
 the OIDC subject `repo:nlopez@20211302/homelab@<repository id>:environment:production`.

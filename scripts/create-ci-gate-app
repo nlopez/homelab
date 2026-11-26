@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Creates the GitHub App that posts the protected ci-ok check (github/ci-gate.tf)
+# through GitHub's app manifest flow, the only way to create an app: one click
+# in the browser, then this script finishes the job.
+#
+#   scripts/create-ci-gate-app
+#
+# Run it once, after `tofu apply` in github/ has created the ci-gate
+# environment. It stores the app's private key in that environment's
+# CI_GATE_APP_KEY secret (it never enters OpenTofu state) and a copy in the
+# operator 1Password vault, then prints the app ID and the install link.
+# Needs gh (authenticated as the repository owner) and op.
+set -euo pipefail
+
+repo="nlopez/homelab"
+name="${CI_GATE_APP_NAME:-nlopez-homelab-ci-gate}"
+state="$(openssl rand -hex 16)"
+dir="$(mktemp -d)"
+trap 'rm -rf "${dir}"' EXIT
+
+gh api "repos/${repo}/environments/ci-gate" --jq .name >/dev/null 2>&1 || {
+  echo "The ci-gate environment doesn't exist yet: apply github/ first." >&2
+  exit 1
+}
+
+manifest="$(jq -cn --arg name "${name}" --arg repo "https://github.com/${repo}" '{
+  name: $name,
+  url: $repo,
+  description: "Posts the protected ci-ok check on nlopez/homelab pull requests (github/ci-gate.tf).",
+  public: false,
+  redirect_url: $repo,
+  hook_attributes: {url: $repo, active: false},
+  default_permissions: {
+    checks: "write",
+    pull_requests: "write",
+    issues: "write",
+    contents: "read",
+    metadata: "read"
+  },
+  default_events: []
+}')"
+
+# GitHub takes the manifest as a form POST, so open a page that submits it.
+cat > "${dir}/create.html" <<HTML
+<!doctype html>
+<form id="f" method="post" action="https://github.com/settings/apps/new?state=${state}">
+  <input type="hidden" name="manifest" value='${manifest}'>
+  <p>Creating the ${name} GitHub App&hellip; <button type="submit">Continue</button></p>
+</form>
+<script>document.getElementById("f").submit()</script>
+HTML
+echo "Opening GitHub to create the app. Click 'Create GitHub App'." >&2
+echo "GitHub then sends you to https://github.com/${repo}?code=...&state=${state}" >&2
+( xdg-open "${dir}/create.html" || open "${dir}/create.html" ) >/dev/null 2>&1 ||
+  echo "Open this file in your browser: ${dir}/create.html" >&2
+
+read -r -p "Paste the code from that URL (or the whole URL): " answer
+code="$(sed -E 's/.*[?&]code=([^&]+).*/\1/' <<<"${answer}")"
+if [[ "${answer}" == *state=* && "${answer}" != *"state=${state}"* ]]; then
+  echo "That URL's state doesn't match this run; start again." >&2
+  exit 1
+fi
+
+app="$(gh api -X POST "app-manifests/${code}/conversions")"
+id="$(jq -r .id <<<"${app}")"
+slug="$(jq -r .slug <<<"${app}")"
+
+jq -r .pem <<<"${app}" | gh secret set CI_GATE_APP_KEY --env ci-gate --repo "${repo}"
+jq -r .pem <<<"${app}" | op document create - --vault operator \
+  --title "GitHub App ${slug} private key" --file-name "${slug}.pem" >/dev/null
+
+cat <<DONE
+Created the GitHub App ${slug} (ID ${id}).
+- Its private key is in the ci-gate environment's CI_GATE_APP_KEY secret, with a copy in the
+  operator vault ("GitHub App ${slug} private key").
+
+Next:
+1. Install it on ${repo} only: https://github.com/apps/${slug}/installations/new
+2. In github/: tofu apply -var ci_gate_app_id=${id}   (or set ci_gate_app_id = ${id} in a PR)
+DONE
