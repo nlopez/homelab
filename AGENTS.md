@@ -78,7 +78,7 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 | every PR | `pre-commit`: the commit hooks, on the files the PR changes | nothing |
 | every PR | `Script tests`: `.github/scripts/tests/run.sh` and shellcheck, for the scripts CI runs | nothing |
 | `arr/` | `tofu plan` comment (secret-holding resources excluded) | `tofu apply` |
-| `ansible/` | `ansible-lint` | nothing; a nightly check-mode drift run, and apply is a manual `Ansible` dispatch |
+| `ansible/` | `ansible-lint` | applies a change confined to allowlisted roles (`.github/scripts/ansible-merge-tags.py`), by tag; anything else waits for a manual `Ansible` dispatch with apply. Nightly check-mode drift run |
 | `authentik/` | `tofu plan` comment | `tofu apply` |
 | `truenas/` | `tofu plan` comment (replication keychain excluded) | `tofu apply` |
 | `aws/` (SES and SMTP stacks) | `tofu plan` comment per stack | `tofu apply` |

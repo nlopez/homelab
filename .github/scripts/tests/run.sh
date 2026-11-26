@@ -384,6 +384,29 @@ gate_fixtures "${g}" success yes owner
 expect "gate passes a destroy a code owner approved" "0" "$(gaterun "${g}")"
 expect "gate completes ci-ok as success for an approved destroy" "success" "$(conclusion "${g}")"
 
+### ansible-merge-tags.py
+
+mt="${scripts}/ansible-merge-tags.py"
+expect "ansible-merge-tags applies an allowlisted role alone" "unattended_upgrades" \
+  "$(printf 'ansible/roles/unattended_upgrades/tasks/main.yml\nansible/README.md\n' | python3 "${mt}")"
+expect "ansible-merge-tags applies nothing when another role changed too" "" \
+  "$(printf 'ansible/roles/unattended_upgrades/tasks/main.yml\nansible/roles/sshd/tasks/main.yml\n' | python3 "${mt}")"
+expect "ansible-merge-tags applies nothing for group_vars" "" \
+  "$(echo ansible/group_vars/all | python3 "${mt}")"
+expect "ansible-merge-tags applies nothing for site.yaml" "" \
+  "$(echo ansible/site.yaml | python3 "${mt}")"
+expect "ansible-merge-tags applies nothing for a docs-only change" "" \
+  "$(echo ansible/README.md | python3 "${mt}")"
+expect "every allowlisted tag is in site.yaml" "" "$(python3 - "${mt}" "${repo}/ansible/site.yaml" <<'PY'
+import importlib.util, sys, yaml
+spec = importlib.util.spec_from_file_location("mt", sys.argv[1]); mt = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mt)
+plays = yaml.safe_load(open(sys.argv[2]))
+tagged = {r.get("tags") for p in plays for r in p.get("roles", []) if isinstance(r, dict)}
+print(" ".join(t for t in mt.AUTO_APPLY.values() if t not in tagged))
+PY
+)"
+
 ### workflows
 
 # Every workflow runs its steps with pipefail. Under the default shell

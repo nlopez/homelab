@@ -1,6 +1,12 @@
 name: Ansible
 
 on:
+  # A merge applies on its own only when it changes nothing but roles in
+  # .github/scripts/ansible-merge-tags.py's allowlist, and then only those
+  # roles' tags. Any other change waits for a dispatch with apply.
+  push:
+    branches: [ "main" ]
+    paths: ['ansible/**', '.github/workflows/ansible.yaml', '.github/scripts/ansible-merge-tags.py']
   schedule:
     # Nightly drift check. Applying is always an explicit decision.
     - cron: '27 6 * * *'
@@ -27,7 +33,7 @@ defaults:
 
 jobs:
   ansible:
-    name: ${{ inputs.apply && 'Apply' || 'Drift check' }}
+    name: ${{ github.event_name == 'push' && 'Apply on merge' || inputs.apply && 'Apply' || 'Drift check' }}
     environment: production
     runs-on: ubuntu-24.04
     permissions:
@@ -38,12 +44,47 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The push's before commit, to see what a merge changed.
+          fetch-depth: 0
+
+      # check: the nightly or a dispatched drift check. apply: a dispatch with
+      # apply, every role. merge: a push whose changes are all allowlisted
+      # roles, only their tags. skip: any other push.
+      - name: Decide what to run
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          APPLY: ${{ inputs.apply }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          tags=""
+          if [ "${EVENT}" = push ]; then
+            if [ -z "${BEFORE}" ] || [ "${BEFORE}" = 0000000000000000000000000000000000000000 ]; then BEFORE="${GITHUB_SHA}^"; fi
+            tags="$(git diff --name-only "${BEFORE}" "${GITHUB_SHA}" | .github/scripts/ansible-merge-tags.py)"
+            if [ -n "${tags}" ]; then mode=merge; else mode=skip; fi
+          elif [ "${APPLY}" = true ]; then mode=apply
+          else mode=check
+          fi
+          echo "mode=${mode}" >> "${GITHUB_OUTPUT}"
+          echo "tags=${tags}" >> "${GITHUB_OUTPUT}"
+          if [ "${mode}" = skip ]; then
+            {
+              echo "## Ansible: not applied"
+              echo
+              echo "This push changes Ansible files outside the roles a merge may apply on its own"
+              echo "(\`.github/scripts/ansible-merge-tags.py\`), or none at all. To apply it, run the"
+              echo "Ansible workflow with **apply** checked."
+            } >> "${GITHUB_STEP_SUMMARY}"
+            echo "::notice title=Ansible not applied::This change needs a dispatch of the Ansible workflow with apply."
+          fi
 
       # The client id and audience come from tailscale_federated_identity
       # .github_actions in tailnet/admin; the action requests a GitHub OIDC
       # token for that audience itself. The runner authenticates to the hosts
       # through Tailscale SSH, so no SSH key is stored anywhere.
       - name: Join the tailnet
+        if: steps.mode.outputs.mode != 'skip'
         uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
         with:
           oauth-client-id: TX3ajrU7JY71CNTRL-kQaJB6AVyQ11CNTRL
@@ -53,6 +94,7 @@ jobs:
       # The inventory is keyed by the sites' names, which only resolve through
       # the tailnet's split DNS. Point them at the nodes' tailnet addresses.
       - name: Map the inventory names to tailnet addresses
+        if: steps.mode.outputs.mode != 'skip'
         run: |
           while read -r fqdn peer; do
             ip=$(tailscale ip -4 "$peer")
@@ -65,15 +107,17 @@ jobs:
           EOF
 
       - uses: cachix/install-nix-action@382a9ed9481c7c1f94f68b72ef105b3417c73877 # v32.1.0
+        if: steps.mode.outputs.mode != 'skip'
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install 1Password CLI
+        if: steps.mode.outputs.mode != 'skip'
         uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
 
       - name: Check for drift
         id: drift
-        if: ${{ !inputs.apply }}
+        if: steps.mode.outputs.mode == 'check'
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
         run: |
@@ -103,7 +147,7 @@ jobs:
       # only the play recap and the names of the changed tasks: --diff output
       # can hold rendered templates with secrets, so it stays in the run log.
       - name: Report drift
-        if: ${{ !inputs.apply && steps.drift.outcome == 'success' }}
+        if: ${{ steps.mode.outputs.mode == 'check' && steps.drift.outcome == 'success' }}
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -130,9 +174,20 @@ jobs:
           fi
 
       - name: Apply
-        if: ${{ inputs.apply }}
+        if: steps.mode.outputs.mode == 'apply'
         env:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
         run: |
           op run --env-file ansible/secrets.env -- nix develop -c \
             bash -c 'cd ansible && ansible-galaxy collection install -r requirements.yaml && ansible-playbook site.yaml'
+
+      - name: Apply the merged roles
+        if: steps.mode.outputs.mode == 'merge'
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          TAGS: ${{ steps.mode.outputs.tags }}
+        run: |
+          echo "Applying only: ${TAGS}"
+          # shellcheck disable=SC2016 # the inner bash expands TAGS from the environment
+          op run --env-file ansible/secrets.env -- nix develop -c \
+            bash -c 'cd ansible && ansible-galaxy collection install -r requirements.yaml && ansible-playbook site.yaml --tags "${TAGS}"'
