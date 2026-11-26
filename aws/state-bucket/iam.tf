@@ -315,8 +315,11 @@ locals {
     # The plan for tailnet/admin reads the tailnet with its own all:read
     # OAuth client, so the role only needs the state.
     tailnet-admin = ["tailnet-admin"]
-    truenas       = ["truenas"]
-    arr           = ["arr"]
+    # github/ is applied locally; its PR plan reads the repository with a
+    # read-only token (github/secrets.plan.env).
+    github  = ["github"]
+    truenas = ["truenas"]
+    arr     = ["arr"]
   }
 }
 
