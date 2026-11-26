@@ -27,6 +27,15 @@ Every PR also runs `pre-commit` (the commit hooks) and `ci-ok`, which passes onl
 check passed. Every OpenTofu stack also plans nightly on `main`, and keeps a `Drift in <stack>`
 issue open while the live state differs from `main`. OpenTofu state lives in the S3 bucket from `aws/state-bucket`, one key per stack.
 
+## Host names
+
+A host has a DNS name, `<role>.<site>.radoncanyon.com`, and a tailnet name, `<role>-<site>`:
+`gw.lga1.radoncanyon.com` and `gw-lga1`. Hosts that exist at only one site drop the site from the
+tailnet name: `knode1` is `knode1.lga1.radoncanyon.com`. Each site's DHCP registers clients under its
+own subdomain, so both sites can reuse a role name without colliding. The fixed names are Unbound
+host overrides in `gateway/lga1.tf` and `gateway/lga2.tf`. Tailnet names are set in
+`tailnet/tofu/devices.tf`.
+
 ## Secrets
 
 Nothing secret is committed. Each OpenTofu stack lists its 1Password references in `secrets.env`;
