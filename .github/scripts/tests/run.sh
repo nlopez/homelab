@@ -195,6 +195,27 @@ else
   pass "ansible-drift-summary leaves out the --diff output"
 fi
 
+### scripts/plan
+
+plan="${repo}/scripts/plan"
+stacks="$(python3 "${plan}" --list | cut -f1)"
+callers="$(grep -l 'uses: ./.github/workflows/_tofu-stack.yaml' "${repo}"/.github/workflows/*.yaml | wc -l | tr -d ' ')"
+contains "plan --list finds the DNS stack" "dns" "${stacks}"
+contains "plan --list expands the AWS matrix" "aws/ses" "${stacks}"
+expect "plan --list covers every stack workflow" "${callers}" \
+  "$(python3 "${plan}" --list | cut -f2 | sort -u | wc -l | tr -d ' ')"
+gateway="$(python3 "${plan}" gateway --dry-run)"
+contains "plan gateway uses the PR plan's excludes" "-exclude=opnsense_wireguard_server.lga1" "${gateway}"
+contains "plan gateway sets the PR plan's placeholders" "export TF_VAR_wg_psk=placeholder" "${gateway}"
+contains "plan gateway reads only the read-only credentials" "op run --env-file gateway/secrets.plan.env" "${gateway}"
+contains "plan never takes the state lock" "plan -input=false -lock=false" "${gateway}"
+if grep -q "secrets.env " <<<"${gateway}"; then fail "plan never uses the apply credentials"; else pass "plan never uses the apply credentials"; fi
+contains "plan runs tofu from the repo root, past the apply wrapper" "tofu -chdir=gateway" "${gateway}"
+expect "plan uses a service account token instead of the app when one is set" "" \
+  "$(OP_SERVICE_ACCOUNT_TOKEN=x python3 "${plan}" dns --dry-run | grep -E 'OP_APP_AUTH|--account')"
+python3 "${plan}" no-such-stack >/dev/null 2>&1
+expect "plan rejects an unknown stack" "2" "$?"
+
 ### scripts/check-hostnames.py
 
 # A throwaway repo with one private app, one public app, and the docs they need.

@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""Plan an OpenTofu stack locally, the way its pull-request plan does in CI.
+
+    scripts/plan --list            # the stacks, from their workflows
+    scripts/plan dns               # plan one stack (by directory)
+    scripts/plan aws/ses --dry-run # print the commands instead of running them
+
+Reads each stack's settings from its caller of .github/workflows/_tofu-stack.yaml
+(directory, plan-args, plan-env, tailnet), so it plans exactly what CI plans.
+The plan is read-only: it uses the stack's secrets.plan.env (the read-only
+ci-pr credentials), never secrets.env, and never takes the state lock.
+
+Credentials it needs, and where it gets them:
+- 1Password: OP_SERVICE_ACCOUNT_TOKEN for the ci-pr service account if set,
+  otherwise your 1Password app session (OP_APP_AUTH).
+- AWS (the state bucket): your AWS credentials, e.g. AWS_PROFILE with read
+  access to the bucket (the default ReadOnlyAccess profile works).
+- Tailnet stacks (gateway): this machine must reach the gateways.
+"""
+import argparse
+import os
+import pathlib
+import shlex
+import subprocess
+import sys
+
+import yaml
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+WORKFLOWS = ROOT / ".github" / "workflows"
+SHARED = "./.github/workflows/_tofu-stack.yaml"
+
+
+def stacks():
+    """Map each stack directory to its _tofu-stack.yaml inputs."""
+    found = {}
+    for path in sorted(WORKFLOWS.glob("*.yaml")):
+        doc = yaml.safe_load(path.read_text()) or {}
+        for job in (doc.get("jobs") or {}).values():
+            if not isinstance(job, dict) or job.get("uses") != SHARED:
+                continue
+            inputs = job.get("with") or {}
+            directory = str(inputs["directory"])
+            dirs = [directory]
+            if "${{ matrix.dir }}" in directory:
+                matrix = (job.get("strategy") or {}).get("matrix") or {}
+                dirs = [directory.replace("${{ matrix.dir }}", d) for d in matrix.get("dir", [])]
+            for d in dirs:
+                found[d] = {**inputs, "directory": d, "workflow": path.name}
+    return found
+
+
+def commands(stack):
+    """The commands that plan a stack, and the environment they need."""
+    directory = stack["directory"]
+    env = {}
+    for line in str(stack.get("plan-env") or "").splitlines():
+        if "=" in line:
+            name, value = line.split("=", 1)
+            env[name.strip()] = value
+    # -chdir from the repo root: the dev shell's tofu wrapper switches to the
+    # apply credentials when it runs inside a directory with a secrets.env.
+    tofu = ["tofu", f"-chdir={directory}"]
+    plan = tofu + ["plan", "-input=false", "-lock=false", *shlex.split(str(stack.get("plan-args") or ""))]
+    init = tofu + ["init", "-input=false"]
+    plan_env = ROOT / directory / "secrets.plan.env"
+    if plan_env.is_file():
+        op = ["op", "run", "--env-file", str(plan_env.relative_to(ROOT))]
+        if not os.environ.get("OP_SERVICE_ACCOUNT_TOKEN"):
+            env["OP_APP_AUTH"] = "1"
+            op += ["--account", "my.1password.com"]
+        plan = op + ["--"] + plan
+    return env, [init, plan]
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("stack", nargs="?", help="stack directory, e.g. dns or aws/ses")
+    parser.add_argument("--list", action="store_true", help="list the stacks")
+    parser.add_argument("--dry-run", action="store_true", help="print the commands without running them")
+    args = parser.parse_args()
+
+    known = stacks()
+    if args.list or not args.stack:
+        for d, s in sorted(known.items()):
+            notes = " (needs the tailnet)" if s.get("tailnet") else ""
+            print(f"{d}\t{s['workflow']}{notes}")
+        return 0 if args.list else 2
+
+    stack = known.get(args.stack.rstrip("/"))
+    if stack is None:
+        print(f"unknown stack {args.stack!r}; scripts/plan --list shows them", file=sys.stderr)
+        return 2
+
+    env, steps = commands(stack)
+    if args.dry_run:
+        for name, value in sorted(env.items()):
+            print(f"export {name}={shlex.quote(value)}")
+        for step in steps:
+            print(shlex.join(step))
+        return 0
+
+    if stack.get("tailnet"):
+        print(f"{args.stack} talks to hosts on the tailnet; this machine must reach them.", file=sys.stderr)
+    full_env = {**os.environ, **env}
+    for step in steps:
+        result = subprocess.run(step, cwd=ROOT, env=full_env)
+        if result.returncode != 0:
+            return result.returncode
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
