@@ -21,10 +21,10 @@ case "${gate}" in
 esac
 echo
 
-failed="$(jq -r '.[] | select(.name != "ci-ok" and .status == "completed")
+failed="$(jq -r '.[] | select(.name != "ci-ok" and .name != "Protected gate" and .status == "completed")
   | select(.conclusion | IN("success", "skipped", "neutral") | not)
   | "- `\(.name)`: \(.conclusion)"' "${runs}")"
-pending="$(jq -r '.[] | select(.name != "ci-ok" and .status != "completed") | "- `\(.name)`: \(.status)"' "${runs}")"
+pending="$(jq -r '.[] | select(.name != "ci-ok" and .name != "Protected gate" and .status != "completed") | "- `\(.name)`: \(.status)"' "${runs}")"
 if [ -n "${failed}${pending}" ]; then
   echo "**Checks not passing:**"
   echo
