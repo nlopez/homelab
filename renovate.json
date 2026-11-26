@@ -14,6 +14,7 @@
   ],
   "minimumReleaseAge": "7 days",
   "enabledManagers": [
+    "ansible-galaxy",
     "custom.regex",
     "helm-values",
     "github-actions",
@@ -96,6 +97,33 @@
       ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "semver-coerced"
+    },
+    {
+      "customType": "regex",
+      "description": "Update the yt-dlp release media-toolbox pins in its Makefile, and the release link above it. The nightly build picks up new releases on its own; the pin is what pushes and manual runs build.",
+      "managerFilePatterns": [
+        "/^media-toolbox/Makefile$/"
+      ],
+      "matchStrings": [
+        "YT_DLP_VERSION := (?<currentValue>\\S+)",
+        "# https://github\\.com/yt-dlp/yt-dlp/releases/tag/(?<currentValue>\\S+)"
+      ],
+      "depNameTemplate": "yt-dlp/yt-dlp",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "regex:^(?<major>\\d{4})\\.(?<minor>\\d{2})\\.(?<patch>\\d{2})(\\.(?<build>\\d+))?$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update the bgutil-ytdlp-pot-provider release media-toolbox pins in its Makefile",
+      "managerFilePatterns": [
+        "/^media-toolbox/Makefile$/"
+      ],
+      "matchStrings": [
+        "BGUTIL_YTDLP_POT_PROVIDER_VERSION := (?<currentValue>\\S+)"
+      ],
+      "depNameTemplate": "Brainicism/bgutil-ytdlp-pot-provider",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver"
     }
   ],
   "packageRules": [

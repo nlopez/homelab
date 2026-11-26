@@ -53,18 +53,18 @@ the tailnet as the `gateway/` jobs do. Their plan and apply roles already exist 
 `aws/state-bucket/iam.tf`; what's missing is their credentials in 1Password (read-only keys in `ci-pr`,
 CI copies in `ci`). `github/` needs a token that can administer the repository.
 
-### 4. Renovate covers five of seven dependency types
+### 4. Renovate covers all but devenv.lock
 
-Enabled managers: `custom.regex`, `helm-values`, `github-actions`, `pre-commit`, `terraform`.
+Enabled managers: `ansible-galaxy`, `custom.regex`, `helm-values`, `github-actions`, `pre-commit`,
+`terraform`. Regex managers cover the Helm charts in `kubernetes/bootstrap/apps-helm.yaml`, container
+images, and the yt-dlp and bgutil pins in `media-toolbox/Makefile`. `ansible/requirements.yaml` pins
+the one collection Galaxy installs (`datadog.dd`); `ansible.posix` and `community.general` come with
+the dev shell's Ansible, so nixpkgs sets them.
 
-Not covered: the collections in `ansible/requirements.yaml`, and `devenv.lock`.
-
-The Renovate app was installed on 2026-11-25; its first run is due inside the 8:00
-America/New_York window that `renovate.json` schedules. The media-toolbox schedule builds new yt-dlp and bgutil releases but no longer
-commits the new pins to `main`, so `media-toolbox/Makefile` falls behind the published image.
-
-Fix: add `ansible-galaxy` and `nix` to `enabledManagers` and add a regex manager
-for the two versions in `media-toolbox/Makefile`.
+Not covered: `devenv.lock`. Renovate's `nix` manager reads `flake.nix` and relocks `flake.lock`;
+devenv keeps its inputs in `devenv.yaml`, and bumping a locked `rev` without its `narHash` breaks the
+lock. Fix: a scheduled workflow that runs `devenv update` and opens a PR, with a GitHub App token so
+the PR's checks run (pull requests opened with the workflow token don't trigger workflows).
 
 ### 5. Repo hygiene
 
