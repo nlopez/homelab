@@ -43,7 +43,7 @@ runs:
         tofu show -no-color tfplan > plan.txt
 
     # ci-ok reads the plan-destroys annotation and fails until a code owner
-    # adds the destroy-approved label (.github/workflows/ci-gate.yaml).
+    # adds the destroy-approved label (.github/workflows/ci-gate-protected.yaml).
     - name: Check for destroys and replaces
       if: steps.plan.outcome == 'success'
       shell: bash

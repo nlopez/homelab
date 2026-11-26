@@ -38,8 +38,8 @@ if [ -z "${conclusion}" ]; then
 fi
 
 api --paginate "repos/${repo}/issues/${pr}/comments?per_page=100" \
-  --jq '.[] | select(.user.login == "github-actions[bot]") | select(.body | startswith("<!-- ci-summary -->")) | .body' |
-  tail -n +2
+  --jq '.[] | select(.user.type == "Bot") | select(.body | startswith("<!-- ci-summary -->")) | .body' |
+  awk '/^<!-- ci-summary -->$/ { n++; buf = "" ; next } { buf = buf $0 "\n" } END { printf "%s", buf }'
 echo
 
 if [ "${conclusion}" != success ]; then
