@@ -11,8 +11,9 @@
 # prints the ID to set here.
 
 variable "ci_gate_app_id" {
-  type        = number
-  default     = null
+  type = number
+  # nlopez-homelab-ci-gate, created 2026-11-26.
+  default     = 5930324
   description = "ID of the GitHub App that posts the protected ci-ok check (scripts/create-ci-gate-app prints it)."
 }
 

@@ -1,0 +1,87 @@
+name: CI gate (protected)
+
+# The tamper-proof ci-ok. A pull_request workflow runs the PR's own copy, so a
+# PR could weaken the gate that judges it, and any workflow can post a passing
+# "ci-ok" as GitHub Actions. This one runs on pull_request_target, so it always
+# runs main's workflow and main's scripts and never checks out the PR's code,
+# and it posts ci-ok as the ci-gate GitHub App (github/ci-gate.tf). The app's
+# key is in the ci-gate environment, which only jobs running against main can
+# read, and the main ruleset requires the app's ci-ok.
+on:
+  pull_request_target:
+    branches: [ "main" ]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions: {}
+
+concurrency:
+  group: ci-gate-protected-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Protected gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 95
+    environment: ci-gate
+    permissions:
+      contents: read
+
+    steps:
+      # main's scripts: pull_request_target checks out the base branch.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Get the app's token
+        env:
+          APP_ID: ${{ vars.CI_GATE_APP_ID }}
+          APP_KEY: ${{ secrets.CI_GATE_APP_KEY }}
+          REPO: ${{ github.repository }}
+        run: |-
+          set -euo pipefail
+          key="$(mktemp)"
+          trap 'rm -f "${key}"' EXIT
+          printf '%s\n' "${APP_KEY}" > "${key}"
+          token="$(.github/scripts/app-token.sh token "${APP_ID}" "${key}" "${REPO}")"
+          echo "::add-mask::${token}"
+          echo "APP_TOKEN=${token}" >> "${GITHUB_ENV}"
+
+      - name: Start the ci-ok check
+        env:
+          GH_TOKEN: ${{ env.APP_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |-
+          id="$(gh api -X POST "repos/${REPO}/check-runs" -f name=ci-ok -f head_sha="${SHA}" \
+            -f status=in_progress -f details_url="${RUN_URL}" --jq .id)"
+          echo "CHECK_RUN_ID=${id}" >> "${GITHUB_ENV}"
+
+      - name: Gate
+        id: gate
+        env:
+          GH_TOKEN: ${{ env.APP_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          PR: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: .github/scripts/ci-gate-check.sh 2>&1 | tee gate.log
+
+      - name: Finish the ci-ok check
+        if: ${{ always() && env.CHECK_RUN_ID != '' }}
+        env:
+          GH_TOKEN: ${{ env.APP_TOKEN }}
+          REPO: ${{ github.repository }}
+          OUTCOME: ${{ job.status == 'cancelled' && 'cancelled' || steps.gate.outcome }}
+        run: |-
+          case "${OUTCOME}" in
+            success) conclusion=success; title="Every other check passed" ;;
+            cancelled) conclusion=cancelled; title="Cancelled" ;;
+            *) conclusion=failure; title="The gate failed" ;;
+          esac
+          jq -n --arg c "${conclusion}" --arg t "${title}" --rawfile s <(tail -c 60000 gate.log 2>/dev/null || true) \
+            '{status: "completed", conclusion: $c, output: {title: $t, summary: ("```\n" + $s + "\n```")}}' |
+            gh api -X PATCH "repos/${REPO}/check-runs/${CHECK_RUN_ID}" --input - >/dev/null
