@@ -17,6 +17,13 @@ concurrency:
   group: github-pr-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
+# shell: bash runs steps with -eo pipefail; the default (bash -e) lets a
+# failing command before a pipe pass, as `script 2>&1 | tee log` once let the
+# ci-ok gate pass with failed checks.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   # The plan compares the PR's config with the last applied state, without
   # refreshing: the read-only token can't see the merge settings (the API
