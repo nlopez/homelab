@@ -36,6 +36,7 @@ metadata:
     gethomepage.dev/icon: argo-cd.png
     gethomepage.dev/description: GitOps
     gethomepage.dev/pod-selector: app.kubernetes.io/name=argocd-server
+    gethomepage.dev/href: https://flopie.desertbluffs.com/auth/login
   namespace: argocd
 spec:
   parentRefs:

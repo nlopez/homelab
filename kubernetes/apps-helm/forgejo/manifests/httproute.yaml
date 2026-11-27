@@ -10,6 +10,7 @@ metadata:
     gethomepage.dev/icon: forgejo.png
     gethomepage.dev/description: Git forge
     gethomepage.dev/pod-selector: app.kubernetes.io/name=forgejo
+    gethomepage.dev/href: https://dazzi.desertbluffs.com/user/oauth2/authentik
 spec:
   parentRefs:
   - name: private
