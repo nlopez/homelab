@@ -1,11 +1,26 @@
 #!/usr/bin/env python3
-"""Read an OPNsense config.xml offline: flatten it, list its rules, or redact it.
+"""Read an OPNsense config.xml from a file or a gateway's API.
+
+Flatten it, list its rules, or redact it.
 
     scripts/opnsense-config flatten CONFIG [XPATH...] [--strip-uuids] [--sort]
     scripts/opnsense-config rules CONFIG
     scripts/opnsense-config redact CONFIG > sanitized.xml
 
-Fetch a config with `ssh <gateway> 'sudo cat /conf/config.xml' > config.xml`.
+CONFIG is a config.xml file, or a gateway's base URL such as
+https://gw.lga1.radoncanyon.com. Given a URL, the script downloads the running
+config from /api/core/backup/download/this with the API key and secret in
+OPNSENSE_API_KEY and OPNSENSE_API_SECRET, and keeps it in memory. Either may
+be a 1Password reference (op://...), read with `op read` from the operator's
+account; `{host}` in it becomes the URL's host name. For the gateways' own
+API keys in the operator vault:
+
+    export OPNSENSE_API_KEY='op://operator/opnsense-api-{host}/key'
+    export OPNSENSE_API_SECRET='op://operator/opnsense-api-{host}/secret'
+
+The key's user needs the "Diagnostics: Configuration History" privilege
+(page-diagnostics-configurationhistory); the download holds every secret in
+plaintext. `redact URL > sanitized.xml` saves a copy without them.
 
 flatten prints one `path=value` line per leaf, in document order. A record
 with a uuid attribute gets the uuid's first 8 characters in brackets; repeated
@@ -16,8 +31,13 @@ Every subcommand redacts secrets by default (see SECRET_TAGS and is_secret);
 --no-redact turns that off. Stdlib only; run with `python3 -I`.
 """
 import argparse
+import base64
+import os
 import re
+import subprocess
 import sys
+import urllib.parse
+import urllib.request
 import xml.etree.ElementTree as ET
 
 REDACTED = "[REDACTED]"
@@ -226,6 +246,41 @@ def cmd_redact(root, _args):
     print()
 
 
+def credential(name, host):
+    value = os.environ.get(name)
+    if not value:
+        sys.exit("opnsense-config: set OPNSENSE_API_KEY and OPNSENSE_API_SECRET to fetch from a gateway")
+    if not value.startswith("op://"):
+        return value
+    ref = value.replace("{host}", host)
+    # The operator vault is readable only with the desktop app's sign-in, as for
+    # the dev shell's tofu wrapper (flake.nix).
+    result = subprocess.run(["op", "read", "--no-newline", "--account", "my.1password.com", ref],
+                            env={**os.environ, "OP_APP_AUTH": "1"}, capture_output=True, text=True)
+    if result.returncode:
+        sys.exit(f"opnsense-config: op read {ref}: {result.stderr.strip()}")
+    return result.stdout
+
+
+def fetch(base_url):
+    host = urllib.parse.urlsplit(base_url).hostname
+    key, secret = credential("OPNSENSE_API_KEY", host), credential("OPNSENSE_API_SECRET", host)
+    auth = base64.b64encode(f"{key}:{secret}".encode()).decode()
+    req = urllib.request.Request(base_url.rstrip("/") + "/api/core/backup/download/this",
+                                 headers={"Authorization": f"Basic {auth}"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        body = resp.read()
+    if not body.lstrip().startswith(b"<?xml"):
+        sys.exit(f"opnsense-config: {base_url} returned no XML document: {body[:80]!r}")
+    return body
+
+
+def load_root(config):
+    if re.match(r"https?://", config, re.I):
+        return ET.fromstring(fetch(config))
+    return ET.parse(config).getroot()
+
+
 def main():
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--no-redact", action="store_true", help="print secrets as they are")
@@ -251,7 +306,7 @@ def main():
     x.set_defaults(func=cmd_redact)
 
     args = parser.parse_args()
-    root = ET.parse(args.config).getroot()
+    root = load_root(args.config)
     if not args.no_redact:
         redact_tree(root, args.redact_pubkeys)
     args.func(root, args)

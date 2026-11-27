@@ -687,6 +687,42 @@ loader.exec_module(oc)
 bad = [t for t in oc.SECRET_TAGS if not oc.is_secret(t, "x")]
 bad += [t for t in oc.NOT_SECRET_TAGS if oc.is_secret(t, "x" * 40)]
 print(bad or "ok")' "${repo}/scripts/opnsense-config")"
+# fetch_test <body>: load_root on a URL, with urlopen replaced by a stub that
+# records the request and returns <body>.
+fetch_test() {
+  OPNSENSE_API_KEY="${KEY:-k}" OPNSENSE_API_SECRET="${SECRET:-s}" python3 -I -c '
+import importlib.machinery, importlib.util, io, sys, urllib.request
+loader = importlib.machinery.SourceFileLoader("oc", sys.argv[1])
+oc = importlib.util.module_from_spec(importlib.util.spec_from_loader("oc", loader))
+loader.exec_module(oc)
+def urlopen(req, timeout):
+    print(req.full_url, req.get_header("Authorization"))
+    return io.BytesIO(sys.argv[2].encode())
+urllib.request.urlopen = urlopen
+print(oc.load_root("https://gw.example/").findtext("system/hostname"))' "${repo}/scripts/opnsense-config" "$1" 2>&1
+}
+expect "opnsense-config fetches a URL from the backup API with basic auth" \
+"https://gw.example/api/core/backup/download/this Basic azpz
+gw" "$(fetch_test '<?xml version="1.0"?><opnsense><system><hostname>gw</hostname></system></opnsense>')"
+mkdir -p "${work}/bin"
+# A stub op that prints the last 7 characters of the reference it reads.
+cat >"${work}/bin/op" <<'SH'
+#!/bin/sh
+[ "${OP_APP_AUTH}" = 1 ] && [ -z "${OP_FAIL}" ] || exit 1
+for ref; do :; done
+printf %s "${ref}" | tail -c 7
+SH
+chmod +x "${work}/bin/op"
+contains "opnsense-config reads op:// credentials for the URL's host" \
+  "Basic $(printf %s 'ple/key:ple/sec' | base64)" \
+  "$(PATH="${work}/bin:${PATH}" KEY='op://v/api-{host}/key' SECRET='op://v/api-{host}/sec' \
+    fetch_test '<?xml version="1.0"?><opnsense/>')"
+contains "opnsense-config names the op:// reference it failed to read" "op read op://v/api-gw.example/key" \
+  "$(PATH="${work}/bin:${PATH}" OP_FAIL=1 KEY='op://v/api-{host}/key' fetch_test '<?xml version="1.0"?><opnsense/>')"
+contains "opnsense-config rejects a download that is not XML" "returned no XML document" \
+  "$(fetch_test '&lt;?xml version="1.0"?&gt;')"
+contains "opnsense-config needs API credentials to fetch" "set OPNSENSE_API_KEY" \
+  "$(env -u OPNSENSE_API_KEY python3 -I "${repo}/scripts/opnsense-config" rules https://gw.example 2>&1)"
 
 echo
 if [ "${failures}" -gt 0 ]; then echo "${failures} failed"; exit 1; fi
