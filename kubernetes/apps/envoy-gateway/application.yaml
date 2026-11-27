@@ -15,7 +15,7 @@ spec:
     namespace: envoy-gateway-system
   sources:
   - repoURL: oci://docker.io/envoyproxy/gateway-helm
-    targetRevision: 1.9.3
+    targetRevision: 1.10.0
     path: .
     helm:
       valueFiles:
