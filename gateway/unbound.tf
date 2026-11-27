@@ -1,5 +1,9 @@
 locals {
   internal_zones = ["desertbluffs.com"]
+
+  # Public zones that publish private addresses (dns/radoncanyon.com.tf), which
+  # rebind protection (private_addresses) would otherwise strip from answers.
+  private_domains = ["radoncanyon.com"]
 }
 
 resource "opnsense_unbound_general" "lga1" {
@@ -38,7 +42,7 @@ resource "opnsense_unbound_general" "lga1" {
   outgoing_interface                    = []
   port                                  = "53"
   private_addresses                     = ["0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "169.254.0.0/16", "172.16.0.0/12", "192.0.2.0/24", "192.168.0.0/16", "198.18.0.0/15", "198.51.100.0/24", "2001:db8::/32", "203.0.113.0/24", "233.252.0.0/24", "::1/128", "fc00::/8", "fd00::/8", "fe80::/10"]
-  private_domains                       = [""]
+  private_domains                       = local.private_domains
   qname_min_strict                      = false
   register_dhcp                         = false
   register_dhcp_domain                  = ""
@@ -98,7 +102,7 @@ resource "opnsense_unbound_general" "lga2" {
   outgoing_interface                    = []
   port                                  = "53"
   private_addresses                     = ["0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "169.254.0.0/16", "172.16.0.0/12", "192.0.2.0/24", "192.168.0.0/16", "198.18.0.0/15", "198.51.100.0/24", "2001:db8::/32", "203.0.113.0/24", "233.252.0.0/24", "::1/128", "fc00::/8", "fd00::/8", "fe80::/10"]
-  private_domains                       = [""]
+  private_domains                       = local.private_domains
   qname_min_strict                      = false
   register_dhcp                         = false
   register_dhcp_domain                  = ""
