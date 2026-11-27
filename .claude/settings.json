@@ -38,6 +38,7 @@
       "Bash(gh api:*)"
     ]
   },
+  "enabledMcpjsonServers": ["opentofu"],
   "hooks": {
     "SessionStart": [
       {
