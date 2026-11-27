@@ -7,7 +7,9 @@ Read the root [AGENTS.md](../AGENTS.md) first. This covers what is specific to t
 - `apps/<name>/`: plain manifests. The `apps` ApplicationSet (`bootstrap/apps.yaml`) turns every
   directory here into an Application named `<name>`, deployed to namespace `<name>`, recursing into
   subdirectories. Adding the directory is all it takes. `apps/<name>/overlays/<o>/` becomes
-  Application `<name>-<o>`, also in namespace `<name>`.
+  Application `<name>-<o>`, also in namespace `<name>`. Deleting the directory deletes the
+  Application and every resource it manages, PVCs included. The 1Password item behind a
+  `OnePasswordItem` stays; delete it by hand.
 - `apps-helm/<name>/`: a Helm chart. Add an entry to the `list` generator in
   `bootstrap/apps-helm.yaml` (`name`, `tier`, `repoURL`, `chart`, `targetRevision`, `namespace`),
   then put the chart's values in `apps-helm/<name>/values.yaml` and any extra manifests in
@@ -55,7 +57,8 @@ Read the root [AGENTS.md](../AGENTS.md) first. This covers what is specific to t
 
 ## Stateful apps
 
-- A `PersistentVolumeClaim` binds a fresh volume if its name or namespace changes. Renaming an app
-  that has PVCs, or moving it between `apps/` and `apps-helm/`, orphans its data. Leave that to a
-  human.
+- A `PersistentVolumeClaim` binds a fresh volume if its name or namespace changes. Renaming or
+  removing an app under `apps/` that has PVCs, or moving it between `apps/` and `apps-helm/`,
+  deletes its old PVCs; on a storage class with `reclaimPolicy: Delete` the data goes with them.
+  Leave that to a human.
 - `kubernetes/README.md` covers bootstrap order and Velero restores.
