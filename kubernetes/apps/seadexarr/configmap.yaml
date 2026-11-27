@@ -39,9 +39,6 @@ data:
     sleep_time: 2
     cache_time: 1
     interactive: false
-    anime_mappings:
-    anidb_mappings:
-    anibridge_mappings:
     log_level: "INFO"
   unmonitor-anime.py: |-
     import json
