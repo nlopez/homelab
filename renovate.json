@@ -124,6 +124,19 @@
       "depNameTemplate": "Brainicism/bgutil-ytdlp-pot-provider",
       "datasourceTemplate": "github-releases",
       "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Update the pixivfe release the patched pixivfe image builds from. Merging the bump builds a new ghcr.io/nlopez/pixivfe tag, which the image rule then rolls out; a patch that no longer applies fails the build on the bump's PR.",
+      "managerFilePatterns": [
+        "/^pixivfe/Dockerfile$/"
+      ],
+      "matchStrings": [
+        "ARG PIXIVFE_VERSION=(?<currentValue>\\S+)"
+      ],
+      "depNameTemplate": "pixivfe/PixivFE",
+      "datasourceTemplate": "gitlab-tags",
+      "versioningTemplate": "semver"
     }
   ],
   "packageRules": [
@@ -182,6 +195,14 @@
       "matchPackageNames": [
         "ghcr.io/nlopez/media-toolbox"
       ],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "The pixivfe CI publishes <upstream version>-<CI run number> tags (e.g. v3.1.0-12); the run number orders rebuilds of the same upstream version (patch changes). Commit-SHA tags are ignored. We build it ourselves, and the upstream pin already waits out the release age.",
+      "matchPackageNames": [
+        "ghcr.io/nlopez/pixivfe"
+      ],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-(?<build>\\d+)$",
       "minimumReleaseAge": null
     },
     {
