@@ -4,9 +4,10 @@ kind: ApplicationSet
 metadata:
   name: apps
   namespace: argocd
+  annotations:
+    # Deleting this ApplicationSet deletes every app under kubernetes/apps/ and its resources.
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
-  syncPolicy:
-    preserveResourcesOnDeletion: true
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
   generators:
@@ -19,6 +20,8 @@ spec:
   template:
     metadata:
       name: "{{ .path.basename }}"
+      finalizers:
+      - resources-finalizer.argocd.argoproj.io
     spec:
       project: default
       ignoreDifferences:
