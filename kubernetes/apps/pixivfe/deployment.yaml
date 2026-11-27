@@ -40,6 +40,11 @@ spec:
             secretKeyRef:
               name: pixivfe
               key: credential
+        # Fetch pixiv (API and images) through the cluster's Cloudflare WARP
+        # exit. Pages with many images finish sooner than over the home
+        # connection's route to Japan.
+        - name: HTTPS_PROXY
+          value: http://warp.warp.svc.cluster.local:8888
         resources:
           requests:
             cpu: 10m
