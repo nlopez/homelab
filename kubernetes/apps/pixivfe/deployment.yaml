@@ -40,15 +40,18 @@ spec:
             secretKeyRef:
               name: pixivfe
               key: credential
-        # Fetch pixiv (API and images) through the cluster's Cloudflare WARP
-        # exit. Pages with many images finish sooner than over the home
-        # connection's route to Japan.
         # Without an external media service, pixivfe leaves out the Download
         # menu. media-api-deployment.yaml runs one.
         - name: PIXIVFE_UGOIRAPROXY
           value: https://dupin.desertbluffs.com/media-api
+        # Fetch images (i.pximg.net) through the cluster's Cloudflare WARP
+        # exit: pages with many images finish sooner than over the home
+        # connection's route to Japan. pixiv.net stays direct because
+        # Cloudflare answers WARP traffic to it with a bot challenge (403).
         - name: HTTPS_PROXY
           value: http://warp.warp.svc.cluster.local:8888
+        - name: NO_PROXY
+          value: pixiv.net
         resources:
           requests:
             cpu: 10m
