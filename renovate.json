@@ -13,6 +13,8 @@
     "* 8 * * *"
   ],
   "minimumReleaseAge": "7 days",
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 20,
   "enabledManagers": [
     "ansible-galaxy",
     "custom.regex",
