@@ -19,6 +19,8 @@ Several agents and people work in this repo at the same time. Every change lands
 
 Cloud sessions without `gh`: see [.claude/CLOUD.md](.claude/CLOUD.md).
 
+If you abandon a task, close the PR (`gh pr close --delete-branch`). Never leave an open PR behind without saying why in the PR.
+
 ## Landing a change
 
 The `ship` skill walks through committing, opening a PR, waiting for checks, verifying the plan, merging, and confirming the apply. Use it for every change to this repo. See `.claude/skills/ship/SKILL.md`.
@@ -37,10 +39,13 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 - A hook fails: fix the cause and commit again. Do not bypass it.
 - You changed a script in `.github/scripts/` or `scripts/`: run `.github/scripts/tests/run.sh` before pushing, and add a case for the behaviour you changed.
 - A plan job fails before it plans (credentials, network): say so in the PR and leave it for a human. Do not merge without a plan.
+- A failed apply on `main`: open a follow-up PR; do not retry by hand.
+- If you re-run a failed check, re-run the `CI gate (protected)` workflow too.
+- A plan that destroys or replaces anything needs a human's approval, even when intended. Say in the PR what is destroyed and why. The `ci-ok` check fails until a code owner adds the `destroy-approved` label by hand. Never add that label yourself. A later push whose plan still destroys something removes the label, so the approval always covers the current plan.
 
 ## Checks and applies
 
-Every PR gets `ci-ok` (passes only when all others pass), `pre-commit` (commit hooks), and `Script tests` (for scripts in `.github/scripts/`). Every OpenTofu stack plans on PR and applies on `main` via `.github/workflows/_tofu-stack.yaml`.
+Every PR gets `ci-ok` (passes only when all others pass), `pre-commit` (commit hooks), and `Script tests` (for scripts in `.github/scripts/`). Every OpenTofu stack plans on PR and applies on `main` via `.github/workflows/_tofu-stack.yaml`. The `ci-ok` check is posted by the ci-gate GitHub App from `main`'s copy of `.github/workflows/ci-gate-protected.yaml`, so a PR can't change or fake it.
 
 Exceptions:
 - `arr/`: secret-holding resources excluded from PR plan.
