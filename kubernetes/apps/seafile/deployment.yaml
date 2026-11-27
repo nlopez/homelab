@@ -26,7 +26,7 @@ spec:
           type: RuntimeDefault
       containers:
       - name: seafile
-        image: seafileltd/seafile-mc:13.0.30
+        image: seafileltd/seafile-mc:14.0.9
         resources:
           requests:
             cpu: 100m
