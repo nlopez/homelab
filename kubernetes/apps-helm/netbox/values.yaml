@@ -13,6 +13,9 @@ csrf:
   trustedOrigins:
   - https://kikit.desertbluffs.com
 loginRequired: true
+# Every signed-in user can view everything; authentik admins are superusers (see the pipeline below).
+exemptViewPermissions:
+- '*'
 timeZone: America/New_York
 remoteAuth:
   enabled: true
