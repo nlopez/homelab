@@ -13,7 +13,7 @@ resource "truenas_app" "tailscale_nas1" {
   catalog_app = "tailscale"
   custom_app  = false
   name        = "tailscale"
-  running     = false
+  running     = true
   train       = "community"
   version     = "1.4.28"
 }
@@ -73,7 +73,7 @@ resource "truenas_app" "tailscale_nas2" {
   catalog_app = "tailscale"
   custom_app  = false
   name        = "tailscale"
-  running     = false
+  running     = true
   train       = "community"
   version     = "1.4.28"
 }
