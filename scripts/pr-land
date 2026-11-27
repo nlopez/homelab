@@ -6,8 +6,8 @@
 #
 #   scripts/pr-land <pr number>
 #
-# Exit status: pr-wait's (1 ci-ok failed, 2 usage or API error, 3 main moved,
-# 4 timed out) before the merge; after it, 0 every run passed, 1 a run failed,
+# Exit status: pr-wait's (1 ci-ok failed, 2 usage or API error, 3 must contain
+# main's latest commit, 4 timed out) before the merge; after it, 0 every run passed, 1 a run failed,
 # 2 the merge failed, 5 timed out waiting for runs (30 minutes).
 # Needs `gh` authenticated for the repository (GH_TOKEN works too).
 set -euo pipefail

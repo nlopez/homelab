@@ -1,0 +1,62 @@
+name: CI gate refresh
+
+# A push to main can make an open PR's plans stale for the stacks it changes.
+# main doesn't require PRs to contain its latest commit, so this fails ci-ok on
+# the open PRs that change those stacks (.github/scripts/ci-gate-refresh.sh),
+# as the ci-gate app, from main's own copy of the script.
+on:
+  push:
+    branches: [ "main" ]
+
+permissions: {}
+
+concurrency:
+  group: ci-gate-refresh
+  cancel-in-progress: false
+
+# shell: bash runs steps with -eo pipefail; the default (bash -e) lets a
+# failing command before a pipe pass, as `script 2>&1 | tee log` once let the
+# ci-ok gate pass with failed checks.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  refresh:
+    name: Refresh open PRs' ci-ok
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: ci-gate
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Get the app's token
+        env:
+          APP_ID: ${{ vars.CI_GATE_APP_ID }}
+          APP_KEY: ${{ secrets.CI_GATE_APP_KEY }}
+          REPO: ${{ github.repository }}
+        run: |-
+          set -euo pipefail
+          key="$(mktemp)"
+          trap 'rm -f "${key}"' EXIT
+          printf '%s\n' "${APP_KEY}" > "${key}"
+          token="$(.github/scripts/app-token.sh token "${APP_ID}" "${key}" "${REPO}")"
+          echo "::add-mask::${token}"
+          echo "APP_TOKEN=${token}" >> "${GITHUB_ENV}"
+
+      - name: Fail ci-ok on PRs with stale plans
+        env:
+          GH_TOKEN: ${{ env.APP_TOKEN }}
+          APP_ID: ${{ vars.CI_GATE_APP_ID }}
+          REPO: ${{ github.repository }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: .github/scripts/ci-gate-refresh.sh

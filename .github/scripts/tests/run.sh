@@ -382,6 +382,10 @@ JSON
   # Open PRs: this one (#7, dns), #8 also on dns, #9 on gateway only.
   echo '[{"number": 7, "title": "this"}, {"number": 8, "title": "other | dns"}, {"number": 9, "title": "gw"}]' > "${d}/repos_o_r_pulls.json"
   echo '[{"filename": "dns/main.tf"}]' > "${d}/repos_o_r_pulls_7_files.json"
+  # The PR branched at base0000; since then main changed only gateway.
+  echo "{\"head\": {\"sha\": \"${head}\"}}" > "${d}/repos_o_r_pulls_7.json"
+  echo '{"merge_base_commit": {"sha": "base0000"}}' > "${d}/repos_o_r_compare_main...${head}.json"
+  echo '{"files": [{"filename": "gateway/main.tf"}]}' > "${d}/repos_o_r_compare_base0000...main.json"
   echo '[{"filename": "dns/records.tf"}, {"filename": "README.md"}]' > "${d}/repos_o_r_pulls_8_files.json"
   echo '[{"filename": "gateway/main.tf"}]' > "${d}/repos_o_r_pulls_9_files.json"
 }
@@ -408,6 +412,14 @@ rm "${g}/repos_o_r_pulls_8_files.json"
 gaterun "${g}" >/dev/null
 contains "gate's summary says so when it can't read another PR's files" "Couldn't check other open PRs" \
   "$(sed -n '/^POST repos\/o\/r\/issues\/7\/comments/,/^$/p' "${g}/calls.log")"
+gate_fixtures "${g}" success no none
+echo '{"files": [{"filename": "gateway/main.tf"}, {"filename": "dns/records.tf"}]}' > "${g}/repos_o_r_compare_base0000...main.json"
+expect "gate fails when main changed the PR's stack since it branched" "1" "$(gaterun "${g}")"
+contains "gate names the stale stack" "main changed dns since this PR branched" "$(cat "${g}/out.log")"
+rm "${g}/repos_o_r_compare_base0000...main.json"
+expect "gate fails when it can't tell what main changed" "1" "$(gaterun "${g}")"
+contains "gate says it couldn't check for stale plans" "Couldn't check whether main changed" "$(cat "${g}/out.log")"
+gate_fixtures "${g}" success no none
 rm "${g}/repos_o_r_pulls.json"
 : > "${g}/calls.log"
 expect "gate still passes when it can't list open PRs" "0" "$(gaterun "${g}")"
@@ -446,6 +458,37 @@ summary_comment 'nlopez-homelab-ci-gate[bot]' "$(printf '0%.0s' {1..64})" > "${g
 expect "gate fails an older approval when the destroys changed" "1" "$(gaterun "${g}")"
 summary_comment 'someone' "${fp}" > "${g}/repos_o_r_issues_7_comments.json"
 expect "gate ignores a record in a comment the app didn't post" "1" "$(gaterun "${g}")"
+
+### ci-gate-refresh.sh (against the fake gh)
+
+r="${work}/refresh"
+mkdir -p "${r}"
+# The push b1..a1 changed dns. Open: #8 on dns, #9 on gateway, #10 on dns with no ci-ok yet.
+echo '{"files": [{"filename": "dns/records.tf"}, {"filename": "README.md"}]}' > "${r}/repos_o_r_compare_b1...a1.json"
+echo '[{"number": 8, "head": {"sha": "h8"}}, {"number": 9, "head": {"sha": "h9"}}, {"number": 10, "head": {"sha": "h10"}}]' > "${r}/repos_o_r_pulls.json"
+echo '[{"filename": "dns/main.tf"}]' > "${r}/repos_o_r_pulls_8_files.json"
+echo '[{"filename": "gateway/main.tf"}]' > "${r}/repos_o_r_pulls_9_files.json"
+echo '[{"filename": "dns/zone.tf"}]' > "${r}/repos_o_r_pulls_10_files.json"
+echo '{"check_runs": [{"id": 40, "started_at": "2030-01-01T00:00:00Z"}, {"id": 50, "started_at": "2030-01-01T00:05:00Z"}]}' > "${r}/repos_o_r_commits_h8_check-runs.json"
+echo '{"check_runs": []}' > "${r}/repos_o_r_commits_h10_check-runs.json"
+refreshrun() { # <before> <after>; prints the exit status
+  PATH="${work}/ghbin:${PATH}" GH_FIXTURES="${r}" REPO=o/r APP_ID=1 BEFORE="$1" AFTER="$2" RUN_URL=u/run \
+    "${scripts}/ci-gate-refresh.sh" >"${r}/out.log" 2>&1
+  echo $?
+}
+: > "${r}/calls.log"
+expect "refresh passes" "0" "$(refreshrun b1 a1)"
+calls="$(cat "${r}/calls.log")"
+contains "refresh fails the latest ci-ok of a PR on the changed stack" "PATCH repos/o/r/check-runs/50" "${calls}"
+contains "refresh names the stack in ci-ok" "main changed dns in a1" "${calls}"
+if grep -q 'check-runs/40' <<<"${calls}"; then fail "refresh leaves earlier ci-ok runs alone"; else pass "refresh leaves earlier ci-ok runs alone"; fi
+expect "refresh changes only that PR's ci-ok" "1" "$(grep -c '^PATCH' <<<"${calls}")"
+contains "refresh says a PR without ci-ok is left to its gate" "#10: no ci-ok yet" "$(cat "${r}/out.log")"
+echo '{"files": [{"filename": "README.md"}]}' > "${r}/repos_o_r_compare_b2...a2.json"
+: > "${r}/calls.log"
+expect "refresh passes a push that changes no stack" "0" "$(refreshrun b2 a2)"
+expect "refresh changes nothing for a push that changes no stack" "" "$(cat "${r}/calls.log")"
+expect "refresh fails when it can't read the push" "1" "$(refreshrun b3 a3)"
 
 ### ansible-merge-tags.py
 
