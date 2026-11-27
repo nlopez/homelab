@@ -1,0 +1,60 @@
+commonAnnotations:
+  reloader.stakater.com/auto: "true"
+podLabels:
+  tags.datadoghq.com/env: homelab
+  tags.datadoghq.com/service: netbox
+# Every secret comes from 1Password: the chart's generated ones would change on each Argo CD render.
+existingSecret: netbox
+superuser:
+  existingSecret: netbox-superuser
+allowedHosts:
+- kikit.desertbluffs.com
+csrf:
+  trustedOrigins:
+  - https://kikit.desertbluffs.com
+loginRequired: true
+timeZone: America/New_York
+remoteAuth:
+  enabled: true
+  backends:
+  - social_core.backends.open_id_connect.OpenIdConnectAuth
+  autoCreateUser: true
+logoutRedirectUrl: https://arsox.desertbluffs.com/application/o/netbox/end-session/
+extraConfig:
+- values:
+    SOCIAL_AUTH_OIDC_ENDPOINT: https://arsox.desertbluffs.com/application/o/netbox/
+    SOCIAL_AUTH_OIDC_KEY: netbox
+    # TLS ends at the gateway; without this the redirect URI is http:// and authentik rejects it.
+    SOCIAL_AUTH_REDIRECT_IS_HTTPS: true
+- secret:
+    secretName: netbox
+    items:
+    - key: oidc.yaml
+      path: oidc.yaml
+postgresql:
+  enabled: false
+externalDatabase:
+  host: netbox-database-tn-rw.netbox.svc.cluster.local
+  existingSecretName: netbox-database
+  existingSecretKey: password
+valkey:
+  enabled: false
+tasksDatabase:
+  host: netbox-valkey
+  existingSecretName: netbox-valkey
+  existingSecretKey: password
+cachingDatabase:
+  host: netbox-valkey
+  existingSecretName: netbox-valkey
+  existingSecretKey: password
+persistence:
+  storageClass: tn-nas1-mtank-iscsi
+resources:
+  requests:
+    cpu: 50m
+    memory: 512Mi
+worker:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 256Mi
