@@ -136,9 +136,9 @@
         "443"
       ]
     },
-    // The split DNS resolvers for desertbluffs.com and radoncanyon.com
-    // (tailnet/tofu/dns.tf). A runner on the tailnet sends every lookup for
-    // those domains here, so without this grant they time out.
+    // The split DNS resolvers for desertbluffs.com (tailnet/tofu/dns.tf). A
+    // runner on the tailnet sends every lookup for that domain here, so
+    // without this grant they time out.
     {
       "src": [
         "tag:ci"

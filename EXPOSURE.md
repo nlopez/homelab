@@ -94,10 +94,10 @@ flowchart LR
   (`tailnet/tofu/dns.tf`) pointing `desertbluffs.com` to both gateways (`100.83.144.88`,
   `100.86.37.97`). Names without a host override fall through to public recursion.
 - **Site infrastructure (`*.lga1.radoncanyon.com`, `*.lga2.radoncanyon.com`):** Gateways, nodes,
-  NAS, and odroids live as Unbound host overrides (LAN A + ULA AAAA) on both `gw.lga1` and
-  `gw.lga2` (`gateway/`), so they resolve even when the cluster is down. Tailnet split-DNS routes
-  `radoncanyon.com` to both gateways (`100.83.144.88`, `100.86.37.97`), and Tailscale MagicDNS (`*.macaroni-pirate.ts.net`) answers tailnet IPs
-  automatically. No private IPs are published in Cloudflare (`dns/`).
+  NAS, and odroids are public Cloudflare records (`dns/radoncanyon.com.tf`) with their LAN A and
+  ULA AAAA addresses, so any resolver answers them, even when the cluster is down. The gateways'
+  Unbound lists `radoncanyon.com` in `private_domains` so rebind protection keeps those answers.
+  Tailscale MagicDNS (`*.macaroni-pirate.ts.net`) answers tailnet IPs automatically.
 - **Outside:** Cloudflare DNS answers with the WAN address and the gateway's public IPv6 address.
   Internet records are DNS-only with a 60s TTL, so clients that move between inside and outside
   pick up the other answer quickly. The `kamotimestamps.com` routes are the exception: they opt in

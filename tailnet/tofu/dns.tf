@@ -5,12 +5,12 @@
 # provider documents it as conflicting with tailscale_dns_split_nameservers,
 # which would otherwise fight it over the same entries on every apply.
 #
-# Private names for both domains are Unbound host overrides on the two
+# Private desertbluffs.com names are Unbound host overrides on the two
 # gateways, so tailnet clients use the same resolvers as the sites' LANs.
+# radoncanyon.com needs no entry: its site names are public records in dns/.
 locals {
   split_dns = {
     "desertbluffs.com" = ["100.83.144.88", "100.86.37.97"]
-    "radoncanyon.com"  = ["100.83.144.88", "100.86.37.97"]
   }
 }
 
