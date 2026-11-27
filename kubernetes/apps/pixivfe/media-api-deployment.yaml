@@ -43,8 +43,11 @@ spec:
             secretKeyRef:
               name: pixivfe
               key: credential
+        # Images through WARP, pixiv.net direct; see deployment.yaml.
         - name: HTTPS_PROXY
           value: http://warp.warp.svc.cluster.local:8888
+        - name: NO_PROXY
+          value: pixiv.net
         resources:
           requests:
             cpu: 10m
