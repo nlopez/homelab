@@ -56,9 +56,18 @@ if ! gh api "repos/${REPO}/issues/${PR}/labels" --jq '.[].name' | grep -qx destr
 fi
 approval="$(gh api --paginate "repos/${REPO}/issues/${PR}/events?per_page=100" \
   --jq '.[] | select(.event == "labeled" and .label.name == "destroy-approved")
-    | {actor: .actor.login, app: (.performed_via_github_app.slug // "")}' | jq -s 'last')"
+    | {actor: .actor.login, app: (.performed_via_github_app.slug // ""), at: .created_at}' | jq -s 'last')"
 actor="$(jq -r .actor <<<"${approval}")"
 app="$(jq -r .app <<<"${approval}")"
+labeled_at="$(jq -r .at <<<"${approval}")"
+# The approval covers only what the owner saw: a label added before the head
+# commit was pushed (its first check suite) doesn't count.
+pushed_at="$(gh api --paginate "repos/${REPO}/commits/${SHA}/check-suites?per_page=100" \
+  --jq '.check_suites[].created_at' | sort | head -n 1)"
+if [ -z "${pushed_at}" ] || [[ ! "${labeled_at}" > "${pushed_at}" ]]; then
+  echo "::error::destroy-approved was added at ${labeled_at}, before ${SHA:0:8} was pushed at ${pushed_at:-an unknown time}. A code owner must review this commit, then remove the label and add it again."
+  exit 1
+fi
 if [ -n "${app}" ]; then
   echo "::error::destroy-approved was added through the ${app} app, not by a person. A code owner must add it by hand."
   exit 1

@@ -54,6 +54,9 @@ b.created_first (create then delete)
 c.gone (delete)" "${out}"
 expect "plan-destroys prints nothing for a plan with no resource changes" "" \
   "$(echo '{"format_version": "1.2"}' | "${scripts}/plan-destroys.sh")"
+expect "plan-destroys skips a replaced terraform_data trigger" "" \
+  "$(echo '{"resource_changes": [{"address": "terraform_data.refresh", "type": "terraform_data",
+    "change": {"actions": ["delete", "create"]}}]}' | "${scripts}/plan-destroys.sh")"
 
 ### plan-diff.sh
 
@@ -368,9 +371,12 @@ JSON
     owner|app)
       echo '[{"name": "destroy-approved"}]' > "${d}/repos_o_r_issues_7_labels.json"
       if [ "${label}" = app ]; then app='{"slug": "some-app"}'; else app=null; fi
-      echo "[{\"event\": \"labeled\", \"label\": {\"name\": \"destroy-approved\"}, \"actor\": {\"login\": \"owner\"}, \"performed_via_github_app\": ${app}}]" \
+      echo "[{\"event\": \"labeled\", \"label\": {\"name\": \"destroy-approved\"}, \"actor\": {\"login\": \"owner\"}, \"performed_via_github_app\": ${app}, \"created_at\": \"2030-01-01T00:10:00Z\"}]" \
         > "${d}/repos_o_r_issues_7_events.json" ;;
   esac
+  # The head commit was pushed at 00:00; a re-run added the 00:20 suite.
+  echo '{"check_suites": [{"created_at": "2030-01-01T00:20:00Z"}, {"created_at": "2030-01-01T00:00:00Z"}]}' \
+    > "${d}/repos_o_r_commits_${head}_check-suites.json"
   echo '[]' > "${d}/repos_o_r_issues_7_comments.json"
   # Open PRs: this one (#7, dns), #8 also on dns, #9 on gateway only.
   echo '[{"number": 7, "title": "this"}, {"number": 8, "title": "other | dns"}, {"number": 9, "title": "gw"}]' > "${d}/repos_o_r_pulls.json"
@@ -422,6 +428,9 @@ expect "gate fails destroy-approved added through an app" "1" "$(gaterun "${g}")
 gate_fixtures "${g}" success yes owner
 expect "gate passes a destroy a code owner approved" "0" "$(gaterun "${g}")"
 expect "gate completes ci-ok as success for an approved destroy" "success" "$(conclusion "${g}")"
+echo '{"check_suites": [{"created_at": "2030-01-01T00:30:00Z"}]}' > "${g}/repos_o_r_commits_${head}_check-suites.json"
+expect "gate fails destroy-approved added before the head commit was pushed" "1" "$(gaterun "${g}")"
+contains "gate says the approval predates the push" "remove the label and add it again" "$(cat "${g}/out.log")"
 
 ### ansible-merge-tags.py
 
