@@ -1,6 +1,6 @@
 --- a/core/ranking_calendar.go
 +++ b/core/ranking_calendar.go
-@@ -4,6 +4,7 @@
+@@ -4,11 +4,13 @@
  package core
  
  import (
@@ -8,7 +8,13 @@
  	"errors"
  	"fmt"
  	"net/http"
-@@ -28,7 +29,7 @@
+ 	"regexp"
+ 	"strconv"
++	"strings"
+ 	"time"
+ 
+ 	"github.com/PuerkitoBio/goquery"
+@@ -28,7 +30,7 @@
  
  var (
  	// artworkIDRegexp extracts the artwork ID from an image URL.
@@ -17,7 +23,16 @@
  
  	errInvalidYear  = errors.New("invalid year")
  	errInvalidMonth = errors.New("invalid month")
-@@ -143,10 +144,56 @@
+@@ -107,7 +109,7 @@
+ 	numDays := daysIn(time.Month(monthInt), yearInt) // Get the number of days in the month
+ 
+ 	calendar, dayCount = addDaysOfMonth(calendar,
+-		extractImageLinks(r, doc), dayCount, numDays, year, month) // Add days of the month
++		extractImageLinks(r, doc, yearInt, monthInt), dayCount, numDays, year, month) // Add days of the month
+ 	calendar, dayCount = addEmptyDaysAfter(calendar, dayCount) // Add empty days after the last day to complete the week
+ 
+ 	_ = dayCount
+@@ -143,10 +145,65 @@
  	return data, nil
  }
  
@@ -28,9 +43,12 @@
 +		PageProps struct {
 +			Assign struct {
 +				DisplayA struct {
++					Date     string `json:"date"` // YYYYMM
 +					Calendar []struct {
-+						Day string `json:"day"`
-+						Img string `json:"img"`
++						// "01" to "31", or the number 0 for the
++						// days before the 1st that fill out the week.
++						Day json.RawMessage `json:"day"`
++						Img string          `json:"img"`
 +					} `json:"calendar"`
 +				} `json:"display_a"`
 +			} `json:"assign"`
@@ -39,10 +57,11 @@
 +}
 +
  // extractImageLinks extracts image links from the parsed HTML document.
+-func extractImageLinks(r *http.Request, doc *html.Node) []string {
 +//
 +// The returned slice is indexed by day of the month minus one; days without
 +// a ranked work hold an empty string.
- func extractImageLinks(r *http.Request, doc *html.Node) []string {
++func extractImageLinks(r *http.Request, doc *html.Node, year, month int) []string {
 +	gq := goquery.NewDocumentFromNode(doc)
 +
 +	// ranking_log.php renders with Next.js and carries the calendar in
@@ -52,8 +71,14 @@
 +		if err := json.Unmarshal([]byte(script.Text()), &data); err == nil {
 +			links := []string{}
 +
++			// pixiv redirects a month after the current one to the current
++			// month; those months have no rankings yet.
++			if data.Props.PageProps.Assign.DisplayA.Date != fmt.Sprintf("%04d%02d", year, month) {
++				return links
++			}
++
 +			for _, entry := range data.Props.PageProps.Assign.DisplayA.Calendar {
-+				day, err := strconv.Atoi(entry.Day)
++				day, err := strconv.Atoi(strings.Trim(string(entry.Day), `"`))
 +				if err != nil || day < 1 || day > 31 || entry.Img == "" {
 +					continue
 +				}
@@ -77,7 +102,7 @@
  	links := make([]string, 0, imgSelection.Length())
 --- /dev/null
 +++ b/core/ranking_calendar_test.go
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,53 @@
 +// Copyright 2023 - 2025, VnPower and the pixivFE contributors
 +// SPDX-License-Identifier: AGPL-3.0-only
 +
@@ -95,7 +120,8 @@
 +	t.Parallel()
 +
 +	page := `<html><body><img src="https://s.pximg.net/logo.svg">
-+<script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"assign":{"display_a":{"calendar":[
++<script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"assign":{"display_a":{"date":"202611","calendar":[
++{"day":0,"week":"Sun"},
 +{"day":"01","img":"https://i.pximg.net/c/128x128/img-master/img/2026/10/31/02/11/01/151475433_p0_square1200.jpg"},
 +{"day":"03","img":"https://i.pximg.net/c/128x128/custom-thumb/img/2026/11/13/02/52/41/151996977_p0_custom1200.jpg"},
 +{"day":"04"}
@@ -106,7 +132,13 @@
 +		t.Fatal(err)
 +	}
 +
-+	links := extractImageLinks(httptest.NewRequest("GET", "/rankingCalendar", nil), doc)
++	req := httptest.NewRequest("GET", "/rankingCalendar", nil)
++
++	if future := extractImageLinks(req, doc, 2027, 1); len(future) != 0 {
++		t.Errorf("a month pixiv redirected to another has links: %q", future)
++	}
++
++	links := extractImageLinks(req, doc, 2026, 11)
 +
 +	if len(links) != 3 {
 +		t.Fatalf("got %d links, want 3: %q", len(links), links)
