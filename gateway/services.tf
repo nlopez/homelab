@@ -1,4 +1,4 @@
-# Cron jobs and traffic shaper pipes, imported from the live gateways.
+# Cron jobs, imported from the live gateways.
 # Generated from config.xml; keep in sync with the appliance.
 
 locals {
@@ -29,28 +29,6 @@ locals {
     }
   }
 
-  lga1_trafficshaper_pipes = {
-    "10000-Download Pipe" = {
-      uuid             = "2f69c891-fdf6-4e7b-be98-b23ab2123157"
-      bandwidth        = "950"
-      bandwidth_metric = "Mbit"
-      number           = "10000"
-      mask             = "none"
-      scheduler        = "fq_codel"
-      description      = "Download Pipe"
-      enabled          = true
-    }
-    "10001-Upload Pipe" = {
-      uuid             = "100e3cfc-c890-4a23-a36a-4526b76e834b"
-      bandwidth        = "900"
-      bandwidth_metric = "Mbit"
-      number           = "10001"
-      mask             = "none"
-      scheduler        = "fq_codel"
-      description      = "Upload Pipe"
-      enabled          = true
-    }
-  }
 
   lga2_cron_jobs = {
     "AcmeClient Cronjob for Certificate AutoRenewal" = {
@@ -91,28 +69,6 @@ locals {
     }
   }
 
-  lga2_trafficshaper_pipes = {
-    "10000-Upload Pipe" = {
-      uuid             = "70dd3a11-4f72-411a-bf32-e3ee138d3fe3"
-      bandwidth        = "900"
-      bandwidth_metric = "Mbit"
-      number           = "10000"
-      mask             = "none"
-      scheduler        = "fq_codel"
-      description      = "Upload Pipe"
-      enabled          = true
-    }
-    "10001-Download Pipe" = {
-      uuid             = "045a61d2-4630-40c5-8260-8e260500b39c"
-      bandwidth        = "950"
-      bandwidth_metric = "Mbit"
-      number           = "10001"
-      mask             = "none"
-      scheduler        = "fq_codel"
-      description      = "Download Pipe"
-      enabled          = true
-    }
-  }
 
 }
 
@@ -139,26 +95,6 @@ import {
   id       = each.value.uuid
 }
 
-resource "opnsense_trafficshaper_pipe" "lga1_trafficshaper_pipes" {
-  provider = opnsense.lga1
-  for_each = local.lga1_trafficshaper_pipes
-
-  bandwidth        = each.value.bandwidth
-  bandwidth_metric = each.value.bandwidth_metric
-  number           = try(each.value.number, null)
-  mask             = try(each.value.mask, null)
-  scheduler        = try(each.value.scheduler, null)
-  description      = try(each.value.description, null)
-  enabled          = each.value.enabled
-}
-
-import {
-  provider = opnsense.lga1
-  for_each = local.lga1_trafficshaper_pipes
-  to       = opnsense_trafficshaper_pipe.lga1_trafficshaper_pipes[each.key]
-  id       = each.value.uuid
-}
-
 resource "opnsense_cron_job" "lga2_cron_jobs" {
   provider = opnsense.lga2
   for_each = local.lga2_cron_jobs
@@ -179,26 +115,6 @@ import {
   provider = opnsense.lga2
   for_each = local.lga2_cron_jobs
   to       = opnsense_cron_job.lga2_cron_jobs[each.key]
-  id       = each.value.uuid
-}
-
-resource "opnsense_trafficshaper_pipe" "lga2_trafficshaper_pipes" {
-  provider = opnsense.lga2
-  for_each = local.lga2_trafficshaper_pipes
-
-  bandwidth        = each.value.bandwidth
-  bandwidth_metric = each.value.bandwidth_metric
-  number           = try(each.value.number, null)
-  mask             = try(each.value.mask, null)
-  scheduler        = try(each.value.scheduler, null)
-  description      = try(each.value.description, null)
-  enabled          = each.value.enabled
-}
-
-import {
-  provider = opnsense.lga2
-  for_each = local.lga2_trafficshaper_pipes
-  to       = opnsense_trafficshaper_pipe.lga2_trafficshaper_pipes[each.key]
   id       = each.value.uuid
 }
 

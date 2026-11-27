@@ -16,7 +16,7 @@ provider.
 - Custom gateways and static routes
 - Unbound query forwards and general settings
 - System tunables with a non-default value
-- Cron jobs, traffic shaper pipes, and syslog destinations
+- Cron jobs and syslog destinations
 - Site-to-site WireGuard: instances, peers, and the global enable
 - FRR/Quagga general settings and BGP (prefix lists, route maps, neighbors, redistribution)
 - Monit tests and services
