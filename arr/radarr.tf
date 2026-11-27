@@ -1,12 +1,6 @@
 # Recyclarr owns quality profiles, custom formats, quality definitions, and
 # movie naming (kubernetes/apps/recyclarr), so they stay out of this stack.
 
-# Unused. Added by the first change CI applied here, to prove the Arr
-# workflow's apply on main can write to Radarr.
-resource "radarr_tag" "homelab_ci" {
-  label = "homelab-ci"
-}
-
 resource "radarr_root_folder" "movies" {
   path = "/media/movies"
 }
