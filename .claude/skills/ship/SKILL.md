@@ -47,17 +47,17 @@ Read the `AGENTS.md` of any directory you change (`kubernetes/`, `gateway/`, `aw
   job for any row that isn't `No changes`.
 - A destroy or replace: stop and leave it for a human (AGENTS.md). Never add `destroy-approved`.
 - Anything you didn't intend, including drift: don't merge. Check for a `Drift in <stack>` issue.
-- Merge by squash: `gh pr merge --squash --match-head-commit <sha> --delete-branch`, using the head
-  SHA you checked, so a late push can't slip in. To merge as soon as `ci-ok` passes without
-  waiting, add `--auto` right after opening the PR instead.
+- Merge and confirm the apply with `scripts/pr-land <pr>`: one command that squash-merges with
+  head-commit matching, waits for all workflow runs on main to complete, and reports each run's
+  result. For a stack that should change, check its Apply step ran (not just its Plan); a green
+  run with a skipped Apply means nothing was applied. For `kubernetes/`, it includes the
+  `Kubernetes sync check` run, which fails if a changed Application isn't Synced and Healthy
+  within 15 minutes. To merge as soon as `ci-ok` passes without waiting, add `--auto` right
+  after opening the PR instead (applies the merge without waiting for apply runs).
 
 ## 6. After the merge
 
-- Confirm each stack's run on `main` for the merge commit passed, and for a stack that should
-  change, that its Apply step ran (not just its Plan). A green run with a skipped Apply means
-  nothing was applied.
-- For `kubernetes/`, confirm the `Kubernetes sync check` run passed: it fails if a changed
-  Application's sync fails or it isn't Synced and Healthy within 15 minutes, and lists each one's
-  state. A failure there is the change not working, not a flaky check.
+- If a run failed, open the failed job's log and fix the issue in a follow-up PR; do not retry
+  by hand.
 - Several PRs open at once: `main` requires each to be up to date, so after every merge, rebase
   the next one and wait for its fresh `ci-ok` before merging it. Merge the quickest checks first.

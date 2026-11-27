@@ -465,6 +465,77 @@ PY
 )"
 expect "every workflow defaults to bash with pipefail" "" "${nopipefail}"
 
+### scripts/pr-land (against a fake repo with mocked gh and pr-wait)
+# pr-land merges a PR and waits for workflow runs; we mock both by creating
+# a fake repo structure with mock scripts.
+prl_repo="${work}/pr-land-repo"
+mkdir -p "${prl_repo}/scripts"
+cat > "${prl_repo}/scripts/gh" <<'SH'
+#!/usr/bin/env bash
+[ "$1" = api ] || exit 2; shift
+method=GET jqexpr=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -X) method="$2"; shift 2 ;;
+    --jq) jqexpr="$2"; shift 2 ;;
+    *) path="$1"; shift ;;
+  esac
+done
+# Mock responses for pr-land: PR info, merge, workflow runs.
+case "${path}" in
+  *pulls/123)
+    if [ "${method}" = PUT ]; then
+      echo '{"sha": "abc123def456"}'
+    else
+      echo '{"head": {"sha": "abc123def456"}, "base": {"sha": "base1234"}, "merge_commit_sha": "merged1234"}'
+    fi
+    ;;
+  *branches/main) echo '{"commit": {"sha": "main1234"}}' ;;
+  *actions/runs*)
+    echo '{"workflow_runs": [{"name": "dns / Apply", "conclusion": "success", "id": 1}, {"name": "gateway / Apply", "conclusion": "failure", "id": 2}]}'
+    ;;
+  *jobs) echo '{"jobs": [{"name": "Apply", "conclusion": "success"}]}' ;;
+  *) echo '{}' ;;
+esac | jq -r "${jqexpr}" 2>/dev/null || echo ""
+SH
+chmod +x "${prl_repo}/scripts/gh"
+
+cp "${repo}/scripts/pr-land" "${prl_repo}/scripts/"
+chmod +x "${prl_repo}/scripts/pr-land"
+cat > "${prl_repo}/scripts/pr-wait" <<'SH'
+#!/usr/bin/env bash
+# Mock pr-wait: succeed by default, fail or exit 3 on demand.
+case "${PR_WAIT_MODE}" in
+  fail) echo "ci-ok failed" >&2; exit 1 ;;
+  main-moved) echo "main moved" >&2; exit 3 ;;
+  timeout) echo "timed out" >&2; exit 4 ;;
+  *) echo "ci-ok summary" >&2; exit 0 ;;
+esac
+SH
+chmod +x "${prl_repo}/scripts/pr-wait"
+
+prland_test() {
+  local mode="$1" exp_exit="$2" exp_text="$3"
+  cd "${prl_repo}" || exit
+  export PR_WAIT_MODE="${mode}" GH_REPO="o/r"
+  PATH="${prl_repo}/scripts:${PATH}" "${prl_repo}/scripts/pr-land" 123 >"${work}/pr-land-out.txt" 2>&1
+  local exit_code=$?
+  if [ "${exit_code}" = "${exp_exit}" ]; then
+    pass "pr-land ${mode}: exit code ${exit_code}"
+  else
+    fail "pr-land ${mode}: expected exit ${exp_exit}, got ${exit_code}"
+  fi
+  if [ -n "${exp_text}" ] && grep -q "${exp_text}" "${work}/pr-land-out.txt"; then
+    pass "pr-land ${mode}: output contains '${exp_text}'"
+  elif [ -n "${exp_text}" ]; then
+    fail "pr-land ${mode}: output missing '${exp_text}'"
+  fi
+}
+prland_test default 1 "gateway / Apply"
+prland_test fail 1 ""
+prland_test main-moved 3 ""
+prland_test timeout 4 ""
+
 ### scripts/plan
 
 plan="${repo}/scripts/plan"
