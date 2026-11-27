@@ -41,7 +41,7 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 - A plan job fails before it plans (credentials, network): say so in the PR and leave it for a human. Do not merge without a plan.
 - A failed apply on `main`: open a follow-up PR; do not retry by hand.
 - If you re-run a failed check, re-run the `CI gate (protected)` workflow too.
-- A plan that destroys or replaces anything needs a human's approval, even when intended. Say in the PR what is destroyed and why. The `ci-ok` check fails until a code owner adds the `destroy-approved` label by hand. Never add that label yourself. The approval covers only the commit the owner saw: after any later push, `ci-ok` fails until the owner removes the label and adds it again. Never remove the label yourself either.
+- A plan that destroys or replaces anything needs a human's approval, even when intended. Say in the PR what is destroyed and why. The `ci-ok` check fails until a code owner adds the `destroy-approved` label by hand. Never add that label yourself. The approval covers only the commit the owner saw: after any later push, `ci-ok` fails until the owner removes the label and adds it again. Never remove the label yourself either. A PR that changes the checks that report destroys (`plan-destroys.sh`, `manifest-destroys.sh`, `ci-gate-check.sh`, `.github/actions/tofu-plan/`, `_tofu-stack.yaml`, `kubernetes-argocd-diff.yaml`, `ci-gate-protected.yaml`) needs the same approval, since it could hide a destroy.
 
 ## Checks and applies
 

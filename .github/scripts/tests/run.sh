@@ -443,6 +443,7 @@ JSON
   echo '{"check_suites": [{"created_at": "2030-01-01T00:20:00Z"}, {"created_at": "2030-01-01T00:00:00Z"}]}' \
     > "${d}/repos_o_r_commits_${head}_check-suites.json"
   echo '[]' > "${d}/repos_o_r_issues_7_comments.json"
+  echo '[{"filename": "kubernetes/apps/web/deployment.yaml"}]' > "${d}/repos_o_r_pulls_7_files.json"
 }
 gaterun() { # <fixtures dir>; prints the exit status
   PATH="${work}/ghbin:${PATH}" GH_FIXTURES="$1" GATE_SETTLE=0 GATE_POLL=0 GITHUB_ENV="$1/env" \
@@ -478,6 +479,20 @@ expect "gate completes ci-ok as success for an approved destroy" "success" "$(co
 echo '{"check_suites": [{"created_at": "2030-01-01T00:30:00Z"}]}' > "${g}/repos_o_r_commits_${head}_check-suites.json"
 expect "gate fails an approval added before the head commit was pushed" "1" "$(gaterun "${g}")"
 contains "gate asks for the label again" "remove the label and add it again" "$(cat "${g}/out.log")"
+
+# A PR that edits what reports destroys could hide one, so it needs approval.
+gate_fixtures "${g}" success no none
+echo '[{"filename": ".github/scripts/manifest-destroys.sh"}]' > "${g}/repos_o_r_pulls_7_files.json"
+expect "gate fails a change to the destroy checks without destroy-approved" "1" "$(gaterun "${g}")"
+contains "gate names the destroy check the PR changes" \
+  "Changes the destroy checks: .github/scripts/manifest-destroys.sh" "$(cat "${g}/out.log")"
+gate_fixtures "${g}" success no none
+echo '[{"filename": ".github/actions/tofu-plan/x.yml", "previous_filename": ".github/actions/tofu-plan/action.yml"}]' \
+  > "${g}/repos_o_r_pulls_7_files.json"
+expect "gate fails a renamed destroy check without destroy-approved" "1" "$(gaterun "${g}")"
+gate_fixtures "${g}" success no owner
+echo '[{"filename": ".github/workflows/kubernetes-argocd-diff.yaml"}]' > "${g}/repos_o_r_pulls_7_files.json"
+expect "gate passes a change to the destroy checks a code owner approved" "0" "$(gaterun "${g}")"
 
 ### ansible-merge-tags.py
 

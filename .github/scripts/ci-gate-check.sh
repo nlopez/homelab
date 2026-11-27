@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # The ci-ok gate: waits until every other check on a pull request's head commit
 # has finished, fails if any failed, and when a plan destroys or replaces
-# anything, requires the destroy-approved label from a code owner, added by a
+# anything, or the pull request changes the checks that report destroys,
+# requires the destroy-approved label from a code owner, added by a
 # person rather than through an app. Run by .github/workflows/ci-gate-protected.yaml
 # (main's copy, on pull_request_target, so a PR can't change what judges it).
 #
@@ -41,17 +42,29 @@ destroys="$(gh api --paginate "repos/${REPO}/commits/${SHA}/check-runs?per_page=
     gh api --paginate "repos/${REPO}/check-runs/${id}/annotations?per_page=100" \
       --jq '.[] | select(.title == "plan-destroys") | .message'
   done)"
+# The plan-destroys annotations come from the PR's own copy of these files, so
+# a PR that changes them could hide a destroy. Changing them needs the same
+# approval as a destroy.
+detectors="$(gh api --paginate "repos/${REPO}/pulls/${PR}/files?per_page=100" \
+  --jq '.[] | .filename, (.previous_filename // empty)' |
+  grep -E '^\.github/(scripts/(plan-destroys|manifest-destroys|ci-gate-check)\.sh|actions/tofu-plan/|workflows/(_tofu-stack|kubernetes-argocd-diff|ci-gate-protected)\.yaml$)' |
+  sort -u || true)"
+if [ -n "${detectors}" ]; then
+  while read -r file; do
+    destroys+="${destroys:+$'\n'}Changes the destroy checks: ${file}"
+  done <<<"${detectors}"
+fi
 if [ -z "${destroys}" ]; then
   echo "No plan destroys or replaces anything."
   exit 0
 fi
-echo "Plans that destroy or replace resources:"
+echo "Destroys, replaces, or changes to the destroy checks:"
 echo "${destroys}"
 
 owners="$(gh api "repos/${REPO}/contents/.github/CODEOWNERS?ref=${BASE_REF}" --jq .content | base64 -d |
   awk '$1 == "*" { for (i = 2; i <= NF; i++) { sub(/^@/, "", $i); print $i } }')"
 if ! gh api "repos/${REPO}/issues/${PR}/labels" --jq '.[].name' | grep -qx destroy-approved; then
-  echo "::error::A plan destroys or replaces resources. A code owner (${owners//$'\n'/, }) must review the plan comments and add the destroy-approved label."
+  echo "::error::A plan destroys or replaces resources, or this PR changes the destroy checks. A code owner (${owners//$'\n'/, }) must review the plans and the change, then add the destroy-approved label."
   exit 1
 fi
 approval="$(gh api --paginate "repos/${REPO}/issues/${PR}/events?per_page=100" \
