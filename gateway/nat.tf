@@ -172,22 +172,6 @@ locals {
       destination_not  = true
       log              = false
     }
-    "1100-emergency ssh" = {
-      uuid             = "a570d9cc-e88a-4132-a19d-948eb2bf1d02"
-      sequence         = 1100
-      enabled          = true
-      ip_protocol      = "inet"
-      interface        = "wan"
-      protocol         = "tcp"
-      target           = "192.168.222.1"
-      local_port       = "ssh"
-      description      = "emergency ssh"
-      source_not       = false
-      destination_net  = "wanip"
-      destination_port = "2234"
-      destination_not  = false
-      log              = true
-    }
   }
 }
 
@@ -260,22 +244,6 @@ locals {
       destination_not  = true
       log              = false
       reflection       = "disable"
-    }
-    "500-emergency ssh" = {
-      uuid             = "5fad764f-9e7d-4cc0-be5b-3371fa4a9854"
-      sequence         = 500
-      enabled          = true
-      ip_protocol      = "inet"
-      interface        = "wan"
-      protocol         = "tcp"
-      target           = "192.168.239.254"
-      local_port       = "ssh"
-      description      = "emergency ssh"
-      source_not       = false
-      destination_net  = "wanip"
-      destination_port = "3025"
-      destination_not  = false
-      log              = true
     }
   }
 }
