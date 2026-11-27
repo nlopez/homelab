@@ -125,6 +125,14 @@ expect "manifest-destroys prints nothing when only stateless resources go" "" \
     printf '' >"${md}2/target/httpbin.yaml" && "${scripts}/manifest-destroys.sh" "${md}2")"
 expect "manifest-destroys prints nothing without rendered manifests" "" \
   "$("${scripts}/manifest-destroys.sh" "${work}/no-such-output")"
+mkdir -p "${md}3/base" "${md}3/target"
+printf 'kind: [unclosed\n' >"${md}3/base/broken.yaml"
+cp "${md}3/base/broken.yaml" "${md}3/target/"
+if "${scripts}/manifest-destroys.sh" "${md}3" >/dev/null 2>&1; then
+  fail "manifest-destroys fails on a manifest it can't parse"
+else
+  pass "manifest-destroys fails on a manifest it can't parse"
+fi
 
 ### plan-diff.sh
 

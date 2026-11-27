@@ -34,6 +34,10 @@ objects() {
 }
 
 [ -d "${out}/base" ] || exit 0
+# Parsed to files rather than in <(...), so a manifest yq can't read fails the
+# job instead of listing nothing.
+work="$(mktemp -d)"
+trap 'rm -rf "${work}"' EXIT
 for base in "${out}"/base/*.yaml; do
   [ -e "${base}" ] || continue
   app="$(basename "${base}" .yaml)"
@@ -42,7 +46,9 @@ for base in "${out}"/base/*.yaml; do
     echo "Application ${app} (deletes everything it runs)"
     continue
   fi
-  comm -23 <(objects "${base}") <(objects "${target}") |
+  objects "${base}" >"${work}/base"
+  objects "${target}" >"${work}/target"
+  comm -23 "${work}/base" "${work}/target" |
     while IFS='|' read -r group kind namespace name; do
       case "${group}|${kind}" in
         "|PersistentVolumeClaim" | "|PersistentVolume" | "|Namespace" | \
