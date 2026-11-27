@@ -24,6 +24,45 @@ resource "opnsense_auth_group" "lga2_admins" {
   members     = ["0", "2000"]
 }
 
+# Read-only SSO access: os-sso maps authentik's gateway-viewers group here.
+# OPNsense has no read-only role, and "Deny config write" alone still allows
+# reboots, service restarts, and state flushes, so the group gets only status
+# and log pages. Some of them keep small actions, such as clearing a log or
+# flushing the ARP table. Members are uids; 2003 is the SSO nlopez account.
+resource "opnsense_auth_group" "lga2_viewers" {
+  provider    = opnsense.lga2
+  name        = "viewers"
+  description = "Read-only access through SSO"
+  members     = ["2003"]
+  privileges = [
+    "user-config-readonly",
+    "page-system-login-logout",
+    "page-system-status",
+    "page-status-interfaces",
+    "page-status-dnsoverview",
+    "page-status-ntp",
+    "page-status-trafficgraph",
+    "page-status-carp",
+    "page-diagnostics-arptable",
+    "page-diagnostics-ndptable",
+    "page-diagnostics-routingtables",
+    "page-diagnostics-health",
+    "page-diagnostics-pf-info",
+    "page-diagnostics-system-activity",
+    "page-diagnostics-system-pftop",
+    "page-diagnostics-netstat",
+    "page-diagnostics-logs-system",
+    "page-diagnostics-logs-gateways",
+    "page-diagnostics-logs-firewall-dynamic",
+    "page-diagnostics-logs-firewall-plain",
+    "page-diagnostics-logs-firewall-summary",
+    "page-diagnostics-logs-resolver",
+    "page-diagnostics-logs-kea",
+    "page-status-systemlogs-routing",
+    "page-wireguard-diagnostics",
+  ]
+}
+
 resource "opnsense_acme_account" "lga1" {
   provider    = opnsense.lga1
   name        = "LE Aethertrail"
