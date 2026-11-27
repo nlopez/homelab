@@ -24,7 +24,7 @@ spec:
           type: RuntimeDefault
       containers:
       - name: redis
-        image: redis:8.4.8
+        image: redis:8.10.2
         command: ["sh", "-c", 'exec redis-server --requirepass "$REDIS_PASSWORD" --save ""']
         resources:
           requests:

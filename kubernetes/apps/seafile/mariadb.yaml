@@ -4,7 +4,7 @@ kind: MariaDB
 metadata:
   name: mariadb
 spec:
-  image: mariadb:11.4.13
+  image: mariadb:11.8.9
   rootPasswordSecretKeyRef:
     name: onepassword-seafile
     key: mysql-root-password
