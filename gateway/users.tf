@@ -45,7 +45,6 @@ locals {
     "page-firewall-aliases",
     "page-firewall-categories",
     "page-firewall-nat-portforward-edit",
-    "page-firewall-trafficshaper",
     "page-firewall-virtualipaddress-edit",
     "page-interfaces-assignnetworkports",
     "page-interfaces-vlan-edit",
