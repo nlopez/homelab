@@ -19,16 +19,16 @@ for file in "${files[@]}"; do
   fi
 done
 
+if [ ${#dirs[@]} -eq 0 ]; then
+  exit 0
+fi
+
 # Remove duplicates using sort -u with while-read (macOS bash 3.2 compat; no mapfile)
 declare -A unique_dirs
 while IFS= read -r dir; do
   unique_dirs["$dir"]=1
 done < <(printf '%s\n' "${dirs[@]}" | sort -u)
 dirs=("${!unique_dirs[@]}")
-
-if [ ${#dirs[@]} -eq 0 ]; then
-  exit 0
-fi
 
 # Use a shared plugin cache outside the repo to speed up test runs
 export TF_PLUGIN_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/terraform-plugins"

@@ -553,6 +553,9 @@ if grep -q "Testing ${work}/tofu_test/no_test" <<<"${tofu_test_out}"; then
 else
   pass "tofu-test skips directories without test files"
 fi
+tofu_test_out="$(PATH="${work}/tofu_test_bin:${PATH}" bash "${repo}/scripts/tofu-test.sh" \
+  "${work}/tofu_test/no_test/main.tf" 2>&1)"
+expect "tofu-test passes when no changed directory has test files" "0" "$?"
 
 ### scripts/plan
 
