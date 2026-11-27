@@ -47,6 +47,7 @@ locals {
     "page-firewall-nat-portforward-edit",
     "page-firewall-trafficshaper",
     "page-firewall-virtualipaddress-edit",
+    "page-interfaces-assignnetworkports",
     "page-interfaces-vlan-edit",
     "page-routing",
     "page-services-acmeclient",
