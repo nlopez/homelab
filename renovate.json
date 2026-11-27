@@ -196,7 +196,7 @@
       "enabled": true
     },
     {
-      "description": "Velero is pinned a patch ahead of its chart, and the AWS plugin's minor must match Velero's: allow patches; a new minor comes with the chart",
+      "description": "The chart doesn't version Velero's AWS plugin, and the plugin's minor must match Velero's: allow patches; a new minor goes in the PR that moves the chart to a new Velero minor",
       "matchManagers": [
         "helm-values"
       ],
@@ -204,7 +204,6 @@
         "kubernetes/apps/velero/values.yaml"
       ],
       "matchPackageNames": [
-        "docker.io/velero/velero",
         "velero/velero-plugin-for-aws"
       ],
       "matchUpdateTypes": [
