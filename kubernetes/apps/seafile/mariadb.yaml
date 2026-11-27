@@ -4,7 +4,7 @@ kind: MariaDB
 metadata:
   name: mariadb
 spec:
-  image: mariadb:11.8.9
+  image: mariadb:13.0.2
   # Run mariadb-upgrade on start, so a new server version migrates the system
   # tables when the image changes. It does nothing when there's nothing to do.
   updateStrategy:
