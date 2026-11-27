@@ -317,8 +317,8 @@ expect "the repo's credentials.yaml is complete" "0" "$(TODAY=2000-01-01 python3
 ### ci-gate-run.sh (end to end, against a fake gh)
 
 # The fake gh serves GETs from ${GH_FIXTURES}/<path with / as _>.json (query
-# dropped), applies --jq as gh does, and logs every POST and PATCH, with its
-# body, to ${GH_FIXTURES}/calls.log.
+# dropped), applies --jq as gh does, and logs every other call, with its body,
+# to ${GH_FIXTURES}/calls.log, answering from <METHOD>_<path>.json if present.
 mkdir -p "${work}/ghbin"
 cat > "${work}/ghbin/gh" <<'SH'
 #!/usr/bin/env bash
@@ -341,7 +341,8 @@ if [ "${method}" != GET ]; then
       case "${f}" in *=@*) echo "  ${f%%=@*}:"; sed 's/^/    /' "${f#*=@}" ;; *) echo "  ${f}" ;; esac
     done
     [ "${input}" = 1 ] && jq -c .; echo; } >> "${GH_FIXTURES}/calls.log"
-  body='{"id": 999}'
+  f="${GH_FIXTURES}/${method}_$(tr / _ <<<"${path}").json"
+  if [ -f "${f}" ]; then body="$(cat "${f}")"; else body='{"id": 999}'; fi
 else
   f="${GH_FIXTURES}/$(tr / _ <<<"${path}").json"
   [ -f "${f}" ] || { echo "fake gh: no fixture ${f}" >&2; exit 1; }
@@ -474,76 +475,52 @@ PY
 )"
 expect "every workflow defaults to bash with pipefail" "" "${nopipefail}"
 
-### scripts/pr-land (against a fake repo with mocked gh and pr-wait)
-# pr-land merges a PR and waits for workflow runs; we mock both by creating
-# a fake repo structure with mock scripts.
-prl_repo="${work}/pr-land-repo"
-mkdir -p "${prl_repo}/scripts"
-cat > "${prl_repo}/scripts/gh" <<'SH'
-#!/usr/bin/env bash
-[ "$1" = api ] || exit 2; shift
-method=GET jqexpr=""
-while [ $# -gt 0 ]; do
-  case "$1" in
-    -X) method="$2"; shift 2 ;;
-    --jq) jqexpr="$2"; shift 2 ;;
-    *) path="$1"; shift ;;
-  esac
-done
-# Mock responses for pr-land: PR info, merge, workflow runs.
-case "${path}" in
-  *pulls/123)
-    if [ "${method}" = PUT ]; then
-      echo '{"sha": "abc123def456"}'
-    else
-      echo '{"head": {"sha": "abc123def456"}, "base": {"sha": "base1234"}, "merge_commit_sha": "merged1234"}'
-    fi
-    ;;
-  *branches/main) echo '{"commit": {"sha": "main1234"}}' ;;
-  *actions/runs*)
-    echo '{"workflow_runs": [{"name": "dns / Apply", "conclusion": "success", "id": 1}, {"name": "gateway / Apply", "conclusion": "failure", "id": 2}]}'
-    ;;
-  *jobs) echo '{"jobs": [{"name": "Apply", "conclusion": "success"}]}' ;;
-  *) echo '{}' ;;
-esac | jq -r "${jqexpr}" 2>/dev/null || echo ""
-SH
-chmod +x "${prl_repo}/scripts/gh"
+### scripts/pr-land (against the fake gh, with a stub pr-wait)
 
-cp "${repo}/scripts/pr-land" "${prl_repo}/scripts/"
-chmod +x "${prl_repo}/scripts/pr-land"
-cat > "${prl_repo}/scripts/pr-wait" <<'SH'
-#!/usr/bin/env bash
-# Mock pr-wait: succeed by default, fail or exit 3 on demand.
-case "${PR_WAIT_MODE}" in
-  fail) echo "ci-ok failed" >&2; exit 1 ;;
-  main-moved) echo "main moved" >&2; exit 3 ;;
-  timeout) echo "timed out" >&2; exit 4 ;;
-  *) echo "ci-ok summary" >&2; exit 0 ;;
-esac
-SH
-chmod +x "${prl_repo}/scripts/pr-wait"
-
-prland_test() {
-  local mode="$1" exp_exit="$2" exp_text="$3"
-  cd "${prl_repo}" || exit
-  export PR_WAIT_MODE="${mode}" GH_REPO="o/r"
-  PATH="${prl_repo}/scripts:${PATH}" "${prl_repo}/scripts/pr-land" 123 >"${work}/pr-land-out.txt" 2>&1
-  local exit_code=$?
-  if [ "${exit_code}" = "${exp_exit}" ]; then
-    pass "pr-land ${mode}: exit code ${exit_code}"
-  else
-    fail "pr-land ${mode}: expected exit ${exp_exit}, got ${exit_code}"
-  fi
-  if [ -n "${exp_text}" ] && grep -q "${exp_text}" "${work}/pr-land-out.txt"; then
-    pass "pr-land ${mode}: output contains '${exp_text}'"
-  elif [ -n "${exp_text}" ]; then
-    fail "pr-land ${mode}: output missing '${exp_text}'"
-  fi
+prl="${work}/pr-land"
+mkdir -p "${prl}/bin"
+cp "${repo}/scripts/pr-land" "${prl}/bin/"
+printf '#!/usr/bin/env bash\nexit "${PR_WAIT_EXIT:-0}"\n' > "${prl}/bin/pr-wait"
+chmod +x "${prl}/bin/pr-wait"
+# prl_fixtures <dir> <gateway run conclusion> <merge: ok|fail>
+prl_fixtures() {
+  local d="$1"
+  rm -rf "${d}" && mkdir -p "${d}"
+  echo '{"head": {"sha": "head1111"}, "title": "dns: add a record"}' > "${d}/repos_o_r_pulls_7.json"
+  [ "$3" = ok ] && echo '{"sha": "merge2222", "merged": true}' > "${d}/PUT_repos_o_r_pulls_7_merge.json"
+  cat > "${d}/repos_o_r_actions_runs.json" <<JSON
+{"workflow_runs": [
+  {"id": 1, "name": "DNS", "status": "completed", "conclusion": "success"},
+  {"id": 2, "name": "Gateway", "status": "completed", "conclusion": "$2"}
+]}
+JSON
+  echo '{"jobs": [{"name": "dns / Plan", "steps": []}, {"name": "dns / Apply", "steps": [{"name": "Apply", "conclusion": "success"}]}]}' \
+    > "${d}/repos_o_r_actions_runs_1_jobs.json"
+  echo '{"jobs": [{"name": "gateway / Apply", "steps": [{"name": "Apply", "conclusion": "skipped"}]}]}' \
+    > "${d}/repos_o_r_actions_runs_2_jobs.json"
 }
-prland_test default 1 "gateway / Apply"
-prland_test fail 1 ""
-prland_test main-moved 3 ""
-prland_test timeout 4 ""
+prlrun() { # <fixtures dir> [pr-wait exit]; prints pr-land's exit status
+  PATH="${work}/ghbin:${PATH}" GH_FIXTURES="$1" GH_REPO=o/r PR_LAND_POLL=0 PR_WAIT_EXIT="${2:-0}" \
+    "${prl}/bin/pr-land" 7 >"$1/out.log" 2>&1
+  echo $?
+}
+
+p="${work}/prl"
+prl_fixtures "${p}" success ok
+expect "pr-land passes when every run on main passed" "0" "$(prlrun "${p}")"
+contains "pr-land merges the head pr-wait checked" "sha=head1111" "$(cat "${p}/calls.log")"
+contains "pr-land keeps the PR title in the squash commit" "commit_title=dns: add a record (#7)" "$(cat "${p}/calls.log")"
+contains "pr-land reports an Apply step that ran" "dns / Apply: applied" "$(cat "${p}/out.log")"
+contains "pr-land reports an Apply step that was skipped" "gateway / Apply: Apply step skipped, nothing applied" "$(cat "${p}/out.log")"
+prl_fixtures "${p}" failure ok
+expect "pr-land fails when a run on main failed" "1" "$(prlrun "${p}")"
+contains "pr-land names the failed run" "Gateway: failure" "$(cat "${p}/out.log")"
+prl_fixtures "${p}" success fail
+expect "pr-land fails when the merge fails" "2" "$(prlrun "${p}")"
+contains "pr-land says nothing was merged" "nothing was merged" "$(cat "${p}/out.log")"
+prl_fixtures "${p}" success ok
+expect "pr-land passes on pr-wait's main-moved exit" "3" "$(prlrun "${p}" 3)"
+expect "pr-land doesn't merge when pr-wait fails" "" "$(cat "${p}/calls.log" 2>/dev/null)"
 
 ### scripts/plan
 
