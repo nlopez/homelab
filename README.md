@@ -46,7 +46,7 @@ resources. [SECRETS.md](SECRETS.md) maps each vault ID to what it holds and who 
 
 ## Other docs
 
-- [AGENTS.md](AGENTS.md): how to make a change, from worktree to merged PR.
+- [AGENTS.md](AGENTS.md): how to make a change, from commit to merged PR.
 - [EXPOSURE.md](EXPOSURE.md): what each service exposes to the internet, and split-horizon DNS.
 - [CODENAMES.md](CODENAMES.md): unused hostnames for new apps.
 - [SECRETS.md](SECRETS.md): the 1Password vaults, who reads them, and how to add or rotate a secret.

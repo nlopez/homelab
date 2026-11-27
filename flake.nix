@@ -60,10 +60,6 @@
               aws-sso-creds
             ];
 
-            # Keep the worktree if someone runs `wt merge`; changes land
-            # through pull requests (AGENTS.md).
-            WORKTRUNK_MERGE__REMOVE = "false";
-
             # MITOGEN: fork+file-descriptor broker so each task skips a fresh
             # Python startup on the ARM nodes.
             ANSIBLE_STRATEGY = "mitogen_linear";
