@@ -25,7 +25,7 @@ spec:
       automountServiceAccountToken: false
       initContainers:
       - name: dind
-        image: docker.io/library/docker:29.10.0-dind
+        image: docker.io/library/docker:29.10.0
         restartPolicy: Always
         args:
         - dockerd
