@@ -38,7 +38,6 @@ spec:
         env:
         - name: SERVER_ADDR
           value: ":8080"
-        # The same pixiv session as pixivfe, for R-18 works.
         - name: PHPSESSID
           valueFrom:
             secretKeyRef:

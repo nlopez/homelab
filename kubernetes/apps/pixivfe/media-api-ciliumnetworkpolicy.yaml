@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/cilium.io/ciliumnetworkpolicy_v2.json
 # Only the gateway reaches media-api, so authentik (gateway-oidc.yaml) can't
-# be bypassed to use its pixiv session.
+# be bypassed by calling the pod directly.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
