@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/argoproj.io/application_v1alpha1.json
+# Copy this directory to kubernetes/apps/<name>/ and replace NAME with <name>, and the
+# chart's repoURL, chart and targetRevision. For an OCI chart, set repoURL to
+# oci://<registry>/<path>/<chart> and replace `chart:` with `path: .`. The chart's values
+# go in values.yaml, extra manifests in manifests/.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: NAME
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: NAME
+  sources:
+  - repoURL: https://charts.example.com
+    chart: CHART
+    targetRevision: 1.0.0
+    helm:
+      valueFiles:
+      - $values/kubernetes/apps/NAME/values.yaml
+      ignoreMissingValueFiles: true
+  - repoURL: https://github.com/nlopez/homelab.git
+    targetRevision: main
+    ref: values
+  - repoURL: https://github.com/nlopez/homelab.git
+    targetRevision: main
+    path: kubernetes/apps/NAME/manifests
+  ignoreDifferences:
+  - jsonPointers:
+    - /spec/volumeName
+    kind: PersistentVolumeClaim
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: false
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+    - RespectIgnoreDifferences=true

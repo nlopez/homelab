@@ -1,5 +1,5 @@
 # Desert Bluffs branding. The asset files live in the repo at
-# kubernetes/apps-helm/authentik/branding/ and are served by the authentik
+# kubernetes/apps/authentik/branding/ and are served by the authentik
 # server pod from the authentik-branding ConfigMap (mounted into
 # /web/dist/assets/desert-bluffs/, see the Helm values), so the brand can
 # reference them as built-in static assets.

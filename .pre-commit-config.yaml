@@ -11,7 +11,6 @@ repos:
   - id: check-yaml
     files: ^(kubernetes|\.github)/
     args: ["--allow-multiple-documents"]
-    exclude: ^kubernetes/bootstrap/apps\.yaml$|^kubernetes/bootstrap/apps-helm\.yaml$
   - id: check-added-large-files
     files: ^kubernetes/
   - id: check-json
@@ -40,7 +39,6 @@ repos:
   hooks:
   - id: check-yamlschema
     files: ^kubernetes/
-    exclude: ^kubernetes/bootstrap/apps\.yaml$|^kubernetes/bootstrap/apps-helm\.yaml$
 - repo: local
   hooks:
   - id: kubeconform
@@ -49,7 +47,7 @@ repos:
       kubeconform -strict -summary -schema-location default -schema-location https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json -ignore-missing-schemas
     language: golang
     additional_dependencies: ['github.com/yannh/kubeconform/cmd/kubeconform@v0.8.0']
-    files: ^kubernetes/(apps|apps-helm)/.*\.ya?ml$
+    files: ^kubernetes/apps/.*\.ya?ml$
     exclude: /values\.yaml$|/\.gitkeep$|^kubernetes/apps/pms/deployment\.yaml$
   - id: ansible-lint
     name: ansible-lint

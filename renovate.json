@@ -28,12 +28,12 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Update Helm chart versions in bootstrap ApplicationSet list entries (HTTPS)",
+      "description": "Update Helm chart versions in Application sources (HTTPS)",
       "managerFilePatterns": [
-        "/^kubernetes/bootstrap/apps-helm\\.yaml$/"
+        "/^kubernetes/apps/[^/]+/application\\.yaml$/"
       ],
       "matchStrings": [
-        "- name:\\s*(?<appName>[^\\n]+)\\n(?:\\s*tier:[^\\n]+\\n)?\\s*repoURL:\\s*['\"]?(?<registryUrl>https?://[^\\s'\"]+)['\"]?\\s*\\n\\s*chart:\\s*['\"]?(?<depName>[^\\s'\"]+)['\"]?\\s*\\n\\s*targetRevision:\\s*['\"]?(?<currentValue>[^\\s'\"]+)['\"]?"
+        "repoURL:\\s*['\"]?(?<registryUrl>https?://[^\\s'\"]+)['\"]?\\s*\\n\\s*chart:\\s*['\"]?(?<depName>[^\\s'\"]+)['\"]?\\s*\\n\\s*targetRevision:\\s*['\"]?(?<currentValue>[^\\s'\"]+)['\"]?"
       ],
       "datasourceTemplate": "helm",
       "registryUrlTemplate": "{{{registryUrl}}}",
@@ -41,24 +41,24 @@
     },
     {
       "customType": "regex",
-      "description": "Update OCI-hosted Helm chart versions in bootstrap ApplicationSet list entries",
+      "description": "Update OCI-hosted Helm chart versions in Application sources",
       "managerFilePatterns": [
-        "/^kubernetes/bootstrap/apps-helm\\.yaml$/"
+        "/^kubernetes/apps/[^/]+/application\\.yaml$/"
       ],
       "matchStrings": [
-        "- name:\\s*(?<appName>[^\\n]+)\\n(?:\\s*tier:[^\\n]+\\n)?\\s*repoURL:\\s*['\"]?oci://(?<depName>[^\\s'\"]+)['\"]?\\s*\\n\\s*targetRevision:\\s*['\"]?(?<currentValue>[^\\s'\"]+)['\"]?"
+        "repoURL:\\s*['\"]?oci://(?<depName>[^\\s'\"]+)['\"]?\\s*\\n\\s*targetRevision:\\s*['\"]?(?<currentValue>[^\\s'\"]+)['\"]?"
       ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "semver-coerced"
     },
     {
       "customType": "regex",
-      "description": "Update Docker Hub OCI Helm chart versions (repoURL registry-1.docker.io + chart) in bootstrap ApplicationSet list entries",
+      "description": "Update Docker Hub OCI Helm chart versions (repoURL registry-1.docker.io + chart) in Application sources",
       "managerFilePatterns": [
-        "/^kubernetes/bootstrap/apps-helm\\.yaml$/"
+        "/^kubernetes/apps/[^/]+/application\\.yaml$/"
       ],
       "matchStrings": [
-        "- name:\\s*(?<appName>[^\\n]+)\\n(?:\\s*tier:[^\\n]+\\n)?\\s*repoURL:\\s*['\"]?registry-1\\.docker\\.io['\"]?\\s*\\n\\s*chart:\\s*['\"]?(?<depName>[^\\s'\"]+)['\"]?\\s*\\n\\s*targetRevision:\\s*['\"]?(?<currentValue>[^\\s'\"]+)['\"]?"
+        "repoURL:\\s*['\"]?registry-1\\.docker\\.io['\"]?\\s*\\n\\s*chart:\\s*['\"]?(?<depName>[^\\s'\"]+)['\"]?\\s*\\n\\s*targetRevision:\\s*['\"]?(?<currentValue>[^\\s'\"]+)['\"]?"
       ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "semver-coerced"
@@ -67,8 +67,7 @@
       "customType": "regex",
       "description": "Update container images (image: / CNPG imageName:) in raw Kubernetes manifests",
       "managerFilePatterns": [
-        "/^kubernetes/apps/.+\\.ya?ml$/",
-        "/^kubernetes/apps-helm/[^/]+/manifests/.+\\.ya?ml$/"
+        "/^kubernetes/apps/.+\\.ya?ml$/"
       ],
       "matchStrings": [
         "(?:^|\\n)[ \\t]*(?:-[ \\t]+)?(?:image|imageName):[ \\t]*['\"]?(?<depName>[^:@\\s'\"]+)(?::(?<currentValue>[^@\\s'\"]+))?(?:@(?<currentDigest>sha256:[a-f0-9]+))?['\"]?"
@@ -137,11 +136,21 @@
       "groupName": "container image updates"
     },
     {
-      "description": "Group Helm chart updates from bootstrap/apps-helm.yaml",
+      "description": "Group Helm chart updates from the Application files",
       "matchFileNames": [
-        "kubernetes/bootstrap/apps-helm.yaml"
+        "kubernetes/apps/*/application.yaml"
       ],
       "groupName": "helm chart updates"
+    },
+    {
+      "description": "Leave Helm values files to the helm-values manager; the image regex above is for raw manifests",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchFileNames": [
+        "kubernetes/apps/*/values.yaml"
+      ],
+      "enabled": false
     },
     {
       "description": "Use regex versioning for linuxserver images which use version-X.Y.Z or version-vX.Y.Z tag format",

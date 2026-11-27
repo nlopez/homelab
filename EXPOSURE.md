@@ -37,7 +37,7 @@ a codename picked from [CODENAMES.md](CODENAMES.md). An app reachable from the i
 same hostname on both gateways; private DNS and public DNS answer it differently. The zone apex
 is the exception: it has no private route and always resolves publicly.
 
-Unmatched hostnames under `*.desertbluffs.com` (both gateways) get a catch-all `418` route (`kubernetes/apps-helm/envoy-gateway/manifests/unmatched-teapot.yaml`).
+Unmatched hostnames under `*.desertbluffs.com` (both gateways) get a catch-all `418` route (`kubernetes/apps/envoy-gateway/manifests/unmatched-teapot.yaml`).
 
 ## Split-horizon DNS
 
@@ -128,7 +128,7 @@ flowchart LR
    Cloudflare reaches them and their `CF-*` headers can be trusted.
 
 The `internet` gateway also has the public IPv6 address `2600:4041:5b21:6b64::20`, from the
-Cilium `public-v6` pool (`2600:4041:5b21:6b64::/112`, in `apps-helm/cilium/manifests/bgp.yaml`).
+Cilium `public-v6` pool (`2600:4041:5b21:6b64::/112`, in `apps/cilium/manifests/bgp.yaml`).
 Only Services labeled `lbipam.homelab/pool: public` get addresses from that pool, and the gateway
 is the only one. OPNsense's WAN rule `ingress gateway` allows port 443 to it (alias
 `ingress_gateway_v6`) and to the IPv4 port forward from any source. The address sits

@@ -25,9 +25,9 @@ for csr in $(kubectl get csr --sort-by=.metadata.creationTimestamp -o name); do 
 ### CNI: Cilium
 ```bash
 helm repo add cilium https://helm.cilium.io/
-helm install cilium cilium/cilium --version 1.19.2 --namespace kube-system --values apps-helm/cilium/values.yaml
+helm install cilium cilium/cilium --version 1.19.2 --namespace kube-system --values apps/cilium/values.yaml
 cilium status --wait
-kubectl apply --server-side -Rf apps-helm/cilium/manifests
+kubectl apply --server-side -Rf apps/cilium/manifests
 ```
 
 ### Wait for coredns/control plane running
@@ -38,7 +38,7 @@ kubectl get pod --all-namespaces -owide --watch
 ### ArgoCD
 ```bash
 helm repo add argo https://argoproj.github.io/argo-helm
-helm install --create-namespace --namespace argocd --version 9.0.1 argocd argo/argo-cd --values apps-helm/argocd/values.yaml
+helm install --create-namespace --namespace argocd --version 9.0.1 argocd argo/argo-cd --values apps/argocd/values.yaml
 argocd login --core
 argocd admin initial-password -n argocd
 kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
@@ -59,7 +59,7 @@ kubectl create secret generic onepassword-token -n 1password --from-literal=toke
 
 `kubeadm init` wipes etcd, so every `PersistentVolume`/`PersistentVolumeClaim` object is lost —
 but the underlying data on TrueNAS (`nas1.lga1.radoncanyon.com`) is untouched, since it's external
-to the cluster. Velero (`apps-helm/velero`) tracks CSI snapshots of the stateful namespaces in
+to the cluster. Velero (`apps/velero`) tracks CSI snapshots of the stateful namespaces in
 DigitalOcean Spaces, which also survives a re-init, so restoring is normally just `velero restore
 create` rather than hand-reconstructing PV/PVC manifests from TrueNAS.
 
@@ -73,43 +73,39 @@ For CNPG-managed namespaces (`atuin`, `harbor`), hibernate the `Cluster` first
 (`cnpg.io/hibernation: "on"` annotation) so the snapshot is transactionally consistent rather than
 crash-consistent — see commit `4bd437f7` for the full hibernate/restore dance.
 
-**After re-init**, restore *before* the `apps` AppSet syncs — if it syncs a stateful app's plain
+**After re-init**, restore *before* the stateful apps sync — if Argo CD syncs a stateful app's
 PVC manifest first, that PVC binds to a brand-new empty volume and permanently orphans the real
-data. Velero itself, `external-snapshotter`, `truenas-csi`, and CloudNativePG are all deployed
-by the *other* AppSet (`apps-helm`), so bootstrap that one first and hold `apps` back:
-1. `kubectl apply --server-side -f bootstrap/apps-helm.yaml` (not the whole `bootstrap/` dir yet)
-   and wait for Velero, `external-snapshotter`, `truenas-csi-*`, and `cloudnative-pg` to sync
-   healthy — these are what CSI snapshot restore and CNPG `Cluster` restore depend on.
+data. So apply the infrastructure Applications by hand and hold the root back:
+1. Apply the sync-wave 0 and 1 Applications (networking, secrets, storage, Velero, CloudNativePG)
+   and `external-snapshotter`, and wait for them to sync healthy — CSI snapshot restore and CNPG
+   `Cluster` restore depend on them:
+   ```bash
+   for f in $(grep -l "sync-wave: '[01]'" apps/*/application.yaml) apps/external-snapshotter/application.yaml; do
+     kubectl apply --server-side -f "$f"
+   done
+   ```
 2. Wait for the `BackupStorageLocation` to report `Available`: `velero backup-location get`.
 3. `velero restore create --from-backup <name>` for each namespace that needs its data back.
-4. Only then `kubectl apply --server-side -f bootstrap/apps.yaml` (and `bootstrap/Application.yaml`)
-   so ArgoCD adopts the already-restored PVCs instead of creating fresh ones.
+4. Only then `kubectl apply --server-side -f bootstrap/Application.yaml`. The root adopts the
+   Applications already applied and creates the rest, which adopt the already-restored PVCs
+   instead of creating fresh ones.
 
 If a namespace isn't covered by any Velero backup (new app, or backup window missed), fall back
 to a manual recovery: reclaim the orphaned
 TrueNAS volume as a static PV/PVC, snapshot it, then re-expose that snapshot as the app's PVC
 `dataSource`.
 
-### Bootstrap Argo AppSets
+### Bootstrap the root Application
 
-Apply the infra ApplicationSet first and wait for it healthy, then the workload apps — this is the
-default even on a fresh cluster, not just for recovery, since `apps/*` workloads (CNPG `Cluster`s,
-PVCs) can otherwise race against storage/secrets/networking still coming up:
+Apply the root Application. It manages itself, the delete guard in `bootstrap/`, and one
+Application per `apps/<name>/application.yaml`:
 ```bash
-kubectl apply --server-side -f bootstrap/apps-helm.yaml
-# wait for it healthy: kubectl get applications -n argocd -w
-kubectl apply --server-side -f bootstrap/apps.yaml -f bootstrap/Application.yaml
+kubectl apply --server-side -f bootstrap/Application.yaml
 ```
-`apps-helm.yaml` itself now uses ArgoCD ApplicationSet Progressive Syncs
-(`spec.strategy.type: RollingSync`) to sync its own three tiers in order — network/secrets,
-then storage, then everything else — so a single `kubectl apply -f bootstrap/apps-helm.yaml` is
-enough; you don't need to hand-split that file further.
-
-If you don't care about first-boot ordering (e.g. a disposable test cluster), apply everything at
-once instead:
-```bash
-kubectl apply --server-side -Rf bootstrap
-```
+Each child Application's `argocd.argoproj.io/sync-wave` annotation orders the first sync, and the
+root waits for each wave to be Healthy before the next: networking and secrets (`0`), then storage
+(`1`), then everything else (`2`). So workloads (CNPG `Cluster`s, PVCs) don't race against
+storage, secrets, or networking still coming up.
 
 ### Renovate
 

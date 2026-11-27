@@ -17,7 +17,16 @@ spec:
   destination:
     namespace: argocd
     server: https://kubernetes.default.svc
+  # This directory (the root itself and the delete guard), and one Application per
+  # kubernetes/apps/<name>/application.yaml. Each Application's sync-wave orders
+  # them on a fresh cluster.
   sources:
   - repoURL: https://github.com/nlopez/homelab.git
     path: kubernetes/bootstrap
     targetRevision: main
+  - repoURL: https://github.com/nlopez/homelab.git
+    path: kubernetes/apps
+    targetRevision: main
+    directory:
+      recurse: true
+      include: '*/application.yaml'

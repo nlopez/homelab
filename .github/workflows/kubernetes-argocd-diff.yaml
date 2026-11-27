@@ -3,7 +3,6 @@ on:
   pull_request:
     paths:
     - 'kubernetes/apps/**'
-    - 'kubernetes/apps-helm/**'
     - 'kubernetes/bootstrap/**'
     - '.github/workflows/kubernetes-argocd-diff.yaml'
 permissions:
@@ -35,10 +34,6 @@ jobs:
       with:
         path: target-branch
         fetch-depth: 0
-    - name: 'Point the Helm ApplicationSet at the PR'
-      run: |-
-        sed -i 's|^\( *targetRevision:\) main$|\1 ${{ github.sha }}|' target-branch/kubernetes/bootstrap/apps-helm.yaml
-        grep -c '${{ github.sha }}' target-branch/kubernetes/bootstrap/apps-helm.yaml
     - name: 'Install kubectl, argocd-diff-preview, and yq'
       # shortcut: pinned by hand, bump with the cluster / a new release.
       run: |-
@@ -61,6 +56,7 @@ jobs:
           --target-branch '${{ github.sha }}' \
           --argocd-namespace argocd-diff-preview \
           --create-cluster=false \
+          --file-regex '(^|/)kubernetes/(bootstrap|apps)/' \
           --output-app-manifests \
           --diff-ignore '^  install_(id|time): '
     # ci-ok reads the plan-destroys annotation and fails until a code owner
