@@ -54,6 +54,9 @@ b.created_first (create then delete)
 c.gone (delete)" "${out}"
 expect "plan-destroys prints nothing for a plan with no resource changes" "" \
   "$(echo '{"format_version": "1.2"}' | "${scripts}/plan-destroys.sh")"
+expect "plan-destroys skips a replaced terraform_data trigger" "" \
+  "$(echo '{"resource_changes": [{"address": "terraform_data.refresh", "type": "terraform_data",
+    "change": {"actions": ["delete", "create"]}}]}' | "${scripts}/plan-destroys.sh")"
 
 ### plan-diff.sh
 
@@ -422,6 +425,17 @@ expect "gate fails destroy-approved added through an app" "1" "$(gaterun "${g}")
 gate_fixtures "${g}" success yes owner
 expect "gate passes a destroy a code owner approved" "0" "$(gaterun "${g}")"
 expect "gate completes ci-ok as success for an approved destroy" "success" "$(conclusion "${g}")"
+
+gate_fixtures "${g}" success no none
+echo '[{"filename": "dns/main.tf"}, {"filename": ".github/scripts/plan-destroys.sh"}]' > "${g}/repos_o_r_pulls_7_files.json"
+expect "gate fails a CI change without destroy-approved" "1" "$(gaterun "${g}")"
+contains "gate names the CI file that needs approval" ".github/scripts/plan-destroys.sh" "$(cat "${g}/out.log")"
+gate_fixtures "${g}" success no owner
+echo '[{"filename": ".github/workflows/dns.yaml"}]' > "${g}/repos_o_r_pulls_7_files.json"
+expect "gate passes a CI change a code owner approved" "0" "$(gaterun "${g}")"
+gate_fixtures "${g}" success no none
+rm "${g}/repos_o_r_pulls_7_files.json"
+expect "gate fails when it can't read the PR's files" "1" "$(gaterun "${g}")"
 
 ### ansible-merge-tags.py
 
