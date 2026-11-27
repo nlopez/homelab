@@ -47,7 +47,8 @@ Read the `AGENTS.md` of any directory you change (`kubernetes/`, `gateway/`, `aw
   job for any row that isn't `No changes`.
 - A destroy or replace: stop and leave it for a human (AGENTS.md). Never add `destroy-approved`.
 - Anything you didn't intend, including drift: don't merge. Check for a `Drift in <stack>` issue.
-- Merge by squash with the head SHA you checked as the expected head, so a late push can't slip in.
+- Merge by squash: `gh pr merge --squash --match-head-commit <sha> --delete-branch`, using the head
+  SHA you checked, so a late push can't slip in.
 
 ## 6. After the merge
 
