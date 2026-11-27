@@ -19,6 +19,9 @@ Read the root [AGENTS.md](../AGENTS.md) first. This covers what is specific to t
 - Removing an entry from `bootstrap/apps-helm.yaml` deletes its Application and every resource it
   manages, PVCs and CRDs included. Deleting a CRD deletes every custom resource of that kind in the
   cluster. Leave removing a `network-and-secrets` or `storage` entry, or `argocd`, to a human.
+- Never delete the `apps` or `bootstrap` ApplicationSet, or the `bootstrap` Application, by hand:
+  that deletes every app under it. `bootstrap/delete-guard.yaml` refuses the delete unless the
+  object carries `homelab/allow-delete: "true"`.
 
 ## Hostnames and exposure
 
