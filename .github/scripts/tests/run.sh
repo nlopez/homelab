@@ -543,7 +543,7 @@ chmod +x "${prl}/bin/pr-wait"
 prl_fixtures() {
   local d="$1"
   rm -rf "${d}" && mkdir -p "${d}"
-  echo '{"head": {"sha": "head1111"}, "title": "dns: add a record"}' > "${d}/repos_o_r_pulls_7.json"
+  echo '{"head": {"sha": "beef1111"}, "title": "dns: add a record"}' > "${d}/repos_o_r_pulls_7.json"
   [ "$3" = ok ] && echo '{"sha": "merge2222", "merged": true}' > "${d}/PUT_repos_o_r_pulls_7_merge.json"
   cat > "${d}/repos_o_r_actions_runs.json" <<JSON
 {"workflow_runs": [
@@ -556,16 +556,16 @@ JSON
   echo '{"jobs": [{"name": "gateway / Apply", "steps": [{"name": "Apply", "conclusion": "skipped"}]}]}' \
     > "${d}/repos_o_r_actions_runs_2_jobs.json"
 }
-prlrun() { # <fixtures dir> [pr-wait exit]; prints pr-land's exit status
+prlrun() { # <fixtures dir> [pr-wait exit] [reviewed sha]; prints pr-land's exit status
   PATH="${work}/ghbin:${PATH}" GH_FIXTURES="$1" GH_REPO=o/r PR_LAND_POLL=0 PR_WAIT_EXIT="${2:-0}" \
-    "${prl}/bin/pr-land" 7 >"$1/out.log" 2>&1
+    "${prl}/bin/pr-land" 7 "${3:-beef1111}" >"$1/out.log" 2>&1
   echo $?
 }
 
 p="${work}/prl"
 prl_fixtures "${p}" success ok
 expect "pr-land passes when every run on main passed" "0" "$(prlrun "${p}")"
-contains "pr-land merges the head pr-wait checked" "sha=head1111" "$(cat "${p}/calls.log")"
+contains "pr-land merges the head pr-wait checked" "sha=beef1111" "$(cat "${p}/calls.log")"
 contains "pr-land keeps the PR title in the squash commit" "commit_title=dns: add a record (#7)" "$(cat "${p}/calls.log")"
 contains "pr-land reports an Apply step that ran" "dns / Apply: applied" "$(cat "${p}/out.log")"
 contains "pr-land reports an Apply step that was skipped" "gateway / Apply: Apply step skipped, nothing applied" "$(cat "${p}/out.log")"
@@ -582,6 +582,11 @@ contains "pr-land says no workflow ran" "No workflow ran on main" "$(cat "${p}/o
 prl_fixtures "${p}" success ok
 expect "pr-land passes on pr-wait's main-moved exit" "3" "$(prlrun "${p}" 3)"
 expect "pr-land doesn't merge when pr-wait fails" "" "$(cat "${p}/calls.log" 2>/dev/null)"
+prl_fixtures "${p}" success ok
+expect "pr-land refuses a head other than the one reviewed" "6" "$(prlrun "${p}" 0 cafe2222)"
+expect "pr-land doesn't merge an unreviewed head" "" "$(cat "${p}/calls.log" 2>/dev/null)"
+expect "pr-land merges with a reviewed SHA prefix" "0" "$(prlrun "${p}" 0 beef1111)"
+expect "pr-land rejects a malformed SHA" "2" "$(prlrun "${p}" 0 nothex12)"
 
 ### scripts/plan
 
