@@ -1,18 +1,31 @@
 #!/usr/bin/env bash
-# Lands a pull request: waits for ci-ok (scripts/pr-wait), squash-merges the
-# head commit pr-wait checked, then waits for every workflow run on main for the
-# merge commit and reports each one. For each Apply job it says whether the
-# Apply step ran: a green run whose Apply step was skipped applied nothing.
+# Lands a pull request whose plans you already compared with its description:
+# checks ci-ok (scripts/pr-wait), squash-merges only the head commit you
+# reviewed, then waits for every workflow run on main for the merge commit and
+# reports each one. For each Apply job it says whether the Apply step ran: a
+# green run whose Apply step was skipped applied nothing.
 #
-#   scripts/pr-land <pr number>
+#   scripts/pr-wait <pr number>     # read every plan row first
+#   scripts/pr-land <pr number> <reviewed head sha>
+#
+# The SHA is the one pr-wait printed with the plans you read (8 or more hex
+# characters). ci-ok passes a plan that changes something unintended, so a
+# head you haven't reviewed is never merged.
 #
 # Exit status: pr-wait's (1 ci-ok failed, 2 usage or API error, 3 must contain
-# main's latest commit, 4 timed out) before the merge; after it, 0 every run passed, 1 a run failed,
-# 2 the merge failed, 5 timed out waiting for runs (30 minutes).
+# main's latest commit, 4 timed out) before the merge; 6 the head isn't the
+# one reviewed; after the merge, 0 every run passed, 1 a run failed, 2 the merge
+# failed, 5 timed out waiting for runs (30 minutes).
 # Needs `gh` authenticated for the repository (GH_TOKEN works too).
 set -euo pipefail
 
-pr="${1:?usage: scripts/pr-land <pr number>}"
+usage="usage: scripts/pr-land <pr number> <reviewed head sha>"
+pr="${1:?${usage}}"
+reviewed="${2:?${usage}}"
+if ! [[ "${reviewed}" =~ ^[0-9a-f]{8,40}$ ]]; then
+  echo "${usage}: the SHA needs 8 to 40 hex characters." >&2
+  exit 2
+fi
 repo="${GH_REPO:-$(git remote get-url origin | sed -E 's#(\.git)?$##; s#^.*github\.com[:/]##')}"
 export GH_REPO="${repo}"
 poll="${PR_LAND_POLL:-20}"
@@ -21,6 +34,10 @@ poll="${PR_LAND_POLL:-20}"
 
 # pr-wait passed on this head; the merge fails if the head moved since.
 read -r head title < <(gh api "repos/${repo}/pulls/${pr}" --jq '"\(.head.sha) \(.title)"')
+if [[ "${head}" != "${reviewed}"* ]]; then
+  echo "#${pr}'s head is ${head:0:8}, not the ${reviewed:0:8} you reviewed; nothing was merged. Read its plans (scripts/pr-wait ${pr}) and run pr-land with that SHA." >&2
+  exit 6
+fi
 if ! merge="$(gh api -X PUT "repos/${repo}/pulls/${pr}/merge" -f merge_method=squash \
   -f sha="${head}" -f commit_title="${title} (#${pr})" --jq '.sha // empty')" || [ -z "${merge}" ]; then
   echo "Merging #${pr} at ${head:0:8} failed; nothing was merged." >&2

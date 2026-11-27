@@ -48,13 +48,14 @@ Read the `AGENTS.md` of any directory you change (`kubernetes/`, `gateway/`, `aw
   job for any row that isn't `No changes`.
 - A destroy or replace: stop and leave it for a human (AGENTS.md). Never add `destroy-approved`.
 - Anything you didn't intend, including drift: don't merge. Check for a `Drift in <stack>` issue.
-- Merge and confirm the apply with `scripts/pr-land <pr>`: one command that squash-merges with
-  head-commit matching, waits for all workflow runs on main to complete, and reports each run's
-  result. For a stack that should change, check its Apply step ran (not just its Plan); a green
-  run with a skipped Apply means nothing was applied. For `kubernetes/`, it includes the
-  `Kubernetes sync check` run, which fails if a changed Application isn't Synced and Healthy
-  within 15 minutes. To merge as soon as `ci-ok` passes without waiting, add `--auto` right
-  after opening the PR instead (applies the merge without waiting for apply runs).
+- Only after every row matches: merge and confirm the apply with
+  `scripts/pr-land <pr> <head sha>`, passing the SHA `pr-wait` printed with the plans you read.
+  It merges only that commit, so a later push stops it. It then waits for all workflow runs on
+  main and reports each run's result. For a stack that should change, check its Apply step ran
+  (not just its Plan); a green run with a skipped Apply means nothing was applied. For
+  `kubernetes/`, it includes the `Kubernetes sync check` run, which fails if a changed
+  Application isn't Synced and Healthy within 15 minutes. Never use `gh pr merge --auto`: it
+  merges before anyone compares the plans, and `ci-ok` passes an unintended change.
 
 ## 6. After the merge
 
