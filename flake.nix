@@ -56,6 +56,7 @@
               pkgs.ansible-lint
               pkgs.go
               pkgs.pre-commit
+              pkgs.tflint
               tofu
               aws-sso-creds
             ];

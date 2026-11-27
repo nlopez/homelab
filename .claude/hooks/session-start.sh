@@ -22,11 +22,12 @@ if command -v nix >/dev/null; then
   command -v ansible-lint >/dev/null || missing+=(nixpkgs#ansible-lint)
   command -v ansible-galaxy >/dev/null || missing+=(nixpkgs#ansible)
   command -v go >/dev/null || missing+=(nixpkgs#go)
+  command -v tflint >/dev/null || missing+=(nixpkgs#tflint)
   if [ "${#missing[@]}" -gt 0 ]; then
     nix profile install "${missing[@]}"
   fi
 else
-  echo "session-start: nix is not installed; the tofu, ansible-lint, and kubeconform hooks will fail" >&2
+  echo "session-start: nix is not installed; the tofu, ansible-lint, tflint, and kubeconform hooks will fail" >&2
 fi
 
 # nixpkgs' pre-commit can't build its virtualenvs here, so use PyPI's.
