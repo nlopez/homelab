@@ -16,6 +16,9 @@ Read the root [AGENTS.md](../AGENTS.md) first. This covers what is specific to t
   `apps-helm/<name>/manifests/`. Start from `apps-helm/_template/`. `tier` is one of
   `network-and-secrets`, `storage`, or `platform`; new apps are almost always `platform`.
 - A directory under `apps-helm/` with no `bootstrap/apps-helm.yaml` entry is not deployed.
+- Removing an entry from `bootstrap/apps-helm.yaml` deletes its Application and every resource it
+  manages, PVCs and CRDs included. Deleting a CRD deletes every custom resource of that kind in the
+  cluster. Leave removing a `network-and-secrets` or `storage` entry, or `argocd`, to a human.
 
 ## Hostnames and exposure
 
@@ -58,7 +61,7 @@ Read the root [AGENTS.md](../AGENTS.md) first. This covers what is specific to t
 ## Stateful apps
 
 - A `PersistentVolumeClaim` binds a fresh volume if its name or namespace changes. Renaming or
-  removing an app under `apps/` that has PVCs, or moving it between `apps/` and `apps-helm/`,
+  removing an app that has PVCs, or moving it between `apps/` and `apps-helm/`,
   deletes its old PVCs; on a storage class with `reclaimPolicy: Delete` the data goes with them.
   Leave that to a human.
 - `kubernetes/README.md` covers bootstrap order and Velero restores.
