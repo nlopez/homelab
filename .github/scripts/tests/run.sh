@@ -521,6 +521,39 @@ chmod +x "${work}/testbin/tflint"
 out="$(cd "${repo}" && PATH="${work}/testbin:${PATH}" TF_PLUGIN_CACHE_DIR="${work}/cache" bash "${repo}/scripts/tflint.sh" dns/main.tf datadog/main.tf 2>&1)"
 contains "tflint processes changed files" "Linting" "${out}"
 
+### scripts/tofu-test.sh
+
+mkdir -p "${work}/tofu_test/with_test"
+mkdir -p "${work}/tofu_test/no_test"
+touch "${work}/tofu_test/with_test/test.tftest.hcl" "${work}/tofu_test/with_test/main.tf"
+touch "${work}/tofu_test/no_test/main.tf"
+mkdir -p "${work}/tofu_test_bin"
+cat > "${work}/tofu_test_bin/tofu" <<'SH'
+#!/usr/bin/env bash
+# Stub tofu for testing; just pretend init and test succeed
+case "$1" in
+  -chdir=*) chdir="${1#-chdir=}"; shift; dir="$chdir" ;;
+  *) dir="." ;;
+esac
+case "$1" in
+  init) [ -d "$dir" ] && exit 0 || exit 1 ;;
+  test) [ -f "${dir}/test.tftest.hcl" ] && exit 0 || exit 1 ;;
+  *) exit 1 ;;
+esac
+SH
+chmod +x "${work}/tofu_test_bin/tofu"
+tofu_test_out="$(PATH="${work}/tofu_test_bin:${PATH}" bash "${repo}/scripts/tofu-test.sh" \
+  "${work}/tofu_test/with_test/test.tftest.hcl" \
+  "${work}/tofu_test/with_test/main.tf" \
+  "${work}/tofu_test/no_test/main.tf" 2>&1)"
+expect "tofu-test selects only directories with test files" "0" "$?"
+contains "tofu-test tests the directory with a test file" "Testing ${work}/tofu_test/with_test" "${tofu_test_out}"
+if grep -q "Testing ${work}/tofu_test/no_test" <<<"${tofu_test_out}"; then
+  fail "tofu-test skips directories without test files"
+else
+  pass "tofu-test skips directories without test files"
+fi
+
 ### scripts/plan
 
 plan="${repo}/scripts/plan"
