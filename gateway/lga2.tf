@@ -11,52 +11,6 @@ locals {
     }
   }
 
-  lga2_local_hosts = {
-    "gw-A" = {
-      uuid        = "084d3588-2efa-4cab-9249-fda1945ab555"
-      hostname    = "gw"
-      domain      = "lga2.radoncanyon.com"
-      rr          = "A"
-      server      = "192.168.239.254"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
-    "odroid-A" = {
-      uuid        = "f89a60df-6d4b-4510-98f7-703ad3b3abf3"
-      hostname    = "odroid"
-      domain      = "lga2.radoncanyon.com"
-      rr          = "A"
-      server      = "192.168.239.2"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
-    "gw-AAAA" = {
-      uuid        = "d398d013-3005-40a3-908a-056e37a00566"
-      hostname    = "gw"
-      domain      = "lga2.radoncanyon.com"
-      rr          = "AAAA"
-      server      = "fd72:ce7b:d4a9:9511::254"
-      description = "Site infrastructure name"
-    }
-    "odroid-AAAA" = {
-      uuid        = "99fed737-5eb9-4159-890e-f27f65fa5ef6"
-      hostname    = "odroid"
-      domain      = "lga2.radoncanyon.com"
-      rr          = "AAAA"
-      server      = "fd72:ce7b:d4a9:9511::2"
-      description = "Site infrastructure name"
-    }
-  }
-
-  lga2_unbound_hosts = merge(
-    local.lga2_local_hosts,
-    { for k, v in local.lga1_local_hosts : "lga1-${k}" => {
-      hostname    = v.hostname
-      domain      = v.domain
-      rr          = v.rr
-      server      = v.server
-      description = v.description
-    } }
-  )
-
   lga2_gateways = {
     "WG_LGA1" = {
       name            = "WG_LGA1"
@@ -130,18 +84,6 @@ resource "opnsense_unbound_domain_override" "lga2_unbound_forwards" {
   enabled     = true
 }
 
-resource "opnsense_unbound_host_override" "lga2_unbound_hosts" {
-  provider = opnsense.lga2
-  for_each = local.lga2_unbound_hosts
-
-  hostname    = each.value.hostname
-  domain      = each.value.domain
-  rr          = each.value.rr
-  server      = each.value.server
-  description = each.value.description
-  enabled     = true
-}
-
 resource "opnsense_system_gateway" "lga2_gateways" {
   provider = opnsense.lga2
   for_each = local.lga2_gateways
@@ -171,13 +113,6 @@ import {
   provider = opnsense.lga2
   for_each = local.lga2_unbound_forwards
   to       = opnsense_unbound_domain_override.lga2_unbound_forwards[each.key]
-  id       = each.value.uuid
-}
-
-import {
-  provider = opnsense.lga2
-  for_each = local.lga2_local_hosts
-  to       = opnsense_unbound_host_override.lga2_unbound_hosts[each.key]
   id       = each.value.uuid
 }
 
