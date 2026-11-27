@@ -16,24 +16,32 @@ resource "opnsense_auth_group" "lga1_admins" {
   members     = ["0", "2000"]
 }
 
+# On lga2, os-sso adds and removes SSO accounts in admins and viewers from
+# authentik's gateway-admins and gateway-viewers groups (authentik/opnsense.tf)
+# at each login, so membership is not managed here. root (0) and nlopez-local
+# (2000) are local break-glass members; os-sso's group sync never removes
+# members it did not add.
 resource "opnsense_auth_group" "lga2_admins" {
   provider    = opnsense.lga2
   name        = "admins"
   description = "System Administrators"
   privileges  = ["page-all"]
   members     = ["0", "2000"]
+
+  lifecycle {
+    ignore_changes = [members]
+  }
 }
 
 # Read-only SSO access: os-sso maps authentik's gateway-viewers group here.
 # OPNsense has no read-only role, and "Deny config write" alone still allows
 # reboots, service restarts, and state flushes, so the group gets only status
 # and log pages. Some of them keep small actions, such as clearing a log or
-# flushing the ARP table. Members are uids; 2003 is the SSO nlopez account.
+# flushing the ARP table.
 resource "opnsense_auth_group" "lga2_viewers" {
   provider    = opnsense.lga2
   name        = "viewers"
   description = "Read-only access through SSO"
-  members     = ["2003"]
   privileges = [
     "user-config-readonly",
     "page-system-login-logout",
@@ -61,6 +69,10 @@ resource "opnsense_auth_group" "lga2_viewers" {
     "page-status-systemlogs-routing",
     "page-wireguard-diagnostics",
   ]
+
+  lifecycle {
+    ignore_changes = [members]
+  }
 }
 
 resource "opnsense_acme_account" "lga1" {
