@@ -11,11 +11,6 @@ repo_root=$(git rev-parse --show-toplevel)
 export TFLINT_PLUGIN_DIR="${TFLINT_PLUGIN_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/tflint-plugins}"
 mkdir -p "$TFLINT_PLUGIN_DIR"
 
-# Pass GITHUB_TOKEN to tflint if available, to avoid rate limits on plugin downloads
-if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-  export GITHUB_TOKEN
-fi
-
 # Get unique stack directories from the changed files
 dirs=$(bash "$repo_root/scripts/terraform-stack-dirs.sh" "$@")
 
