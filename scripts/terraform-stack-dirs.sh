@@ -22,4 +22,4 @@ if [[ -z "$dirs" ]]; then
   exit 0
 fi
 
-echo "$dirs" | sort -u
+echo -n "$dirs" | sort -u
