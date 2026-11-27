@@ -126,7 +126,7 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
       - name: meilisearch
-        image: getmeili/meilisearch:v1.55.0
+        image: getmeili/meilisearch:v1.57.0
         resources:
           requests:
             cpu: 50m
