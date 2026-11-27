@@ -230,6 +230,13 @@
       "versioning": "loose"
     },
     {
+      "description": "Docker's tag suffix names the variant (29.10.0-dind is the daemon, 29.10.0 the CLI). The image regex's versioning reads it as a prerelease and would drop it; docker versioning keeps the suffix.",
+      "matchPackageNames": [
+        "docker.io/library/docker"
+      ],
+      "versioning": "docker"
+    },
+    {
       "description": "media-toolbox CI publishes <yt-dlp version>-<CI run number> tags (e.g. 2026.10.26-42); the run number orders rebuilds of the same yt-dlp version (bgutil plugin bumps, flake changes). Other tags (bare version, commit SHAs) are ignored.",
       "matchPackageNames": [
         "ghcr.io/nlopez/media-toolbox"
