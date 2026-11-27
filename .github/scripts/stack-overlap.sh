@@ -70,7 +70,10 @@ stale() { # <pr>
   local pr="$1" head base mine moved
   head="$(gh api "repos/${REPO}/pulls/${pr}" --jq .head.sha)"
   base="$(gh api "repos/${REPO}/compare/main...${head}" --jq .merge_base_commit.sha)"
-  [ -n "${base}" ] && [ "${base}" != null ] || { echo "no merge base for #${pr}" >&2; return 1; }
+  if [ -z "${base}" ] || [ "${base}" = null ]; then
+    echo "no merge base for #${pr}" >&2
+    return 1
+  fi
   mine="$(pr_stacks "${pr}")"
   moved="$(changed "${base}" main)"
   comm -12 <(echo "${mine}") <(echo "${moved}") | sed '/^$/d'
