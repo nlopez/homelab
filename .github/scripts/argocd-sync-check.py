@@ -62,15 +62,22 @@ def fetch_apps():
         return json.load(response).get("items") or []
 
 
+def git(*args):
+    return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True).returncode == 0
+
+
 def at_or_after(sha, revisions):
     """Whether any of revisions is sha or a commit that contains it."""
     for rev in revisions:
         if rev == sha:
             return True
-        if len(rev) == 40 and subprocess.run(
-            ["git", "-C", str(ROOT), "merge-base", "--is-ancestor", sha, rev],
-            capture_output=True,
-        ).returncode == 0:
+        if len(rev) != 40:
+            continue
+        # A merge pushed after this checkout moves every Application to a
+        # commit the checkout doesn't have yet; fetch it to compare.
+        if not git("cat-file", "-e", f"{rev}^{{commit}}"):
+            git("fetch", "--quiet", "origin", rev) or git("fetch", "--quiet", "origin")
+        if git("merge-base", "--is-ancestor", sha, rev):
             return True
     return False
 

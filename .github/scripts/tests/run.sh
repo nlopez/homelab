@@ -350,6 +350,11 @@ app "${pushed}" Synced Healthy
 contains "sync-check passes a Synced, Healthy app at the pushed commit" "Every changed Application is Synced and Healthy" "$(synccheck)"
 app "${later}" Synced Healthy
 contains "sync-check accepts an app already at a later commit" "Every changed Application is Synced and Healthy" "$(synccheck)"
+# A checkout made before the later commit was pushed has to fetch it.
+gitc branch at-push "${pushed}"
+git clone -q --single-branch --branch at-push "file://${s}" "${work}/synccheckout"
+contains "sync-check fetches a later commit its checkout lacks" "Every changed Application is Synced and Healthy" \
+  "$(REPO_ROOT="${work}/synccheckout" ARGOCD_APPS_JSON="${work}/apps.json" SYNC_TIMEOUT=0 python3 "${sync}" wait "${base}" "${pushed}" 2>&1)"
 app "${base}" Synced Healthy
 contains "sync-check waits for an app still at an older commit" "Timed out after 0s waiting for web" "$(synccheck)"
 app "${pushed}" OutOfSync Healthy Running
