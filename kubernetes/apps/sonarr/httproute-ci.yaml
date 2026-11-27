@@ -69,6 +69,7 @@ spec:
       - jolthog.desertbluffs.com
       remoteJWKS:
         uri: https://token.actions.githubusercontent.com/.well-known/jwks
+        cacheDuration: 300s
       extractFrom:
         headers:
         - name: X-Api-Key
@@ -82,6 +83,7 @@ spec:
           provider: github-actions
           claims:
           - name: repository_id
+            valueType: String
             values:
             - "1466265485"
       cel: >-
