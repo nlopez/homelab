@@ -42,8 +42,11 @@ spec:
               name: litexiv
               key: credential
         # Fetch pixiv (API and images) through the cluster's Cloudflare WARP exit.
+        # The trailing dot skips the search list: the node's lga1.radoncanyon.com
+        # domain answers NOERROR with no records, and musl (the image's static PHP)
+        # stops searching there.
         - name: LITEXIV_HTTP_PROXY
-          value: warp.warp.svc.cluster.local:8888
+          value: warp.warp.svc.cluster.local.:8888
         resources:
           requests:
             cpu: 10m
