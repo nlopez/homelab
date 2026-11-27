@@ -20,6 +20,7 @@ provider.
 - FRR/Quagga general settings and BGP (prefix lists, route maps, neighbors, redistribution)
 - Monit tests and services
 - Auth users, auth groups, ACME accounts, certificate definitions, and DNS-01 validations
+- Dynamic DNS general settings (native backend on both)
 
 ## Not managed here
 
@@ -31,6 +32,10 @@ The provider has no resource for these, so they stay in the GUI and are covered 
 - SNMP (enabled on lga1)
 - Netflow (enabled on both)
 - HA sync (configured on both)
+- Dynamic DNS accounts: `opnsense_ddclient_account` has no `zone` or `interface`, which the
+  Cloudflare service needs. Each gateway keeps `<site>.desertbluffs.com` pointed at its WAN
+  address (lga1: A; lga2: A and AAAA) with the `ddclient-gw.<site>-cloudflare` token
+  (`.github/credentials.yaml`)
 - System general settings (hostname, timezone, SSH, webgui, DNS servers): upstream-blocked
 
 Each gateway uploads its own `config.xml` to Google Drive nightly at 01:00 through the
