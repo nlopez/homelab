@@ -34,7 +34,7 @@ spec:
               type: RuntimeDefault
           containers:
           - name: sync
-            image: docker.io/curlimages/curl:8.11.1
+            image: docker.io/curlimages/curl:8.23.0
             env:
             - name: IMMICH_API_KEY
               valueFrom:
