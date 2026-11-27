@@ -14,7 +14,7 @@ locals {
       uuid      = "0fc568ea-3172-4003-9212-dc38807ac9be"
       name      = "NetworkLink"
       type      = "NetworkInterface"
-      condition = "failed link"
+      condition = "link down"
       action    = "alert"
     }
     "NetworkSaturation" = {
@@ -136,7 +136,7 @@ locals {
       uuid      = "37f59959-e526-4234-b0e2-1d278fd03b9d"
       name      = "NetworkLink"
       type      = "NetworkInterface"
-      condition = "failed link"
+      condition = "link down"
       action    = "alert"
     }
     "NetworkSaturation" = {
