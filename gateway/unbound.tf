@@ -23,7 +23,7 @@ resource "opnsense_unbound_general" "lga1" {
   forwarding_enabled  = false
   hide_identity       = true
   hide_version        = true
-  insecure_domains    = []
+  insecure_domains    = [""] # an empty set reads back as [""]
   keep_probing_hosts  = false
   log_local_actions   = false
   log_queries         = false
@@ -84,7 +84,7 @@ resource "opnsense_unbound_general" "lga2" {
   forwarding_enabled  = false
   hide_identity       = true
   hide_version        = true
-  insecure_domains    = []
+  insecure_domains    = [""] # an empty set reads back as [""]
   keep_probing_hosts  = false
   log_local_actions   = false
   log_queries         = false
