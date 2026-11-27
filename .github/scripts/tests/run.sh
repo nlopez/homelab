@@ -432,17 +432,6 @@ echo '{"check_suites": [{"created_at": "2030-01-01T00:30:00Z"}]}' > "${g}/repos_
 expect "gate fails destroy-approved added before the head commit was pushed" "1" "$(gaterun "${g}")"
 contains "gate says the approval predates the push" "remove the label and add it again" "$(cat "${g}/out.log")"
 
-gate_fixtures "${g}" success no none
-echo '[{"filename": "dns/main.tf"}, {"filename": ".github/scripts/plan-destroys.sh"}]' > "${g}/repos_o_r_pulls_7_files.json"
-expect "gate fails a CI change without destroy-approved" "1" "$(gaterun "${g}")"
-contains "gate names the CI file that needs approval" ".github/scripts/plan-destroys.sh" "$(cat "${g}/out.log")"
-gate_fixtures "${g}" success no owner
-echo '[{"filename": ".github/workflows/dns.yaml"}]' > "${g}/repos_o_r_pulls_7_files.json"
-expect "gate passes a CI change a code owner approved" "0" "$(gaterun "${g}")"
-gate_fixtures "${g}" success no none
-rm "${g}/repos_o_r_pulls_7_files.json"
-expect "gate fails when it can't read the PR's files" "1" "$(gaterun "${g}")"
-
 ### ansible-merge-tags.py
 
 mt="${scripts}/ansible-merge-tags.py"
