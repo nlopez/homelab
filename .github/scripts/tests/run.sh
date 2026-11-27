@@ -58,6 +58,82 @@ expect "plan-destroys skips a replaced terraform_data trigger" "" \
   "$(echo '{"resource_changes": [{"address": "terraform_data.refresh", "type": "terraform_data",
     "change": {"actions": ["delete", "create"]}}]}' | "${scripts}/plan-destroys.sh")"
 
+### manifest-destroys.sh
+
+md="${work}/manifest-destroys"
+mkdir -p "${md}/base" "${md}/target"
+cat >"${md}/base/sonarr.yaml" <<'YAML'
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: config
+  namespace: sonarr
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cache
+  namespace: sonarr
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonarr
+  namespace: sonarr
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: sonarr-database
+  namespace: sonarr
+YAML
+cat >"${md}/target/sonarr.yaml" <<'YAML'
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: config
+  namespace: sonarr
+YAML
+cat >"${md}/base/cnpg.yaml" <<'YAML'
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: clusters.postgresql.cnpg.io
+YAML
+printf '' >"${md}/target/cnpg.yaml"
+cat >"${md}/base/litexiv.yaml" <<'YAML'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: litexiv
+YAML
+cat >"${md}/base/httpbin.yaml" <<'YAML'
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin
+YAML
+printf '' >"${md}/target/httpbin.yaml"
+cp "${md}/base/sonarr.yaml" "${md}/target/new.yaml"
+expect "manifest-destroys lists removed apps and removed stateful resources" \
+"CustomResourceDefinition clusters.postgresql.cnpg.io in cnpg
+Application litexiv (deletes everything it runs)
+Cluster sonarr/sonarr-database in sonarr
+PersistentVolumeClaim sonarr/cache in sonarr" "$("${scripts}/manifest-destroys.sh" "${md}")"
+expect "manifest-destroys prints nothing when only stateless resources go" "" \
+  "$(mkdir -p "${md}2/base" "${md}2/target" && cp "${md}/base/httpbin.yaml" "${md}2/base/" &&
+    printf '' >"${md}2/target/httpbin.yaml" && "${scripts}/manifest-destroys.sh" "${md}2")"
+expect "manifest-destroys prints nothing without rendered manifests" "" \
+  "$("${scripts}/manifest-destroys.sh" "${work}/no-such-output")"
+mkdir -p "${md}3/base" "${md}3/target"
+printf 'kind: [unclosed\n' >"${md}3/base/broken.yaml"
+cp "${md}3/base/broken.yaml" "${md}3/target/"
+if "${scripts}/manifest-destroys.sh" "${md}3" >/dev/null 2>&1; then
+  fail "manifest-destroys fails on a manifest it can't parse"
+else
+  pass "manifest-destroys fails on a manifest it can't parse"
+fi
+
 ### plan-diff.sh
 
 out="$(printf '%s\n' '  ~ resource "a" "b" {' '      ~ x = 1 -> 2' '      + y = 3' '      - z = 4' \
