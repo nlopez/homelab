@@ -10,6 +10,6 @@ plugin "terraform" {
 # AWS ruleset - pinned version for reproducibility
 plugin "aws" {
   enabled = true
-  version = "0.32.0"
+  version = "0.50.0"
   source  = "github.com/terraform-linters/tflint-ruleset-aws"
 }
