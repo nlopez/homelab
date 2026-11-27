@@ -8,6 +8,10 @@ metadata:
     # Deleting this ApplicationSet deletes every app in it, Argo CD and Cilium included.
     argocd.argoproj.io/sync-options: Prune=false
 spec:
+  # Leave the tracking annotation of another Application that manages these Applications.
+  preservedFields:
+    annotations:
+    - argocd.argoproj.io/tracking-id
   strategy:
     type: RollingSync
     rollingSync:
