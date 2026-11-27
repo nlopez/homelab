@@ -73,4 +73,9 @@ Read the root [AGENTS.md](../AGENTS.md) first. This covers what is specific to t
 - A `PersistentVolumeClaim` binds a fresh volume if its name or namespace changes. Renaming or
   removing an app that has PVCs deletes its old PVCs; on a storage class with
   `reclaimPolicy: Delete` the data goes with them. Leave that to a human.
+- A PVC whose manifest sets `spec.volumeName` (pre-bound to an existing volume) must keep it.
+  Argo CD applies and diffs server-side; once a field is in what Argo CD applied, removing it from
+  the manifest means removing it from the live object, and a bound claim's `volumeName` can't
+  change. Pre-bound PVCs that predate this rule have a second owner of `volumeName` (field manager
+  `pv-binding`); dynamically bound ones are co-owned by `kube-controller-manager`.
 - `kubernetes/README.md` covers bootstrap order and Velero restores.
