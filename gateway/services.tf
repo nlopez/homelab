@@ -46,6 +46,7 @@ locals {
       bandwidth_metric = "Mbit"
       number           = "10001"
       mask             = "none"
+      scheduler        = "fq_codel"
       description      = "Upload Pipe"
       enabled          = true
     }
