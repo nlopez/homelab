@@ -738,6 +738,63 @@ sed -i '/`swee`/d' "${r}/EXPOSURE.md"
 contains "check-hostnames catches a routed hostname missing from EXPOSURE.md" \
   "swee.desertbluffs.com is routed but not in the table" "$(hostcheck "${r}")"
 
+### helm-pins.py
+
+pins="${scripts}/helm-pins.py"
+hp="${work}/helm-pins"
+mkdir -p "${hp}"
+# What the chart ships: its app, a sidecar it renders without a tag, and a
+# Docker Hub image written without a registry.
+cat > "${hp}/defaults.yaml" <<'YAML'
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - name: app
+        image: ghcr.io/example/app:v1.0.0
+      - name: helper
+        image: velero/velero
+      initContainers:
+      - name: cache
+        image: valkey/valkey:9.1-alpine
+YAML
+render() { # <app tag> <helper image> <cache tag> <extra image>
+  cat > "${hp}/rendered.yaml" <<YAML
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - name: app
+        image: ghcr.io/example/app:$1
+      - name: helper
+        image: $2
+      - name: ours
+        image: $4
+      initContainers:
+      - name: cache
+        image: docker.io/valkey/valkey:$3
+YAML
+}
+compare() { python3 "${pins}" compare "${hp}/defaults.yaml" "${hp}/rendered.yaml" "${hp}/values.yaml" web 2>&1; }
+echo 'image: {tag: v1.0.0}' > "${hp}/values.yaml"
+render v1.0.0 velero/velero:v1.18.4 9.1-alpine ghcr.io/nlopez/ours:1
+expect "helm-pins passes the chart's own versions, untagged chart images, and images the chart doesn't ship" "" "$(compare)"
+render v1.1.0 velero/velero 9.1-alpine ghcr.io/nlopez/ours:1
+printf 'image:\n  tag: v1.1.0\n' > "${hp}/values.yaml"
+contains "helm-pins flags a tag set over the chart's" \
+  "web: values.yaml runs ghcr.io/example/app:v1.1.0, but the chart ships v1.0.0" "$(compare)"
+expect "helm-pins exits 1 on an override" "1" "$(compare >/dev/null; echo $?)"
+render v1.0.0 velero/velero 9.2-alpine ghcr.io/nlopez/ours:1
+printf 'cache:\n  tag: 9.2-alpine\n' > "${hp}/values.yaml"
+contains "helm-pins matches docker.io and bare Docker Hub names" \
+  "runs docker.io/valkey/valkey:9.2-alpine, but the chart ships 9.1-alpine" "$(compare)"
+printf 'cache:\n  tag: 9.2-alpine  # pin: data written by 9.2\n' > "${hp}/values.yaml"
+expect "helm-pins accepts an override with a pin reason" "" "$(compare)"
+expect "helm-pins maps changed values and Application files to Helm apps" "velero" \
+  "$(printf 'kubernetes/apps/velero/values.yaml\nkubernetes/apps/httpbin/deployment.yaml\nkubernetes/apps/httpbin/application.yaml\nREADME.md\n' | python3 "${pins}" changed)"
+
 ### scripts/opnsense-config
 
 oc() { python3 -I "${repo}/scripts/opnsense-config" "$@"; }

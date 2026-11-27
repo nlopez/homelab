@@ -12,6 +12,11 @@ Read the root [AGENTS.md](../AGENTS.md) first. This covers what is specific to t
   Application deploys every file in the directory except itself, recursing into subdirectories.
 - A Helm chart: copy `_template/helm/`, set the chart's `repoURL`, `chart`, and `targetRevision`,
   put its values in `values.yaml` and any extra manifests in `manifests/`.
+- The chart versions the images it ships; Renovate updates the chart. Don't set the tag of one of
+  those images in `values.yaml`: it outlives the next chart update. The `Helm pins` check fails a
+  PR that does, unless the line says why, `# pin: <reason>` (Immich's chart lags its app, say).
+  Images the chart doesn't ship (sidecars, plugins, our own builds) are yours to pin, and Renovate
+  updates them.
 - The `argocd.argoproj.io/sync-wave` annotation orders a fresh cluster's first sync: `0` networking
   and secrets, `1` storage, `2` everything else. New apps are almost always `2`.
 - Deleting an app's directory deletes its Application and every resource it manages, PVCs and CRDs

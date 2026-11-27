@@ -102,7 +102,8 @@ gitea:
       DEFAULT_BRANCH: main
 extraContainers:
 # The chart doesn't template extraContainers, so this tag can't follow the
-# chart. Keep it at the chart's appVersion when the chart is updated.
+# chart. Keep it at the chart's appVersion when the chart is updated; the Helm
+# pins check (.github/scripts/helm-pins.py) fails a chart update until it does.
 - name: register-runner
   image: code.forgejo.org/forgejo/forgejo:15.0.12-rootless
   command:
