@@ -25,6 +25,6 @@ resource "authentik_application" "netbox" {
   name              = "NetBox"
   slug              = "netbox"
   protocol_provider = authentik_provider_oauth2.netbox.id
-  # /oauth/login/oidc/ starts SSO directly, skipping NetBox's login page.
-  meta_launch_url = "https://kikit.desertbluffs.com/oauth/login/oidc/"
+  # NetBox starts SSO only on a POST from its login page, so the tile opens that page.
+  meta_launch_url = "https://kikit.desertbluffs.com/"
 }
