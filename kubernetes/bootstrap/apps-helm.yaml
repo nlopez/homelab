@@ -193,11 +193,6 @@ spec:
         repoURL: oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
         targetRevision: "0.15.1"
         namespace: arc-runners
-      - name: netbox
-        tier: platform
-        repoURL: oci://ghcr.io/netbox-community/netbox-chart/netbox
-        targetRevision: "8.3.117"
-        namespace: netbox
   template:
     metadata:
       name: "{{.name}}"
