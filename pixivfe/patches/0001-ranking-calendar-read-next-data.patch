@@ -1,0 +1,126 @@
+--- a/core/ranking_calendar.go
++++ b/core/ranking_calendar.go
+@@ -4,6 +4,7 @@
+ package core
+ 
+ import (
++	"encoding/json"
+ 	"errors"
+ 	"fmt"
+ 	"net/http"
+@@ -28,7 +29,7 @@
+ 
+ var (
+ 	// artworkIDRegexp extracts the artwork ID from an image URL.
+-	artworkIDRegexp = regexp.MustCompile(`/(\d+)_p0_(custom|square)1200\.jpg`)
++	artworkIDRegexp = regexp.MustCompile(`/(\d+)_p0_(custom|square|master)1200\.jpg`)
+ 
+ 	errInvalidYear  = errors.New("invalid year")
+ 	errInvalidMonth = errors.New("invalid month")
+@@ -143,10 +144,56 @@
+ 	return data, nil
+ }
+ 
++// rankingLogNextData is the part of ranking_log.php's __NEXT_DATA__ that
++// holds each day's top work.
++type rankingLogNextData struct {
++	Props struct {
++		PageProps struct {
++			Assign struct {
++				DisplayA struct {
++					Calendar []struct {
++						Day string `json:"day"`
++						Img string `json:"img"`
++					} `json:"calendar"`
++				} `json:"display_a"`
++			} `json:"assign"`
++		} `json:"pageProps"`
++	} `json:"props"`
++}
++
+ // extractImageLinks extracts image links from the parsed HTML document.
++//
++// The returned slice is indexed by day of the month minus one; days without
++// a ranked work hold an empty string.
+ func extractImageLinks(r *http.Request, doc *html.Node) []string {
++	gq := goquery.NewDocumentFromNode(doc)
++
++	// ranking_log.php renders with Next.js and carries the calendar in
++	// __NEXT_DATA__ rather than in <img data-src> elements.
++	if script := gq.Find("script#__NEXT_DATA__"); script.Length() > 0 {
++		var data rankingLogNextData
++		if err := json.Unmarshal([]byte(script.Text()), &data); err == nil {
++			links := []string{}
++
++			for _, entry := range data.Props.PageProps.Assign.DisplayA.Calendar {
++				day, err := strconv.Atoi(entry.Day)
++				if err != nil || day < 1 || day > 31 || entry.Img == "" {
++					continue
++				}
++
++				for len(links) < day {
++					links = append(links, "")
++				}
++
++				links[day-1] = RewriteImageURLs(r, entry.Img)
++			}
++
++			return links
++		}
++	}
++
+ 	// Find all "img" elements in the document.
+-	imgSelection := goquery.NewDocumentFromNode(doc).Find("img")
++	imgSelection := gq.Find("img")
+ 
+ 	// NOTE: The actual number of links added might be less if some imgs don't have "data-src".
+ 	links := make([]string, 0, imgSelection.Length())
+--- /dev/null
++++ b/core/ranking_calendar_test.go
+@@ -0,0 +1,46 @@
++// Copyright 2023 - 2025, VnPower and the pixivFE contributors
++// SPDX-License-Identifier: AGPL-3.0-only
++
++package core
++
++import (
++	"net/http/httptest"
++	"strings"
++	"testing"
++
++	"golang.org/x/net/html"
++)
++
++func TestExtractImageLinksNextData(t *testing.T) {
++	t.Parallel()
++
++	page := `<html><body><img src="https://s.pximg.net/logo.svg">
++<script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"assign":{"display_a":{"calendar":[
++{"day":"01","img":"https://i.pximg.net/c/128x128/img-master/img/2026/10/31/02/11/01/151475433_p0_square1200.jpg"},
++{"day":"03","img":"https://i.pximg.net/c/128x128/custom-thumb/img/2026/11/13/02/52/41/151996977_p0_custom1200.jpg"},
++{"day":"04"}
++]}}}}}</script></body></html>`
++
++	doc, err := html.Parse(strings.NewReader(page))
++	if err != nil {
++		t.Fatal(err)
++	}
++
++	links := extractImageLinks(httptest.NewRequest("GET", "/rankingCalendar", nil), doc)
++
++	if len(links) != 3 {
++		t.Fatalf("got %d links, want 3: %q", len(links), links)
++	}
++
++	if links[1] != "" {
++		t.Errorf("day 2 has no entry, got %q", links[1])
++	}
++
++	if got := extractArtworkID(links[0]); got != "151475433" {
++		t.Errorf("day 1 artwork ID = %q, want 151475433 (link %q)", got, links[0])
++	}
++
++	if got := extractArtworkID(links[2]); got != "151996977" {
++		t.Errorf("day 3 artwork ID = %q, want 151996977 (link %q)", got, links[2])
++	}
++}
