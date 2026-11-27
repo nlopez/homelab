@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: litexiv
+  annotations:
+    secret.reloader.stakater.com/reload: "litexiv"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: litexiv
+  template:
+    metadata:
+      labels:
+        app: litexiv
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: litexiv
+        image: codeberg.org/litexiv/litexiv:v2.3.1
+        securityContext:
+          allowPrivilegeEscalation: false
+          # Workerman writes its pid and status files next to cli.php in /app,
+          # and the image has no way to move them.
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop: [ALL]
+        env:
+        - name: LITEXIV_PORT
+          value: "8787"
+        - name: LITEXIV_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: litexiv
+              key: credential
+        # Fetch pixiv (API and images) through the cluster's Cloudflare WARP exit.
+        - name: LITEXIV_HTTP_PROXY
+          value: warp.warp.svc.cluster.local:8888
+        resources:
+          requests:
+            cpu: 10m
+            memory: 128Mi
+        ports:
+        - name: http
+          containerPort: 8787
+        readinessProbe:
+          tcpSocket:
+            port: http
