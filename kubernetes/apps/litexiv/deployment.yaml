@@ -41,9 +41,6 @@ spec:
             secretKeyRef:
               name: litexiv
               key: credential
-        # Fetch pixiv (API and images) through the cluster's Cloudflare WARP exit.
-        - name: LITEXIV_HTTP_PROXY
-          value: warp.warp.svc.cluster.local:8888
         resources:
           requests:
             cpu: 10m
