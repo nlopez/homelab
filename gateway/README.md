@@ -43,6 +43,11 @@ Each gateway uploads its own `config.xml` to Google Drive nightly at 01:00 throu
 `os-gdrive-backup` plugin (System > Configuration > Backups), keeping 60 copies. The provider
 has no resource for that setting either, so it is set in the GUI.
 
+`scripts/opnsense-config` reads a `config.xml` file, or downloads one from a gateway's API, with
+secrets redacted: `flatten` prints
+it as `path=value` lines (`--strip-uuids --sort` output from two gateways diffs cleanly), `rules`
+lists the filter and NAT rules one per line, and `redact` writes a copy that is safe to share.
+
 ## Provider limitations
 
 - **Pseudo-interfaces do not round-trip.** `opnsense_firewall_filter_rule` reads the interface

@@ -1,0 +1,316 @@
+#!/usr/bin/env python3
+"""Read an OPNsense config.xml from a file or a gateway's API.
+
+Flatten it, list its rules, or redact it.
+
+    scripts/opnsense-config flatten CONFIG [XPATH...] [--strip-uuids] [--sort]
+    scripts/opnsense-config rules CONFIG
+    scripts/opnsense-config redact CONFIG > sanitized.xml
+
+CONFIG is a config.xml file, or a gateway's base URL such as
+https://gw.lga1.radoncanyon.com. Given a URL, the script downloads the running
+config from /api/core/backup/download/this with the API key and secret in
+OPNSENSE_API_KEY and OPNSENSE_API_SECRET, and keeps it in memory. Either may
+be a 1Password reference (op://...), read with `op read` from the operator's
+account; `{host}` in it becomes the URL's host name. For the gateways' own
+API keys in the operator vault:
+
+    export OPNSENSE_API_KEY='op://operator/opnsense-api-{host}/key'
+    export OPNSENSE_API_SECRET='op://operator/opnsense-api-{host}/secret'
+
+The key's user needs the "Diagnostics: Configuration History" privilege
+(page-diagnostics-configurationhistory); the download holds every secret in
+plaintext. `redact URL > sanitized.xml` saves a copy without them.
+
+flatten prints one `path=value` line per leaf, in document order. A record
+with a uuid attribute gets the uuid's first 8 characters in brackets; repeated
+siblings without one get `#n`. To compare two gateways, whose records have
+different uuids, flatten both with --strip-uuids --sort and diff the output.
+
+Every subcommand redacts secrets by default (see SECRET_TAGS and is_secret);
+--no-redact turns that off. Stdlib only; run with `python3 -I`.
+"""
+import argparse
+import base64
+import os
+import re
+import subprocess
+import sys
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
+
+REDACTED = "[REDACTED]"
+
+# Leaf tags whose value is always secret, compared lowercased.
+SECRET_TAGS = frozenset({
+    "apikeys",
+    "audit",  # base64 JSON naming who changed a rule and from which address
+    "authorizedkeys",
+    "bcrypt-hash",
+    "community",
+    "crt",
+    "gdrivep12key",
+    "gdrivepassword",
+    "md5-hash",
+    "nt-hash",
+    "otp_seed",
+    "password",
+    "privkey",
+    "prv",
+    "psk",
+    "rocommunity",
+    "rwcommunity",
+    "secret",
+    "sha512-hash",
+    "token",
+})
+
+# Tag fragments that mark a secret anywhere in a tag name, compared lowercased:
+# acme dns-01 credentials (dns_cf_token, dns_aws_secret), plugin API keys, etc.
+SECRET_FRAGMENTS = re.compile(
+    r"passw|passphrase|secret|token|psk|privkey|private_?key|apikey|api_?key|p12|^otp|otp_|community|credential"
+)
+
+# Key-ish tags: a long base64 or hex value under one of these is a secret.
+KEYISH = re.compile(r"key|cert|crt|hash|sig")
+BLOB = re.compile(r"^[A-Za-z0-9+/=_-]{32,}$")
+
+# Values that are secret whatever their tag.
+SECRET_VALUE = re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----|^\$(2[aby]|5|6|argon2\w*)\$")
+
+# Tags that match the rules above but hold no secret.
+NOT_SECRET_TAGS = frozenset({
+    "credentialsttl",  # monit
+    "keepalive",
+    "keylength",
+    "keysig",
+    "keytype",
+    "keys",  # ssh host key types
+    "otplength",
+    "passwordfirst",  # totp server flag
+    "pubkey",  # redacted only with --redact-pubkeys
+})
+
+
+def is_secret(tag, value, redact_pubkeys=False):
+    tag = tag.lower()
+    if not value:
+        return False
+    if tag == "pubkey":
+        return redact_pubkeys
+    if SECRET_VALUE.search(value):
+        return True
+    if tag in NOT_SECRET_TAGS:
+        return False
+    if tag in SECRET_TAGS or SECRET_FRAGMENTS.search(tag):
+        return True
+    return bool(KEYISH.search(tag) and BLOB.match(value))
+
+
+def redact_tree(root, redact_pubkeys=False):
+    for el in root.iter():
+        if len(el) == 0 and is_secret(el.tag, (el.text or "").strip(), redact_pubkeys):
+            el.text = REDACTED
+
+
+def label(el, index):
+    uuid = el.get("uuid")
+    if uuid:
+        return f"{el.tag}[{uuid[:8]}]"
+    if index:
+        return f"{el.tag}#{index}"
+    return el.tag
+
+
+def labels(root):
+    """Map each element to its path segment, and each element to its parent."""
+    names, parents = {}, {}
+    for el in root.iter():
+        kids = list(el)
+        counts = {}
+        for k in kids:
+            parents[k] = el
+            if not k.get("uuid"):
+                counts[k.tag] = counts.get(k.tag, 0) + 1
+        seen = {}
+        for k in kids:
+            index = 0
+            if counts.get(k.tag, 0) > 1:
+                seen[k.tag] = seen.get(k.tag, 0) + 1
+                index = seen[k.tag]
+            names[k] = label(k, index)
+    return names, parents
+
+
+def flatten(el, path, out, width, names):
+    p = f"{path}/{names[el]}" if path else names[el]
+    kids = list(el)
+    if not kids:
+        v = (el.text or "").strip()
+        if width and len(v) > width:
+            v = v[:width] + "..."
+        out.append(f"{p}={v}")
+        return
+    for k in kids:
+        flatten(k, p, out, width, names)
+
+
+def cmd_flatten(root, args):
+    targets = [el for xp in args.xpath for el in root.findall(xp)] if args.xpath else list(root)
+    names, parents = labels(root)
+    out = []
+    for el in targets:
+        if el is root:
+            continue
+        prefix, up = [], parents[el]
+        while up is not root:
+            prefix.insert(0, names[up])
+            up = parents[up]
+        flatten(el, "/".join(prefix), out, args.width, names)
+    if args.strip_uuids:
+        out = [re.sub(r"\[[0-9a-f]{8}\]", "", line) for line in out]
+    if args.exclude:
+        out = [line for line in out if not line.startswith(tuple(args.exclude))]
+    if args.sort:
+        out.sort()
+    print("\n".join(out))
+
+
+def text(e, k):
+    return (e.findtext(k) or "").strip()
+
+
+def flag(e, k, word):
+    return word if text(e, k) == "1" else ""
+
+
+def endpoint(e, k):
+    n = e.find(k)
+    if n is None:
+        return ""
+    s = "any" if n.find("any") is not None else (text(n, "network") or text(n, "address") or "any")
+    if text(n, "not") == "1":
+        s = "!" + s
+    port = text(n, "port")
+    return s + (":" + port if port else "")
+
+
+def mvc_net(e, side):
+    s = ("!" if text(e, f"{side}_not") == "1" else "") + text(e, f"{side}_net")
+    port = text(e, f"{side}_port")
+    return s + (":" + port if port else "")
+
+
+def row(*cols):
+    print(" ".join(c for c in cols if c))
+
+
+def cmd_rules(root, _args):
+    print("## filter rules (legacy)")
+    for e in root.findall("filter/rule"):
+        if len(e) == 0:
+            continue
+        disabled = "disabled" if e.find("disabled") is not None and text(e, "disabled") != "0" else ""
+        row(text(e, "type"), text(e, "interface"), text(e, "ipprotocol"), text(e, "protocol") or "any",
+            endpoint(e, "source"), "->", endpoint(e, "destination"), disabled, "|", text(e, "descr"))
+
+    print("## filter rules")
+    for e in root.findall("OPNsense/Firewall/Filter/rules/rule"):
+        gw = text(e, "gateway")
+        row(text(e, "sequence"), "on" if text(e, "enabled") == "1" else "off", text(e, "action"),
+            text(e, "interface") or "(floating)", "dir=" + text(e, "direction"), "quick=" + text(e, "quick"),
+            text(e, "ipprotocol"), text(e, "protocol"), mvc_net(e, "source"), "->", mvc_net(e, "destination"),
+            "gw=" + gw if gw else "", "state=" + text(e, "statetype"), flag(e, "log", "log"),
+            "|", text(e, "description"))
+
+    print("## port forwards")
+    for e in root.findall("nat/rule"):
+        row(text(e, "sequence"), "off" if text(e, "disabled") == "1" else "on", text(e, "interface"),
+            text(e, "ipprotocol"), text(e, "protocol"), endpoint(e, "source"), "->", endpoint(e, "destination"),
+            "=>", text(e, "target") + ":" + text(e, "local-port"), flag(e, "nordr", "nordr"),
+            flag(e, "log", "log"), "pass=" + text(e, "pass") if text(e, "pass") else "",
+            "reflection=" + text(e, "natreflection") if text(e, "natreflection") else "",
+            "|", text(e, "descr"))
+
+    print("## outbound nat mode=" + text(root, "nat/outbound/mode"))
+    for e in root.findall("nat/outbound/rule"):
+        row("off" if text(e, "disabled") == "1" else "on", text(e, "interface"), endpoint(e, "source"), "->",
+            endpoint(e, "destination"), "=>", text(e, "target"), "|", text(e, "descr"))
+
+
+def cmd_redact(root, _args):
+    tree = ET.ElementTree(root)
+    ET.indent(tree)
+    tree.write(sys.stdout, encoding="unicode", xml_declaration=True)
+    print()
+
+
+def credential(name, host):
+    value = os.environ.get(name)
+    if not value:
+        sys.exit("opnsense-config: set OPNSENSE_API_KEY and OPNSENSE_API_SECRET to fetch from a gateway")
+    if not value.startswith("op://"):
+        return value
+    ref = value.replace("{host}", host)
+    # The operator vault is readable only with the desktop app's sign-in, as for
+    # the dev shell's tofu wrapper (flake.nix).
+    result = subprocess.run(["op", "read", "--no-newline", "--account", "my.1password.com", ref],
+                            env={**os.environ, "OP_APP_AUTH": "1"}, capture_output=True, text=True)
+    if result.returncode:
+        sys.exit(f"opnsense-config: op read {ref}: {result.stderr.strip()}")
+    return result.stdout
+
+
+def fetch(base_url):
+    host = urllib.parse.urlsplit(base_url).hostname
+    key, secret = credential("OPNSENSE_API_KEY", host), credential("OPNSENSE_API_SECRET", host)
+    auth = base64.b64encode(f"{key}:{secret}".encode()).decode()
+    req = urllib.request.Request(base_url.rstrip("/") + "/api/core/backup/download/this",
+                                 headers={"Authorization": f"Basic {auth}"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        body = resp.read()
+    if not body.lstrip().startswith(b"<?xml"):
+        sys.exit(f"opnsense-config: {base_url} returned no XML document: {body[:80]!r}")
+    return body
+
+
+def load_root(config):
+    if re.match(r"https?://", config, re.I):
+        return ET.fromstring(fetch(config))
+    return ET.parse(config).getroot()
+
+
+def main():
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--no-redact", action="store_true", help="print secrets as they are")
+    common.add_argument("--redact-pubkeys", action="store_true", help="redact WireGuard public keys too")
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    f = sub.add_parser("flatten", parents=[common], help="print path=value lines")
+    f.add_argument("config")
+    f.add_argument("xpath", nargs="*", help="ElementTree paths under the root, e.g. interfaces OPNsense/wireguard")
+    f.add_argument("--strip-uuids", action="store_true", help="drop [uuid] labels, for diffing two gateways")
+    f.add_argument("--sort", action="store_true", help="sort the lines")
+    f.add_argument("--exclude", action="append", metavar="PREFIX", help="drop lines starting with PREFIX")
+    f.add_argument("--width", type=int, default=200, help="truncate values to this many characters (0: never)")
+    f.set_defaults(func=cmd_flatten)
+
+    r = sub.add_parser("rules", parents=[common], help="print filter and NAT rules, one per line")
+    r.add_argument("config")
+    r.set_defaults(func=cmd_rules)
+
+    x = sub.add_parser("redact", parents=[common], help="print the config with secrets replaced")
+    x.add_argument("config")
+    x.set_defaults(func=cmd_redact)
+
+    args = parser.parse_args()
+    root = load_root(args.config)
+    if not args.no_redact:
+        redact_tree(root, args.redact_pubkeys)
+    args.func(root, args)
+
+
+if __name__ == "__main__":
+    main()
