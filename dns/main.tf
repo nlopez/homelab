@@ -28,15 +28,16 @@ locals {
   # Records not declared in a zone's map are left alone, so records owned by
   # other systems (external-dns, cert-manager, DDNS) never show up in a plan.
   zones = {
-    "desertbluffs.com" = { ttl = 1, records = local.desertbluffs_com_records }
-    "radoncanyon.com"  = { ttl = 60, records = local.radoncanyon_com_records }
-    "aethertrail.com"  = { ttl = 1, records = local.aethertrail_com_records }
-    "nulogorsk.com"    = { ttl = 60, records = local.nulogorsk_com_records }
+    "desertbluffs.com" = local.desertbluffs_com_records
+    "radoncanyon.com"  = local.radoncanyon_com_records
+    "aethertrail.com"  = local.aethertrail_com_records
+    "nulogorsk.com"    = local.nulogorsk_com_records
   }
 
+  # TTL 1 is Cloudflare's automatic TTL; a record may set its own.
   records = merge([
-    for zone, z in local.zones : {
-      for key, r in z.records : "${zone}/${key}" => merge({ ttl = z.ttl }, r, { zone = zone })
+    for zone, records in local.zones : {
+      for key, r in records : "${zone}/${key}" => merge({ ttl = 1 }, r, { zone = zone })
     }
   ]...)
 }

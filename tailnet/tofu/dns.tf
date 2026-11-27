@@ -7,10 +7,12 @@
 #
 # Private desertbluffs.com names are Unbound host overrides on the two
 # gateways, so tailnet clients use the same resolvers as the sites' LANs.
-# radoncanyon.com needs no entry: its site names are public records in dns/.
+# radoncanyon.com site names are public records with private addresses, which
+# some resolvers strip as DNS rebinding; the gateways' Unbound keeps them.
 locals {
   split_dns = {
     "desertbluffs.com" = ["100.83.144.88", "100.86.37.97"]
+    "radoncanyon.com"  = ["100.83.144.88", "100.86.37.97"]
   }
 }
 
