@@ -8,6 +8,9 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: '2'
+    # Argo CD's server-side diff fails on a bound PVC: RespectIgnoreDifferences
+    # makes Argo CD own its volumeName, and the dry run tries to remove it.
+    argocd.argoproj.io/compare-options: ServerSideDiff=false
   finalizers:
   - resources-finalizer.argocd.argoproj.io
 spec:
