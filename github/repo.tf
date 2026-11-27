@@ -121,9 +121,10 @@ resource "github_repository_ruleset" "main" {
         integration_id = var.ci_gate_app_id
       }
 
-      # A PR must contain the latest main before it merges, so its plans
-      # reflect every change merged before it.
-      strict_required_status_checks_policy = true
+      # A PR needn't contain the latest main: ci-ok fails when main changed one
+      # of the PR's stacks after it branched (ci-gate-check.sh), and the CI gate
+      # refresh workflow fails it on open PRs when a merge does that.
+      strict_required_status_checks_policy = false
     }
   }
 }
