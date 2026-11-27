@@ -11,7 +11,7 @@ Read the `AGENTS.md` of any directory you change (`kubernetes/`, `gateway/`, `aw
 ## 1. Start clean
 
 - `git fetch origin main` and start from `origin/main`.
-- Check open PRs for the same stack first. The `ci-ok` summary comment lists any that overlap.
+- Check open PRs for the same stack first: `gh pr list --search '<dir>'`.
 - One concern per PR. Several small PRs merge faster than one large one, because each only plans
   the stacks it touches.
 
@@ -39,8 +39,7 @@ Read the `AGENTS.md` of any directory you change (`kubernetes/`, `gateway/`, `aw
   background if your agent can, rather than polling. Plans take 2-6 minutes.
 - Exit 1: a check failed. Find the cause in the failing job's log and push a fix; don't re-run
   hoping it passes, and never weaken a check to get green.
-- `ci-ok` saying `main` changed this PR's stacks: rebase, `git push --force-with-lease`, wait again.
-- Exit 3: the ruleset requires `main`'s latest commit. Rebase, push, wait again.
+- A merge conflict with `main`: rebase, `git push --force-with-lease`, wait again.
 
 ## 5. Compare and merge
 
@@ -61,5 +60,5 @@ Read the `AGENTS.md` of any directory you change (`kubernetes/`, `gateway/`, `aw
 
 - If a run failed, open the failed job's log and fix the issue in a follow-up PR; do not retry
   by hand.
-- Several PRs open at once: after a merge, only the ones that change the same stacks need a
-  rebase; their `ci-ok` fails and says so. The others can merge as they are.
+- Several PRs open at once: after a merge, the others can merge as they are. Only a merge
+  conflict needs a rebase.

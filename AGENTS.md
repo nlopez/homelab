@@ -15,8 +15,7 @@ Several agents and people work in this repo at the same time. Every change lands
 
 - Keep each task small and touching few files. Small changes conflict less and plan faster.
 - Do not reformat or reorganize files you are not otherwise changing.
-- Before you start, check open PRs for the same stack: `gh pr list --search '<dir>'`. If another PR changes the same resources, coordinate in that PR instead of opening a competing one. The `ci-ok` summary comment also lists any other open PR that changes the same stacks, as of the gate's last run on your PR.
-
+- Before you start, check open PRs for the same stack: `gh pr list --search '<dir>'`. If another PR changes the same resources, coordinate in that PR instead of opening a competing one.
 Cloud sessions without `gh`: see [.claude/CLOUD.md](.claude/CLOUD.md).
 
 If you abandon a task, close the PR (`gh pr close --delete-branch`). Never leave an open PR behind without saying why in the PR.
@@ -33,7 +32,7 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 
 ## When something goes wrong
 
-- `main` moved: a PR only needs `main`'s changes when `main` changed one of the PR's stacks after it branched. Its plans for that stack are then stale, and `ci-ok` fails and names the stack, on the PR's next run or right after the merge that caused it (the `CI gate refresh` workflow). Rebase (`git fetch origin && git rebase origin/main`), push with `git push --force-with-lease`, wait for a fresh `ci-ok`, and re-read the new plan. A move on other stacks needs nothing.
+- `main` moved: a PR doesn't need `main`'s latest commit. The apply on `main` plans again from `main`, so it applies what both merges changed. Rebase (`git fetch origin && git rebase origin/main`, then `git push --force-with-lease`) only when GitHub reports a merge conflict.
 - Rebase conflict: resolve it, re-run the hooks, and continue. If another agent's change is involved, keep both intents.
 - A plan shows changes you did not make: look for an open `Drift in <stack>` issue. Every OpenTofu stack plans nightly on `main`, and Ansible runs in check mode nightly, and each keeps that issue open while the live state differs from `main`. Do not fold a fix for the drift into an unrelated PR; leave it for a human, or fix it in its own PR that links the issue.
 - A hook fails: fix the cause and commit again. Do not bypass it.
@@ -41,7 +40,7 @@ Never push to `main` directly, and never run `tofu apply` or `ansible-playbook` 
 - A plan job fails before it plans (credentials, network): say so in the PR and leave it for a human. Do not merge without a plan.
 - A failed apply on `main`: open a follow-up PR; do not retry by hand.
 - If you re-run a failed check, re-run the `CI gate (protected)` workflow too.
-- A plan that destroys or replaces anything needs a human's approval, even when intended. Say in the PR what is destroyed and why. The `ci-ok` check fails until a code owner adds the `destroy-approved` label by hand. Never add that label yourself. The approval covers the list of destroys and replaces the owner saw: a rebase or later push that leaves that list unchanged keeps it, and one that changes the list fails `ci-ok` until the owner removes the label and adds it again. Never remove the label yourself either.
+- A plan that destroys or replaces anything needs a human's approval, even when intended. Say in the PR what is destroyed and why. The `ci-ok` check fails until a code owner adds the `destroy-approved` label by hand. Never add that label yourself. The approval covers only the commit the owner saw: after any later push, `ci-ok` fails until the owner removes the label and adds it again. Never remove the label yourself either.
 
 ## Checks and applies
 

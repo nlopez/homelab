@@ -4,9 +4,7 @@
 #
 #   scripts/pr-wait <pr number>
 #
-# Exit status: 0 ci-ok passed; 1 ci-ok failed (including when main changed this
-# PR's stacks since it branched); 2 usage or API error; 3 ci-ok passed but the
-# ruleset requires main's latest commit (rebase, push, and wait again); 4 timed
+# Exit status: 0 ci-ok passed; 1 ci-ok failed; 2 usage or API error; 4 timed
 # out (45 minutes).
 # Needs `gh` authenticated for the repository (GH_TOKEN works too).
 set -euo pipefail
@@ -44,17 +42,10 @@ api --paginate "repos/${repo}/issues/${pr}/comments?per_page=100" \
 echo
 
 if [ "${conclusion}" != success ]; then
-  # The reason, which the summary comment lacks when ci-gate-refresh failed it.
+  # ci-ok's own reason, for a failure the summary comment doesn't explain.
   api "repos/${repo}/commits/${head}/check-runs?check_name=ci-ok" \
     --jq '[.check_runs[]] | sort_by(.started_at) | last | "\(.output.title // "")\n\(.output.summary // "")"' >&2
   echo "ci-ok: ${conclusion}. Fix the failing checks above before merging." >&2
   exit 1
-fi
-# ci-ok already fails when main changed this PR's stacks; "behind" means the
-# ruleset also requires the PR to contain main's latest commit.
-if [ "$(api "repos/${repo}/pulls/${pr}" --jq .mergeable_state)" = behind ]; then
-  echo "ci-ok passed, but main requires this PR to contain its latest commit." >&2
-  echo "Rebase onto origin/main, push with --force-with-lease, and run scripts/pr-wait again." >&2
-  exit 3
 fi
 echo "ci-ok passed on ${head:0:8}. Compare the plans with the PR's description, then merge." >&2

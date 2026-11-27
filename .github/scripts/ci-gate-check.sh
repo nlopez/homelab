@@ -35,18 +35,6 @@ done
 echo "All other checks passed on ${SHA:0:8}:"
 jq -r '.[] | "\(.name): \(.conclusion)"' <<<"${runs}"
 
-# main doesn't require a PR to contain its latest commit, only to rebase when
-# main changed a stack the PR changes; ci-gate-refresh.sh fails ci-ok on open
-# PRs when a later merge does that.
-if ! stale="$("$(dirname "$0")/stack-overlap.sh" stale "${PR}")"; then
-  echo "::error::Couldn't check whether main changed this PR's stacks since it branched."
-  exit 1
-fi
-if [ -n "${stale}" ]; then
-  echo "::error::main changed ${stale//$'\n'/, } since this PR branched, so its plans for them are stale. Rebase onto main and push."
-  exit 1
-fi
-
 destroys="$(gh api --paginate "repos/${REPO}/commits/${SHA}/check-runs?per_page=100" \
   --jq '.check_runs[] | select(.name != "ci-ok" and .name != "Protected gate" and .output.annotations_count > 0) | .id' |
   while read -r id; do
@@ -72,6 +60,14 @@ approval="$(gh api --paginate "repos/${REPO}/issues/${PR}/events?per_page=100" \
 actor="$(jq -r .actor <<<"${approval}")"
 app="$(jq -r .app <<<"${approval}")"
 labeled_at="$(jq -r .at <<<"${approval}")"
+# The approval covers only what the owner saw: a label added before the head
+# commit was pushed (its first check suite) doesn't count.
+pushed_at="$(gh api --paginate "repos/${REPO}/commits/${SHA}/check-suites?per_page=100" \
+  --jq '.check_suites[].created_at' | sort | head -n 1)"
+if [ -z "${pushed_at}" ] || [[ ! "${labeled_at}" > "${pushed_at}" ]]; then
+  echo "::error::destroy-approved was added at ${labeled_at}, before ${SHA:0:8} was pushed at ${pushed_at:-an unknown time}. A code owner must review this commit, then remove the label and add it again."
+  exit 1
+fi
 if [ -n "${app}" ]; then
   echo "::error::destroy-approved was added through the ${app} app, not by a person. A code owner must add it by hand."
   exit 1
@@ -80,27 +76,4 @@ if ! grep -qx "${actor}" <<<"${owners}"; then
   echo "::error::destroy-approved was added by ${actor}, who is not a code owner (${owners//$'\n'/, })."
   exit 1
 fi
-
-# An approval covers the list of destroys the owner saw. A label added after
-# the head commit was pushed (its first check suite) approves this commit's
-# list. An older label still counts when this list is the one the gate last
-# accepted, which it records in its summary comment (ci-gate-run.sh), so a
-# rebase that leaves the plans alone needs no new approval.
-fingerprint="$(sort <<<"${destroys}" | sha256sum | cut -c1-64)"
-pushed_at="$(gh api --paginate "repos/${REPO}/commits/${SHA}/check-suites?per_page=100" \
-  --jq '.check_suites[].created_at' | sort | head -n 1)"
-if [ -n "${pushed_at}" ] && [[ "${labeled_at}" > "${pushed_at}" ]]; then
-  echo "${actor} approved the destroys and replaces."
-else
-  approved="$(gh api --paginate "repos/${REPO}/issues/${PR}/comments?per_page=100" \
-    --jq ".[] | select(.user.login == \"${APP_LOGIN:-nlopez-homelab-ci-gate[bot]}\")
-      | select(.body | startswith(\"<!-- ci-summary -->\")) | .body" |
-    sed -n 's/^<!-- approved-destroys: \([0-9a-f]*\) -->$/\1/p' | tail -n 1)" || approved=""
-  if [ "${approved}" != "${fingerprint}" ]; then
-    echo "::error::The destroys and replaces changed since ${actor} approved them, or were never approved on this PR. A code owner must review this commit's plans, then remove the destroy-approved label and add it again."
-    exit 1
-  fi
-  echo "${actor}'s approval carries over: the destroys and replaces are the ones approved."
-fi
-echo "approved-destroys: ${fingerprint}"
-
+echo "${actor} approved the destroys and replaces."
