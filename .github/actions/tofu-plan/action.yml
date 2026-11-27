@@ -76,7 +76,6 @@ runs:
         OUTCOME: ${{ steps.plan.outcome }}
         TITLE: ${{ inputs.title }}
       run: |-
-        if [ "$OUTCOME" = success ]; then out=plan.txt; else out=plan.log; fi
         summary="$(grep -E '^(Plan:|No changes\.)' plan.log 2>/dev/null | tail -n 1 || true)"
         {
           echo "### ${TITLE} plan (${OUTCOME})"
@@ -89,9 +88,13 @@ runs:
             sed 's/^/- `/; s/ (/` (/' destroys.txt
             echo
           fi
-          echo '```hcl'
-          tail -c 60000 "$out" 2>/dev/null
-          echo '```'
+          if [ "$OUTCOME" = success ]; then
+            "${GITHUB_WORKSPACE}/.github/scripts/plan-diff.sh" < plan.txt
+          else
+            echo '```text'
+            tail -c 60000 plan.log 2>/dev/null
+            echo '```'
+          fi
         } >> "$GITHUB_STEP_SUMMARY"
         # A workflow command's message is one line, with % escaped.
         result="$(jq -cn --arg stack "$TITLE" --arg outcome "$OUTCOME" --arg summary "$summary" \

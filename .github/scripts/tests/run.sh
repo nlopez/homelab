@@ -55,6 +55,22 @@ c.gone (delete)" "${out}"
 expect "plan-destroys prints nothing for a plan with no resource changes" "" \
   "$(echo '{"format_version": "1.2"}' | "${scripts}/plan-destroys.sh")"
 
+### plan-diff.sh
+
+out="$(printf '%s\n' '  ~ resource "a" "b" {' '      ~ x = 1 -> 2' '      + y = 3' '      - z = 4' \
+  '-/+ resource "c" "d" {' '      id = "q"' 'Plan: 1 to add, 1 to change, 1 to destroy.' \
+  | "${scripts}/plan-diff.sh")"
+expect "plan-diff moves action markers to column 0 for diff highlighting" \
+'```diff
+!   resource "a" "b" {
+!       x = 1 -> 2
++       y = 3
+-       z = 4
+!   resource "c" "d" {
+      id = "q"
+Plan: 1 to add, 1 to change, 1 to destroy.
+```' "${out}"
+
 ### app-token.sh
 
 openssl genrsa -out "${work}/app.pem" 2048 2>/dev/null
