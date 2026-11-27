@@ -35,6 +35,18 @@ done
 echo "All other checks passed on ${SHA:0:8}:"
 jq -r '.[] | "\(.name): \(.conclusion)"' <<<"${runs}"
 
+# main doesn't require a PR to contain its latest commit, only to rebase when
+# main changed a stack the PR changes; ci-gate-refresh.sh fails ci-ok on open
+# PRs when a later merge does that.
+if ! stale="$("$(dirname "$0")/stack-overlap.sh" stale "${PR}")"; then
+  echo "::error::Couldn't check whether main changed this PR's stacks since it branched."
+  exit 1
+fi
+if [ -n "${stale}" ]; then
+  echo "::error::main changed ${stale//$'\n'/, } since this PR branched, so its plans for them are stale. Rebase onto main and push."
+  exit 1
+fi
+
 destroys="$(gh api --paginate "repos/${REPO}/commits/${SHA}/check-runs?per_page=100" \
   --jq '.check_runs[] | select(.name != "ci-ok" and .name != "Protected gate" and .output.annotations_count > 0) | .id' |
   while read -r id; do

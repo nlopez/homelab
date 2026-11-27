@@ -39,7 +39,8 @@ Read the `AGENTS.md` of any directory you change (`kubernetes/`, `gateway/`, `aw
   background if your agent can, rather than polling. Plans take 2-6 minutes.
 - Exit 1: a check failed. Find the cause in the failing job's log and push a fix; don't re-run
   hoping it passes, and never weaken a check to get green.
-- Exit 3: `main` moved. Rebase, `git push --force-with-lease`, wait again.
+- `ci-ok` saying `main` changed this PR's stacks: rebase, `git push --force-with-lease`, wait again.
+- Exit 3: the ruleset requires `main`'s latest commit. Rebase, push, wait again.
 
 ## 5. Compare and merge
 
@@ -59,5 +60,5 @@ Read the `AGENTS.md` of any directory you change (`kubernetes/`, `gateway/`, `aw
 
 - If a run failed, open the failed job's log and fix the issue in a follow-up PR; do not retry
   by hand.
-- Several PRs open at once: `main` requires each to be up to date, so after every merge, rebase
-  the next one and wait for its fresh `ci-ok` before merging it. Merge the quickest checks first.
+- Several PRs open at once: after a merge, only the ones that change the same stacks need a
+  rebase; their `ci-ok` fails and says so. The others can merge as they are.
