@@ -1,125 +1,67 @@
 #!/usr/bin/env bash
-# Lands a PR end to end: waits for ci-ok, merges, waits for all apply runs on
-# main to complete, and reports each run's conclusion. For Apply jobs, says
-# whether they ran or were SKIPPED (a green run with a skipped Apply means
-# nothing was applied).
+# Lands a pull request: waits for ci-ok (scripts/pr-wait), squash-merges the
+# head commit pr-wait checked, then waits for every workflow run on main for the
+# merge commit and reports each one. For each Apply job it says whether the
+# Apply step ran: a green run whose Apply step was skipped applied nothing.
 #
 #   scripts/pr-land <pr number>
 #
-# Exit status: 0 all runs passed and pr was merged; 1 a check or run failed;
-# 2 usage or API error; 3 ci-ok passed but main moved (rebase, push, and try
-# again); 4 timed out waiting for ci-ok (45 minutes); 5 timed out waiting for
-# workflow runs to complete (30 minutes).
+# Exit status: pr-wait's (1 ci-ok failed, 2 usage or API error, 3 main moved,
+# 4 timed out) before the merge; after it, 0 every run passed, 1 a run failed,
+# 2 the merge failed, 5 timed out waiting for runs (30 minutes).
 # Needs `gh` authenticated for the repository (GH_TOKEN works too).
 set -euo pipefail
 
 pr="${1:?usage: scripts/pr-land <pr number>}"
 repo="${GH_REPO:-$(git remote get-url origin | sed -E 's#(\.git)?$##; s#^.*github\.com[:/]##')}"
-api() { gh api "$@"; }
+export GH_REPO="${repo}"
+poll="${PR_LAND_POLL:-20}"
 
-# Step 1: Wait for ci-ok using pr-wait (reuse it, don't copy logic).
-repo_root="$(dirname "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")")"
-"${repo_root}/scripts/pr-wait" "${pr}"
-exit_code=$?
-if [ "${exit_code}" -ne 0 ]; then
-  case "${exit_code}" in
-    1) echo "ci-ok failed; fix the checks before landing." >&2; exit 1 ;;
-    3) echo "main moved; rebase, push, and try again." >&2; exit 3 ;;
-    4) echo "Timed out waiting for ci-ok." >&2; exit 4 ;;
-    *) exit "${exit_code}" ;;
-  esac
+"$(dirname "$0")/pr-wait" "${pr}"
+
+# pr-wait passed on this head; the merge fails if the head moved since.
+read -r head title < <(gh api "repos/${repo}/pulls/${pr}" --jq '"\(.head.sha) \(.title)"')
+if ! merge="$(gh api -X PUT "repos/${repo}/pulls/${pr}/merge" -f merge_method=squash \
+  -f sha="${head}" -f commit_title="${title} (#${pr})" --jq '.sha // empty')" || [ -z "${merge}" ]; then
+  echo "Merging #${pr} at ${head:0:8} failed; nothing was merged." >&2
+  exit 2
 fi
+echo "Merged #${pr} as ${merge:0:8}; waiting for its runs on main." >&2
 
-head="$(api "repos/${repo}/pulls/${pr}" --jq .head.sha)"
-echo "ci-ok passed on ${head:0:8}; merging PR #${pr}." >&2
-
-# Step 2: Merge the PR with --match-head-commit to prevent late pushes.
-api "repos/${repo}/pulls/${pr}" --jq '.base.sha' > /dev/null  # Verify PR exists.
-api repos/"${repo}"/pulls/"${pr}"/merge \
-  -X PUT \
-  -F merge_method=squash \
-  -F commit_title="Merge #${pr}" \
-  --jq '.sha // empty' > /dev/null 2>&1 || true
-
-# Wait a moment for the merge commit to be created and runs to register.
-sleep 2
-
-# Step 3: Find the merge commit SHA by checking the PR's merge commit.
-merge_commit="$(api "repos/${repo}/pulls/${pr}" --jq '.merge_commit_sha // empty')" || merge_commit=""
-if [ -z "${merge_commit}" ]; then
-  # If merge_commit_sha isn't set yet, the PR was merged but the metadata
-  # hasn't caught up. Try the main branch's latest commit.
-  merge_commit="$(api "repos/${repo}/branches/main" --jq '.commit.sha')"
-fi
-
-echo "Merge commit: ${merge_commit:0:8}. Waiting for workflow runs..." >&2
-
-# Step 4: Poll workflow runs for the merge commit until all complete or timeout.
-deadline=$((SECONDS + 30 * 60))
-declare -A run_status  # run_name -> conclusion
+# Done when the runs are all complete on two polls in a row, so a workflow
+# that registers late still counts. A change no push workflow's paths match
+# (docs, scripts) starts no runs: three empty polls in a row mean none.
+deadline=$((SECONDS + 30 * 60)) quiet=0 empty=0 runs=""
 while [ "${SECONDS}" -lt "${deadline}" ]; do
-  runs="$(api "repos/${repo}/actions/runs?head_sha=${merge_commit}&per_page=100" \
-    --jq '.workflow_runs | sort_by(.name) | .[] | "\(.name)\t\(.conclusion)\t\(.id)"')"
-
+  sleep "${poll}"
+  runs="$(gh api "repos/${repo}/actions/runs?head_sha=${merge}&event=push&per_page=100" \
+    --jq '.workflow_runs[] | "\(.id)\t\(.status)\t\(.conclusion)\t\(.name)"')"
   if [ -z "${runs}" ]; then
-    # No runs yet; they may not have registered.
-    sleep 3
-    continue
-  fi
-
-  all_complete=true
-  while IFS=$'\t' read -r name conclusion run_id; do
-    if [ "${conclusion}" = "null" ]; then
-      all_complete=false
+    empty=$((empty + 1)) quiet=0
+    if [ "${empty}" -ge 3 ]; then
+      echo "No workflow ran on main for ${merge:0:8}; nothing to apply."
+      exit 0
     fi
-    run_status["${name}"]="${conclusion}"
-  done <<<"${runs}"
-
-  if [ "${all_complete}" = true ]; then
-    break
-  fi
-  sleep 5
-done
-
-# Step 5: Check if all runs completed; print status and check for Apply skips.
-any_failed=false
-while IFS='=' read -r name conclusion; do
-  if [ -z "${name}" ]; then
-    continue
-  fi
-
-  # For Apply jobs, check if they ran or were skipped.
-  if [[ "${name}" == *"Apply" ]] || [[ "${name}" == *"apply" ]]; then
-    # Get the run ID for this run.
-    run_id="$(api "repos/${repo}/actions/runs?head_sha=${merge_commit}&per_page=100" \
-      --jq ".workflow_runs[] | select(.name == \"${name}\") | .id" | head -1)"
-
-    if [ -n "${run_id}" ]; then
-      # Check if the apply job was skipped.
-      apply_status="$(api "repos/${repo}/actions/runs/${run_id}/jobs" \
-        --jq '.jobs[] | select(.name | contains("Apply")) | .conclusion' | head -1)"
-
-      if [ "${apply_status}" = "skipped" ]; then
-        echo "✓ ${name}: ${conclusion} (Apply skipped - nothing applied)"
-      else
-        echo "✓ ${name}: ${conclusion}"
-      fi
-    else
-      echo "✓ ${name}: ${conclusion}"
-    fi
+  elif ! cut -f2 <<<"${runs}" | grep -qvx completed; then
+    empty=0 quiet=$((quiet + 1))
+    [ "${quiet}" -ge 2 ] && break
   else
-    echo "✓ ${name}: ${conclusion}"
+    empty=0 quiet=0
   fi
-
-  if [ "${conclusion}" != "success" ] && [ "${conclusion}" != "null" ] && [ "${conclusion}" != "skipped" ]; then
-    any_failed=true
-  fi
-done < <(for k in "${!run_status[@]}"; do echo "${k}=${run_status[${k}]}"; done | sort)
-
-echo "Workflow runs completed." >&2
-
-if [ "${any_failed}" = true ]; then
-  exit 1
+done
+if [ "${quiet}" -lt 2 ]; then
+  echo "Timed out waiting for the runs on ${merge:0:8}:" >&2
+  printf '%s\n' "${runs}" | cut -f2- >&2
+  exit 5
 fi
 
-exit 0
+failed=0
+while IFS=$'\t' read -r id _ conclusion name; do
+  echo "${name}: ${conclusion}"
+  case "${conclusion}" in success|skipped|neutral) ;; *) failed=1 ;; esac
+  gh api "repos/${repo}/actions/runs/${id}/jobs?per_page=100" \
+    --jq '.jobs[] | select(.name | test("Apply$")) | "  \(.name): \(
+      [.steps[] | select(.name == "Apply") | .conclusion] | first // "no Apply step"
+      | if . == "skipped" then "Apply step skipped, nothing applied" elif . == "success" then "applied" else . end)"'
+done <<<"${runs}"
+exit "${failed}"
