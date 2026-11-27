@@ -26,6 +26,7 @@ while the table and the routes disagree.
 | Goldpinger | `goldpinger` | `fuack` | No | |
 | Homepage | `homepage` | `bushi` | No | |
 | httpbin | `httpbin` | `swee` | No | |
+| LiteXiv | `litexiv` | `kikit` | No | |
 | Palworld | `palworld` | Live map `rooby`; game UDP `10.43.64.10:8211` | No | |
 | Palworld (modded) | `palworld-modded` | Game UDP `10.43.64.10:8311` | No | |
 | Radarr | `radarr` | `dumud` | No | |
