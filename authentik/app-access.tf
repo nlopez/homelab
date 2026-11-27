@@ -37,6 +37,7 @@ locals {
       argocd   = authentik_application.argocd
       immich   = authentik_application.immich
       seafile  = authentik_application.seafile
+      netbox   = authentik_application.netbox
     },
   )
 }
