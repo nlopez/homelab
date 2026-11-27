@@ -4,9 +4,10 @@ kind: ApplicationSet
 metadata:
   name: bootstrap
   namespace: argocd
+  annotations:
+    # Deleting this ApplicationSet deletes every app in it, Argo CD and Cilium included.
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
-  syncPolicy:
-    preserveResourcesOnDeletion: true
   strategy:
     type: RollingSync
     rollingSync:
@@ -198,6 +199,8 @@ spec:
       name: "{{.name}}"
       labels:
         tier: "{{.tier}}"
+      finalizers:
+      - resources-finalizer.argocd.argoproj.io
     spec:
       project: default
       ignoreDifferences:
