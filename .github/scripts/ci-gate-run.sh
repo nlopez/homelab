@@ -38,24 +38,9 @@ jq -r '.[] | select(.name != "ci-ok" and .name != "Protected gate" and .output.a
   done | jq -s . > "${work}/annotations.json"
 "${here}/ci-summary.sh" "${work}/runs.json" "${work}/annotations.json" "${work}/comments.json" \
   "${SHA}" "${gate}" > "${work}/summary.md"
-# Overlap with other open PRs is advisory: a failure to work it out says so
-# instead of failing the gate.
-if overlap="$("${here}/stack-overlap.sh" report "${PR}" 2>"${work}/overlap.err")"; then
-  if [ -n "${overlap}" ]; then printf '\n%s\n' "${overlap}" >> "${work}/summary.md"; fi
-else
-  printf '\n_Couldn'"'"'t check other open PRs for the same stacks: %s_\n' "$(tail -n 1 "${work}/overlap.err")" >> "${work}/summary.md"
-fi
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then cat "${work}/summary.md" >> "${GITHUB_STEP_SUMMARY}"; fi
 comment="$(jq -r --arg login "${app_login}" '[.[] | select(.user.login == $login)
   | select(.body | startswith("<!-- ci-summary -->"))] | last | .id // empty' "${work}/comments.json")"
-# The destroys the gate last accepted an approval for (ci-gate-check.sh): this
-# run's, or the comment's earlier record when this run accepted none.
-approved="$(sed -n 's/^approved-destroys: \([0-9a-f]*\)$/\1/p' "${work}/gate.log" | tail -n 1)"
-if [ -z "${approved}" ] && [ -n "${comment}" ]; then
-  approved="$(jq -r --arg id "${comment}" '.[] | select((.id | tostring) == $id) | .body' "${work}/comments.json" |
-    sed -n 's/^<!-- approved-destroys: \([0-9a-f]*\) -->$/\1/p' | tail -n 1)"
-fi
-if [ -n "${approved}" ]; then printf '\n<!-- approved-destroys: %s -->\n' "${approved}" >> "${work}/summary.md"; fi
 if [ -n "${comment}" ]; then
   gh api -X PATCH "repos/${REPO}/issues/comments/${comment}" -F body=@"${work}/summary.md" >/dev/null
 else

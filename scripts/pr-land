@@ -12,10 +12,10 @@
 # characters). ci-ok passes a plan that changes something unintended, so a
 # head you haven't reviewed is never merged.
 #
-# Exit status: pr-wait's (1 ci-ok failed, 2 usage or API error, 3 must contain
-# main's latest commit, 4 timed out) before the merge; 6 the head isn't the
-# one reviewed; after the merge, 0 every run passed, 1 a run failed, 2 the merge
-# failed, 5 timed out waiting for runs (30 minutes).
+# Exit status: pr-wait's (1 ci-ok failed, 2 usage or API error, 4 timed out)
+# before the merge; 6 the head isn't the one reviewed; after the merge, 0 every
+# run passed, 1 a run failed, 2 the merge failed, 5 timed out waiting for runs
+# (30 minutes).
 # Needs `gh` authenticated for the repository (GH_TOKEN works too).
 set -euo pipefail
 
