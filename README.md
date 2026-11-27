@@ -32,8 +32,8 @@ issue open while the live state differs from `main`. OpenTofu state lives in the
 A host has a DNS name, `<role>.<site>.radoncanyon.com`, and a tailnet name, `<role>-<site>`:
 `gw.lga1.radoncanyon.com` and `gw-lga1`. Hosts that exist at only one site drop the site from the
 tailnet name: `knode1` is `knode1.lga1.radoncanyon.com`. Each site's DHCP registers clients under its
-own subdomain, so both sites can reuse a role name without colliding. The fixed names are Unbound
-host overrides in `gateway/lga1.tf` and `gateway/lga2.tf`. Tailnet names are set in
+own subdomain, so both sites can reuse a role name without colliding. The fixed names are public
+Cloudflare records with private addresses, in `dns/radoncanyon.com.tf`. Tailnet names are set in
 `tailnet/tofu/devices.tf`.
 
 ## Secrets

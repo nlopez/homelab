@@ -27,116 +27,6 @@ locals {
     }
   }
 
-  lga1_local_hosts = {
-    "gw-A" = {
-      uuid        = "9b431324-55d6-44cb-bbba-0805e0ca2e59"
-      hostname    = "gw"
-      domain      = "lga1.radoncanyon.com"
-      rr          = "A"
-      server      = "192.168.222.1"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
-    "knode1-A" = {
-      uuid        = "e464a0f7-29fa-4eb1-b0cc-8ed69eed4723"
-      hostname    = "knode1"
-      domain      = "lga1.radoncanyon.com"
-      rr          = "A"
-      server      = "192.168.222.143"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
-    "knode2-A" = {
-      uuid        = "7b76a925-2ab6-4d84-940a-e693d102ff26"
-      hostname    = "knode2"
-      domain      = "lga1.radoncanyon.com"
-      rr          = "A"
-      server      = "192.168.222.144"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
-    "nas1-A" = {
-      uuid        = "f392b398-2fdb-4457-a4c0-87a8a56217ea"
-      hostname    = "nas1"
-      domain      = "lga1.radoncanyon.com"
-      rr          = "A"
-      server      = "192.168.222.149"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
-    "nas2-A" = {
-      uuid        = "59bf554d-6db2-4e4e-a5e2-29b6bb98b768"
-      hostname    = "nas2"
-      domain      = "lga1.radoncanyon.com"
-      rr          = "A"
-      server      = "192.168.222.114"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
-    "odroid-A" = {
-      uuid        = "445b4ac2-2700-461c-afda-5541cc5c5caa"
-      hostname    = "odroid"
-      domain      = "lga1.radoncanyon.com"
-      rr          = "A"
-      server      = "192.168.222.2"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
-    "odroid-AAAA" = {
-      uuid        = "8977f4cc-f7ba-46b7-9956-3b6076435a9c"
-      hostname    = "odroid"
-      domain      = "lga1.radoncanyon.com"
-      rr          = "AAAA"
-      server      = "fd54:571b:560a:2::2"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
-    "gw-AAAA" = {
-      uuid        = "99a3dd82-91e0-43c6-a6b8-748a2f55ee00"
-      hostname    = "gw"
-      domain      = "lga1.radoncanyon.com"
-      rr          = "AAAA"
-      server      = "fd54:571b:560a:2::1"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
-    "knode1-AAAA" = {
-      uuid        = "7ef097a7-22d1-4a5f-810d-7171a1420eb8"
-      hostname    = "knode1"
-      domain      = "lga1.radoncanyon.com"
-      rr          = "AAAA"
-      server      = "fd54:571b:560a:2::143"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
-    "knode2-AAAA" = {
-      uuid        = "13f3dc41-87b9-4136-989b-deeccd5087fe"
-      hostname    = "knode2"
-      domain      = "lga1.radoncanyon.com"
-      rr          = "AAAA"
-      server      = "fd54:571b:560a:2::144"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
-    "nas1-AAAA" = {
-      uuid        = "38df524f-8894-4522-953a-dcf7f522bf5a"
-      hostname    = "nas1"
-      domain      = "lga1.radoncanyon.com"
-      rr          = "AAAA"
-      server      = "fd54:571b:560a:2:ec4:7aff:fe33:59ee"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
-    "nas2-AAAA" = {
-      uuid        = "ce762ceb-bd17-48c1-ac73-dba07ee7ee9f"
-      hostname    = "nas2"
-      domain      = "lga1.radoncanyon.com"
-      rr          = "AAAA"
-      server      = "fd54:571b:560a:2:225:90ff:fe9b:4ae2"
-      description = "Site infrastructure name (was in the cluster Technitium radoncanyon.com zone)"
-    }
-  }
-
-  lga1_unbound_hosts = merge(
-    local.lga1_local_hosts,
-    { for k, v in local.lga2_local_hosts : "lga2-${k}" => {
-      hostname    = v.hostname
-      domain      = v.domain
-      rr          = v.rr
-      server      = v.server
-      description = v.description
-    } }
-  )
-
   lga1_gateways = {
     "WG_LGA2" = {
       uuid            = "93404547-6ff4-4ad7-a1aa-4825d72ec309"
@@ -204,18 +94,6 @@ resource "opnsense_unbound_domain_override" "lga1_unbound_forwards" {
   enabled     = true
 }
 
-resource "opnsense_unbound_host_override" "lga1_unbound_hosts" {
-  provider = opnsense.lga1
-  for_each = local.lga1_unbound_hosts
-
-  hostname    = each.value.hostname
-  domain      = each.value.domain
-  rr          = each.value.rr
-  server      = each.value.server
-  description = each.value.description
-  enabled     = true
-}
-
 resource "opnsense_system_gateway" "lga1_gateways" {
   provider = opnsense.lga1
   for_each = local.lga1_gateways
@@ -245,13 +123,6 @@ import {
   provider = opnsense.lga1
   for_each = local.lga1_unbound_forwards
   to       = opnsense_unbound_domain_override.lga1_unbound_forwards[each.key]
-  id       = each.value.uuid
-}
-
-import {
-  provider = opnsense.lga1
-  for_each = { for k, v in local.lga1_local_hosts : k => v if can(v.uuid) }
-  to       = opnsense_unbound_host_override.lga1_unbound_hosts[each.key]
   id       = each.value.uuid
 }
 
