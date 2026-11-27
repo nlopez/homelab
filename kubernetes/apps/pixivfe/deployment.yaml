@@ -28,7 +28,7 @@ spec:
       - name: pixivfe
         # Upstream pixivfe with pixivfe/patches/ applied; built by the
         # pixivfe workflow.
-        image: ghcr.io/nlopez/pixivfe:v3.1.0-2
+        image: ghcr.io/nlopez/pixivfe:v3.1.0-4
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
