@@ -10,7 +10,7 @@ spec:
     group: gateway.networking.k8s.io
     kind: Gateway
   hostnames:
-  - kikit.desertbluffs.com
+  - lullu.desertbluffs.com
   rules:
   - backendRefs:
     - name: firefox-sync
@@ -35,7 +35,7 @@ spec:
     group: gateway.networking.k8s.io
     kind: Gateway
   hostnames:
-  - kikit.desertbluffs.com
+  - lullu.desertbluffs.com
   rules:
   - backendRefs:
     - name: firefox-sync

@@ -64,7 +64,7 @@ spec:
         - name: SYNC_TOKENSERVER__FXA_OAUTH_SERVER_URL
           value: https://oauth.accounts.firefox.com
         - name: SYNC_TOKENSERVER__INIT_NODE_URL
-          value: https://kikit.desertbluffs.com
+          value: https://lullu.desertbluffs.com
         ports:
         - name: http
           containerPort: 8000
