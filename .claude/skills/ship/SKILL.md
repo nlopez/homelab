@@ -52,7 +52,8 @@ Read the `AGENTS.md` of any directory you change (`kubernetes/`, `gateway/`, `aw
   result. For a stack that should change, check its Apply step ran (not just its Plan); a green
   run with a skipped Apply means nothing was applied. For `kubernetes/`, it includes the
   `Kubernetes sync check` run, which fails if a changed Application isn't Synced and Healthy
-  within 15 minutes.
+  within 15 minutes. To merge as soon as `ci-ok` passes without waiting, add `--auto` right
+  after opening the PR instead (applies the merge without waiting for apply runs).
 
 ## 6. After the merge
 
