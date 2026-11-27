@@ -10,9 +10,10 @@ netplan_ethernets:
     routes:
       - to: default
         via: 192.168.222.1
+    # No search domain: pods inherit the node's, and the wildcard TXT record
+    # under radoncanyon.com makes every <name>.lga1.radoncanyon.com exist, so
+    # musl resolvers stop there instead of trying the name as written.
     nameservers:
-      search:
-        - lga1.radoncanyon.com
       addresses:
         - 192.168.222.1
 netplan_remove_files:
