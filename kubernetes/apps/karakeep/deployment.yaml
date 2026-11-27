@@ -126,13 +126,17 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
       - name: meilisearch
-        image: getmeili/meilisearch:v1.55.0
+        image: getmeili/meilisearch:v1.57.0
         resources:
           requests:
             cpu: 50m
             memory: 256Mi
         env:
         - name: MEILI_NO_ANALYTICS
+          value: "true"
+        # Meilisearch won't open a database written by another minor version
+        # without this; it migrates the index in place when the image changes.
+        - name: MEILI_UPGRADE_DB
           value: "true"
         - name: MEILI_MASTER_KEY
           valueFrom:
