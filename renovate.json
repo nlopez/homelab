@@ -169,34 +169,7 @@
       "enabled": false
     },
     {
-      "description": "A Helm chart sets the versions of the images it deploys; Renovate updates the chart, not those images. Images a values file pins are left alone unless a rule below allows them.",
-      "matchManagers": [
-        "helm-values"
-      ],
-      "matchFileNames": [
-        "kubernetes/apps/*/values.yaml"
-      ],
-      "enabled": false
-    },
-    {
-      "description": "Images in Helm values that the chart doesn't version: Immich's chart lags the app and expects its tags set, the Actions runner image is ours to pick, and the OPNsense webhook is our own build",
-      "matchManagers": [
-        "helm-values"
-      ],
-      "matchFileNames": [
-        "kubernetes/apps/*/values.yaml"
-      ],
-      "matchPackageNames": [
-        "ghcr.io/immich-app/immich-server",
-        "ghcr.io/immich-app/immich-machine-learning",
-        "docker.io/valkey/valkey",
-        "ghcr.io/actions/actions-runner",
-        "ghcr.io/nlopez/external-dns-opnsense-webhook"
-      ],
-      "enabled": true
-    },
-    {
-      "description": "The chart doesn't version Velero's AWS plugin, and the plugin's minor must match Velero's: allow patches; a new minor goes in the PR that moves the chart to a new Velero minor",
+      "description": "The chart doesn't version Velero's AWS plugin, and the plugin's minor must match Velero's: patches only; a new minor goes in the PR that moves the chart to a new Velero minor. (A values.yaml may not override an image its chart ships: the Helm pins check fails it.)",
       "matchManagers": [
         "helm-values"
       ],
@@ -207,9 +180,23 @@
         "velero/velero-plugin-for-aws"
       ],
       "matchUpdateTypes": [
-        "patch"
+        "minor",
+        "major"
       ],
-      "enabled": true
+      "enabled": false
+    },
+    {
+      "description": "Forgejo's register-runner sidecar runs the chart's Forgejo image but the chart can't template its tag, so it moves with the chart: the Helm pins check fails a chart update until the sidecar matches",
+      "matchManagers": [
+        "helm-values"
+      ],
+      "matchFileNames": [
+        "kubernetes/apps/forgejo/values.yaml"
+      ],
+      "matchPackageNames": [
+        "code.forgejo.org/forgejo/forgejo"
+      ],
+      "enabled": false
     },
     {
       "description": "Use regex versioning for linuxserver images which use version-X.Y.Z or version-vX.Y.Z tag format",

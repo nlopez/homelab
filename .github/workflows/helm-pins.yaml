@@ -1,0 +1,57 @@
+name: Helm pins
+
+# Fails when a Helm app's values.yaml overrides the version of an image its
+# chart ships (.github/scripts/helm-pins.py), so a chart update can't leave an
+# app on an older pinned image. ci-ok waits for it.
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+    - 'kubernetes/apps/**'
+    - '.github/scripts/helm-pins.py'
+    - '.github/workflows/helm-pins.yaml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: helm-pins-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# shell: bash runs steps with -eo pipefail; the default (bash -e) lets a
+# failing command before a pipe pass, as `script 2>&1 | tee log` once let the
+# ci-ok gate pass with failed checks.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check:
+    name: Helm pins
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install helm
+        # shortcut: pinned by hand, bump with a new release.
+        run: |-
+          curl -fsSL -o "$RUNNER_TEMP/helm.tgz" https://get.helm.sh/helm-v4.3.1-linux-amd64.tar.gz
+          echo "0403a88ae20913d11b10a2467b50087721fea7581736da6b9d3992f5357fe54b  $RUNNER_TEMP/helm.tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/helm.tgz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/linux-amd64" >> "$GITHUB_PATH"
+
+      - name: Check the changed Helm apps
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |-
+          python3 -c 'import yaml' 2>/dev/null || python3 -m pip install --quiet pyyaml
+          mapfile -t apps < <(git diff --name-only "${BASE}" HEAD -- kubernetes/apps | python3 .github/scripts/helm-pins.py changed)
+          if [ "${#apps[@]}" -eq 0 ]; then
+            echo "No Helm app's values.yaml or application.yaml changed."
+            exit 0
+          fi
+          python3 .github/scripts/helm-pins.py check "${apps[@]}"

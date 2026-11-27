@@ -12,7 +12,7 @@ controllers:
       main:
         image:
           repository: ghcr.io/immich-app/immich-server
-          tag: v3.4.1
+          tag: v3.4.1 # pin: the immich chart lags the app and expects the tag set
           pullPolicy: IfNotPresent
         env:
           DB_HOSTNAME: immich-database-tn-rw.immich.svc.cluster.local
@@ -42,7 +42,7 @@ valkey:
         main:
           image:
             repository: docker.io/valkey/valkey
-            tag: 9.2-alpine
+            tag: 9.2-alpine # pin: valkey data on the PVC was written by 9.2; the chart ships 9.1
   persistence:
     data:
       enabled: true
@@ -59,7 +59,7 @@ server:
         main:
           image:
             repository: ghcr.io/immich-app/immich-server
-            tag: v3.4.1
+            tag: v3.4.1 # pin: the immich chart lags the app and expects the tag set
             pullPolicy: IfNotPresent
           resources:
             requests:
@@ -86,7 +86,7 @@ machine-learning:
         main:
           image:
             repository: ghcr.io/immich-app/immich-machine-learning
-            tag: v3.4.1-openvino
+            tag: v3.4.1-openvino # pin: the immich chart lags the app and expects the tag set
             pullPolicy: IfNotPresent
           resources:
             requests:
