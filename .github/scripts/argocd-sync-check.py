@@ -29,7 +29,12 @@ ALL = "*"
 
 
 def targets(paths):
-    """Map changed paths to the Applications they feed (kubernetes/bootstrap/apps*.yaml)."""
+    """Map changed paths to the Applications they feed.
+
+    kubernetes/apps/<name>/ feeds Application <name>; its application.yaml also
+    feeds the root Application, bootstrap, which applies it. A change in
+    kubernetes/bootstrap/ can reach every Application.
+    """
     apps = set()
     for path in paths:
         parts = path.strip().split("/")
@@ -37,16 +42,9 @@ def targets(paths):
             continue
         kind, name = parts[1], parts[2]
         if kind == "apps" and len(parts) > 3:
-            if len(parts) > 5 and parts[3] == "overlays":
-                apps.add(f"{name}-{parts[4]}")
-                continue
-            # A base change reaches the app and every overlay built on it.
             apps.add(name)
-            overlays = ROOT / "kubernetes" / "apps" / name / "overlays"
-            if overlays.is_dir():
-                apps.update(f"{name}-{o.name}" for o in overlays.iterdir() if o.is_dir())
-        elif kind == "apps-helm" and len(parts) > 3 and name != "_template":
-            apps.add(name)
+            if parts[3:] == ["application.yaml"]:
+                apps.add("bootstrap")
         elif kind == "bootstrap":
             return {ALL}
     return apps

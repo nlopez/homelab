@@ -4,24 +4,23 @@ Read the root [AGENTS.md](../AGENTS.md) first. This covers what is specific to t
 
 ## Where an app goes
 
-- `apps/<name>/`: plain manifests. The `apps` ApplicationSet (`bootstrap/apps.yaml`) turns every
-  directory here into an Application named `<name>`, deployed to namespace `<name>`, recursing into
-  subdirectories. Adding the directory is all it takes. `apps/<name>/overlays/<o>/` becomes
-  Application `<name>-<o>`, also in namespace `<name>`. Deleting the directory deletes the
-  Application and every resource it manages, PVCs included. The 1Password item behind a
-  `OnePasswordItem` stays; delete it by hand.
-- `apps-helm/<name>/`: a Helm chart. Add an entry to the `list` generator in
-  `bootstrap/apps-helm.yaml` (`name`, `tier`, `repoURL`, `chart`, `targetRevision`, `namespace`),
-  then put the chart's values in `apps-helm/<name>/values.yaml` and any extra manifests in
-  `apps-helm/<name>/manifests/`. Start from `apps-helm/_template/`. `tier` is one of
-  `network-and-secrets`, `storage`, or `platform`; new apps are almost always `platform`.
-- A directory under `apps-helm/` with no `bootstrap/apps-helm.yaml` entry is not deployed.
-- Removing an entry from `bootstrap/apps-helm.yaml` deletes its Application and every resource it
-  manages, PVCs and CRDs included. Deleting a CRD deletes every custom resource of that kind in the
-  cluster. Leave removing a `network-and-secrets` or `storage` entry, or `argocd`, to a human.
-- Never delete the `apps` or `bootstrap` ApplicationSet, or the `bootstrap` Application, by hand:
-  that deletes every app under it. `bootstrap/delete-guard.yaml` refuses the delete unless the
-  object carries `homelab/allow-delete: "true"`.
+- Every app is a directory `apps/<name>/` holding an `application.yaml`: an Argo CD Application
+  named `<name>`, deployed to namespace `<name>` (or the namespace a chart needs). The root
+  Application (`bootstrap/Application.yaml`) applies every `apps/*/application.yaml`. A directory
+  without one is not deployed.
+- Plain manifests: copy `_template/plain/` and put the manifests beside `application.yaml`; the
+  Application deploys every file in the directory except itself, recursing into subdirectories.
+- A Helm chart: copy `_template/helm/`, set the chart's `repoURL`, `chart`, and `targetRevision`,
+  put its values in `values.yaml` and any extra manifests in `manifests/`.
+- The `argocd.argoproj.io/sync-wave` annotation orders a fresh cluster's first sync: `0` networking
+  and secrets, `1` storage, `2` everything else. New apps are almost always `2`.
+- Deleting an app's directory deletes its Application and every resource it manages, PVCs and CRDs
+  included. Deleting a CRD deletes every custom resource of that kind in the cluster. The 1Password
+  item behind a `OnePasswordItem` stays; delete it by hand. Leave removing a wave `0` or `1` app,
+  or `argocd`, to a human.
+- Never delete the `bootstrap` Application by hand: that deletes every app under it.
+  `bootstrap/delete-guard.yaml` refuses the delete unless the object carries
+  `homelab/allow-delete: "true"`.
 
 ## Hostnames and exposure
 
@@ -53,8 +52,8 @@ Read the root [AGENTS.md](../AGENTS.md) first. This covers what is specific to t
   covers yours.
 - The `Manifest Diff` comment renders every Application on `main` and on the PR and diffs them.
   Compare it with what you meant to change, as you would a plan. "No changes found" on a PR that
-  changes manifests means Argo CD won't see the change (a typo in a path, or an `apps-helm`
-  directory with no ApplicationSet entry).
+  changes manifests means Argo CD won't see the change (a typo in a path, or an app directory
+  with no `application.yaml`).
 - A PR that removes an Application, or a PVC, PV, Namespace, CRD, or database (`Cluster`,
   `MariaDB`) from one, counts as a destroy: `Manifest Diff` lists them, and `ci-ok` fails until a
   code owner adds `destroy-approved` (root `AGENTS.md`). Renaming an app counts too.
@@ -67,7 +66,6 @@ Read the root [AGENTS.md](../AGENTS.md) first. This covers what is specific to t
 ## Stateful apps
 
 - A `PersistentVolumeClaim` binds a fresh volume if its name or namespace changes. Renaming or
-  removing an app that has PVCs, or moving it between `apps/` and `apps-helm/`,
-  deletes its old PVCs; on a storage class with `reclaimPolicy: Delete` the data goes with them.
-  Leave that to a human.
+  removing an app that has PVCs deletes its old PVCs; on a storage class with
+  `reclaimPolicy: Delete` the data goes with them. Leave that to a human.
 - `kubernetes/README.md` covers bootstrap order and Velero restores.

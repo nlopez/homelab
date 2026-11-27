@@ -6,6 +6,3 @@ formatter:
   max_line_length: 200
   trim_trailing_whitespace: true
   eof_newline: true
-exclude:
-- kubernetes/bootstrap/apps.yaml
-- kubernetes/bootstrap/apps-helm.yaml

@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/validatingadmissionpolicy-admissionregistration-v1.json
-# Deleting the root Application or an ApplicationSet deletes every app under it
-# and, through each Application's resources finalizer, everything those apps run.
-# Refuse it unless the object is first annotated homelab/allow-delete=true.
+# Deleting the root Application with a cascade deletes every Application it manages
+# and, through each one's resources finalizer, everything those apps run. Refuse it
+# unless the root is first annotated homelab/allow-delete=true.
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingAdmissionPolicy
 metadata:
@@ -13,10 +13,10 @@ spec:
     - apiGroups: ["argoproj.io"]
       apiVersions: ["*"]
       operations: ["DELETE"]
-      resources: ["applications", "applicationsets"]
+      resources: ["applications"]
   validations:
   - expression: >-
-      !(oldObject.metadata.name in ['bootstrap', 'apps']) || (has(oldObject.metadata.annotations) && 'homelab/allow-delete' in oldObject.metadata.annotations && oldObject.metadata.annotations['homelab/allow-delete']
+      oldObject.metadata.name != 'bootstrap' || (has(oldObject.metadata.annotations) && 'homelab/allow-delete' in oldObject.metadata.annotations && oldObject.metadata.annotations['homelab/allow-delete']
       == 'true')
     messageExpression: >-
-      'Deleting ' + oldObject.kind + ' ' + oldObject.metadata.name + ' deletes every app under it. Annotate it homelab/allow-delete=true first.'
+      'Deleting Application bootstrap deletes every app under it. Annotate it homelab/allow-delete=true first.'

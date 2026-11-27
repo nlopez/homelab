@@ -323,9 +323,12 @@ rm "${work}/bin/curl"
 sync="${scripts}/argocd-sync-check.py"
 expect "sync-check maps changed paths to Applications" \
 "argocd
-sonarr" "$(printf 'kubernetes/apps/sonarr/deployment.yaml\nkubernetes/apps-helm/argocd/values.yaml\nkubernetes/README.md\nkubernetes/apps-helm/_template/values.yaml\n' | python3 "${sync}" targets)"
+sonarr" "$(printf 'kubernetes/apps/sonarr/deployment.yaml\nkubernetes/apps/argocd/values.yaml\nkubernetes/README.md\nkubernetes/_template/helm/values.yaml\n' | python3 "${sync}" targets)"
+expect "sync-check adds the root when an application.yaml changes" \
+"bootstrap
+sonarr" "$(echo kubernetes/apps/sonarr/application.yaml | python3 "${sync}" targets)"
 expect "sync-check checks every Application after a bootstrap change" "*" \
-  "$(echo kubernetes/bootstrap/apps.yaml | python3 "${sync}" targets)"
+  "$(echo kubernetes/bootstrap/Application.yaml | python3 "${sync}" targets)"
 
 # A repo with three commits: base, the pushed one, and a later one.
 s="${work}/syncrepo"
@@ -664,7 +667,7 @@ expect "plan rejects an unknown stack" "2" "$?"
 # A throwaway repo with one private app, one public app, and the docs they need.
 make_repo() {
   local dir="$1"
-  rm -rf "${dir}" && mkdir -p "${dir}/scripts" "${dir}/kubernetes/apps/web" "${dir}/kubernetes/apps-helm/pub/manifests"
+  rm -rf "${dir}" && mkdir -p "${dir}/scripts" "${dir}/kubernetes/apps/web" "${dir}/kubernetes/apps/pub/manifests"
   cp "${repo}/scripts/check-hostnames.py" "${dir}/scripts/"
   route() { # <file> <name> <host> <gateways...>
     local f="$1" n="$2" h="$3"; shift 3
@@ -674,7 +677,7 @@ make_repo() {
       echo "  hostnames: [${h}]"; } > "${f}"
   }
   route "${dir}/kubernetes/apps/web/httproute.yaml" web swee.desertbluffs.com private
-  route "${dir}/kubernetes/apps-helm/pub/manifests/httproute.yaml" pub nox.desertbluffs.com private internet
+  route "${dir}/kubernetes/apps/pub/manifests/httproute.yaml" pub nox.desertbluffs.com private internet
   printf '# Unused codenames\n\n- kikit\n- lullu\n' > "${dir}/CODENAMES.md"
   cat > "${dir}/EXPOSURE.md" <<'MD'
 | Service | Namespace | Hostname | Internet | Notes |

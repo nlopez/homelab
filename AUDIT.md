@@ -52,7 +52,7 @@ requests and applies on `main`.
 ### 4. Renovate covers every dependency type
 
 Enabled managers: `ansible-galaxy`, `custom.regex`, `helm-values`, `github-actions`, `nix`,
-`pre-commit`, `terraform`. Regex managers cover the Helm charts in `kubernetes/bootstrap/apps-helm.yaml`,
+`pre-commit`, `terraform`. Regex managers cover the Helm charts in `kubernetes/apps/*/application.yaml`,
 container images, and the yt-dlp and bgutil pins in `media-toolbox/Makefile`. `ansible/requirements.yaml`
 pins the one collection Galaxy installs (`datadog.dd`); `ansible.posix` and `community.general` come
 with the dev shell's Ansible, so nixpkgs sets them. The `nix` manager relocks `flake.lock` (lock

@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/argoproj.io/application_v1alpha1.json
+# Copy this directory to kubernetes/apps/<name>/ and replace NAME with <name>. Put the app's
+# manifests beside this file; the Application deploys every one of them except this file.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: NAME
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: NAME
+  sources:
+  - repoURL: https://github.com/nlopez/homelab.git
+    targetRevision: main
+    path: kubernetes/apps/NAME
+    directory:
+      recurse: true
+      exclude: application.yaml
+  ignoreDifferences:
+  - jsonPointers:
+    - /spec/volumeName
+    kind: PersistentVolumeClaim
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: false
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+    - RespectIgnoreDifferences=true

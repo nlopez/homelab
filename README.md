@@ -9,7 +9,7 @@ workflow, which people and agents both follow.
 | Directory | Manages | On a PR | After merge |
 | --- | --- | --- | --- |
 | [`ansible/`](ansible) | Host config for `knode1`, `knode2`, `odroid-lga1`, `odroid-lga2` | `ansible-lint` | Manual `Ansible` dispatch; nightly drift check |
-| [`kubernetes/`](kubernetes) | Cluster apps through Argo CD: `apps/` (manifests), `apps-helm/` (charts), `bootstrap/` (ApplicationSets) | Hooks, rendered manifest diff | Argo CD syncs; a sync check waits for Synced and Healthy |
+| [`kubernetes/`](kubernetes) | Cluster apps through Argo CD: `apps/<name>/` (one Application each, manifests or a chart), `bootstrap/` (the root Application) | Hooks, rendered manifest diff | Argo CD syncs; a sync check waits for Synced and Healthy |
 | [`authentik/`](authentik) | SSO applications, OAuth2 providers, login flows | `tofu plan` | `tofu apply` |
 | [`aws/`](aws) | SES (`ses/`) and one SMTP user per app (`*-smtp/`) | `tofu plan` per stack | `tofu apply` |
 | [`aws/state-bucket/`](aws/state-bucket) | The OpenTofu state bucket, Identity Center access, CI OIDC roles | `tofu plan` | `tofu apply` |

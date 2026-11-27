@@ -5,7 +5,7 @@ Every app has exactly one hostname (EXPOSURE.md). Two checks keep agents that
 work in parallel from taking the same one:
 
 1. A hostname in a route's `hostnames:` list belongs to one app directory
-   under kubernetes/apps or kubernetes/apps-helm. The same app may route it on
+   under kubernetes/apps. The same app may route it on
    both gateways.
 2. No codename still listed as unused in CODENAMES.md is used as a
    desertbluffs.com hostname anywhere in the repo. Taking a codename means
@@ -23,7 +23,7 @@ import sys
 import yaml
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-APP_DIRS = [ROOT / "kubernetes" / "apps", ROOT / "kubernetes" / "apps-helm"]
+APP_DIRS = [ROOT / "kubernetes" / "apps"]
 
 
 def hostnames(node):

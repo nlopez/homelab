@@ -8,8 +8,8 @@ locals {
   wg_lga1_tunnel = ["10.23.50.1/32", "fd77:7a::1/128"]
   wg_lga2_tunnel = ["10.23.50.2/32", "fd77:7a::2/128"]
 
-  # Cilium pod CIDRs (kubernetes/apps-helm/cilium/values.yaml) and
-  # LoadBalancer pools (kubernetes/apps-helm/cilium/manifests/bgp.yaml), all
+  # Cilium pod CIDRs (kubernetes/apps/cilium/values.yaml) and
+  # LoadBalancer pools (kubernetes/apps/cilium/manifests/bgp.yaml), all
   # announced to gw.lga1 over BGP. The IPv6 prefixes sit inside the lga1 /56
   # and /48 below and are listed so the tunnel keeps them if those ever narrow.
   k8s_nets = [
