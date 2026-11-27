@@ -3,8 +3,9 @@
 # generates the client secret, which is copied from the provider into the
 # plugin's server entry.
 #
-# Only gateway-admins may authorize. os-sso maps that group to the OPNsense
-# admins group, so membership here is firewall admin.
+# Only gateway-admins and gateway-viewers may authorize. os-sso maps
+# gateway-admins to the OPNsense admins group (firewall admin) and
+# gateway-viewers to the viewers group (status and log pages only).
 
 locals {
   opnsense_gateways = {
@@ -14,6 +15,13 @@ locals {
 
 resource "authentik_group" "gateway_admins" {
   name = "gateway-admins"
+  users = [
+    data.authentik_user.akadmin.id,
+  ]
+}
+
+resource "authentik_group" "gateway_viewers" {
+  name = "gateway-viewers"
   users = [
     authentik_user.nlopez.id,
   ]
@@ -55,6 +63,14 @@ resource "authentik_policy_binding" "opnsense_gateway_admins" {
 
   target = authentik_application.opnsense[each.key].uuid
   group  = authentik_group.gateway_admins.id
+  order  = 0
+}
+
+resource "authentik_policy_binding" "opnsense_gateway_viewers" {
+  for_each = local.opnsense_gateways
+
+  target = authentik_application.opnsense[each.key].uuid
+  group  = authentik_group.gateway_viewers.id
   order  = 0
 }
 
