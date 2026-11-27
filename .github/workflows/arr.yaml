@@ -22,7 +22,7 @@ permissions:
 
 concurrency:
   group: ${{ github.event_name == 'pull_request' && format('arr-pr-{0}', github.event.pull_request.number) || 'arr' }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # shell: bash runs steps with -eo pipefail; the default (bash -e) lets a
 # failing command before a pipe pass, as `script 2>&1 | tee log` once let the
