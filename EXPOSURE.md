@@ -96,8 +96,9 @@ flowchart LR
 - **Site infrastructure (`*.lga1.radoncanyon.com`, `*.lga2.radoncanyon.com`):** Gateways, nodes,
   NAS, and odroids are public Cloudflare records (`dns/radoncanyon.com.tf`) with their LAN A and
   ULA AAAA addresses, so any resolver answers them, even when the cluster is down. The gateways'
-  Unbound lists `radoncanyon.com` in `private_domains` so rebind protection keeps those answers.
-  Tailscale MagicDNS (`*.macaroni-pirate.ts.net`) answers tailnet IPs automatically.
+  Unbound lists `radoncanyon.com` in `private_domains` so rebind protection keeps those answers,
+  and tailnet split-DNS sends `radoncanyon.com` to the gateways too, so off-site clients behind a
+  resolver that strips private answers still get them. Tailscale MagicDNS (`*.macaroni-pirate.ts.net`) answers tailnet IPs automatically.
 - **Outside:** Cloudflare DNS answers with the WAN address and the gateway's public IPv6 address.
   Internet records are DNS-only with a 60s TTL, so clients that move between inside and outside
   pick up the other answer quickly. The `kamotimestamps.com` routes are the exception: they opt in

@@ -1,6 +1,4 @@
 locals {
-  internal_zones = ["desertbluffs.com"]
-
   # Public zones that publish private addresses (dns/radoncanyon.com.tf), which
   # rebind protection (private_addresses) would otherwise strip from answers.
   private_domains = ["radoncanyon.com"]
@@ -25,7 +23,7 @@ resource "opnsense_unbound_general" "lga1" {
   forwarding_enabled  = false
   hide_identity       = true
   hide_version        = true
-  insecure_domains    = local.internal_zones
+  insecure_domains    = []
   keep_probing_hosts  = false
   log_local_actions   = false
   log_queries         = false
@@ -34,7 +32,8 @@ resource "opnsense_unbound_general" "lga1" {
   # typetransparent: names with local data still NODATA-fall through the
   # authoritative view for other types (MX, TXT), like a split-horizon zone.
   local_zone_type                       = "typetransparent"
-  max_ttl                               = 300
+  max_ttl                               = 0 # 0 keeps the default cache TTL bounds
+  min_ttl                               = 0
   msg_cache_size                        = ""
   no_aaaa_records                       = false
   no_register_link_local6               = true
@@ -85,7 +84,7 @@ resource "opnsense_unbound_general" "lga2" {
   forwarding_enabled  = false
   hide_identity       = true
   hide_version        = true
-  insecure_domains    = local.internal_zones
+  insecure_domains    = []
   keep_probing_hosts  = false
   log_local_actions   = false
   log_queries         = false
@@ -94,10 +93,11 @@ resource "opnsense_unbound_general" "lga2" {
   # typetransparent: names with local data still NODATA-fall through the
   # authoritative view for other types (MX, TXT), like a split-horizon zone.
   local_zone_type                       = "typetransparent"
+  max_ttl                               = 0 # 0 keeps the default cache TTL bounds
   min_ttl                               = 0
   msg_cache_size                        = ""
   no_aaaa_records                       = false
-  no_register_link_local6               = false
+  no_register_link_local6               = true
   no_register_records                   = true
   outgoing_interface                    = []
   port                                  = "53"
