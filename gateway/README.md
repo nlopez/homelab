@@ -34,7 +34,7 @@ The provider has no resource for these, so they stay in the GUI and are covered 
 - HA sync (configured on both)
 - Dynamic DNS accounts: `opnsense_ddclient_account` has no `zone` or `interface`, which the
   Cloudflare service needs. Each gateway keeps `<site>.desertbluffs.com` pointed at its WAN
-  address (lga1: A; lga2: A and AAAA) with the `ddclient-gw.<site>-cloudflare` token
+  address (A and AAAA on both) with the `ddclient-gw.<site>-cloudflare` token
   (`.github/credentials.yaml`)
 - System general settings (hostname, timezone, SSH, webgui, DNS servers): upstream-blocked
 
