@@ -16,7 +16,7 @@ spec:
   sources:
   - repoURL: https://helm.datadoghq.com
     chart: datadog
-    targetRevision: 3.264.0
+    targetRevision: 3.276.0
     helm:
       valueFiles:
       - $values/kubernetes/apps/datadog/values.yaml
