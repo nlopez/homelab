@@ -52,6 +52,7 @@ locals {
     "page-services-acmeclient",
     "page-services-dnsforwarder",
     "page-services-dnsresolver-overrides",
+    "page-services-dyndns",
     "page-services-monit",
     "page-services-unbound",
     "page-status-interfaces",
