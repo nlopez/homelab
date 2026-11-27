@@ -169,6 +169,50 @@
       "enabled": false
     },
     {
+      "description": "A Helm chart sets the versions of the images it deploys; Renovate updates the chart, not those images. Images a values file pins are left alone unless a rule below allows them.",
+      "matchManagers": [
+        "helm-values"
+      ],
+      "matchFileNames": [
+        "kubernetes/apps/*/values.yaml"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Images in Helm values that the chart doesn't version: Immich's chart lags the app and expects its tags set, the Actions runner image is ours to pick, and the OPNsense webhook is our own build",
+      "matchManagers": [
+        "helm-values"
+      ],
+      "matchFileNames": [
+        "kubernetes/apps/*/values.yaml"
+      ],
+      "matchPackageNames": [
+        "ghcr.io/immich-app/immich-server",
+        "ghcr.io/immich-app/immich-machine-learning",
+        "docker.io/valkey/valkey",
+        "ghcr.io/actions/actions-runner",
+        "ghcr.io/nlopez/external-dns-opnsense-webhook"
+      ],
+      "enabled": true
+    },
+    {
+      "description": "Velero is pinned a patch ahead of its chart, and the AWS plugin's minor must match Velero's: allow patches; a new minor comes with the chart",
+      "matchManagers": [
+        "helm-values"
+      ],
+      "matchFileNames": [
+        "kubernetes/apps/velero/values.yaml"
+      ],
+      "matchPackageNames": [
+        "docker.io/velero/velero",
+        "velero/velero-plugin-for-aws"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "enabled": true
+    },
+    {
       "description": "Use regex versioning for linuxserver images which use version-X.Y.Z or version-vX.Y.Z tag format",
       "matchPackageNames": [
         "ghcr.io/linuxserver/**"
