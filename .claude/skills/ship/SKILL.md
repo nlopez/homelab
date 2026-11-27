@@ -48,7 +48,8 @@ Read the `AGENTS.md` of any directory you change (`kubernetes/`, `gateway/`, `aw
 - A destroy or replace: stop and leave it for a human (AGENTS.md). Never add `destroy-approved`.
 - Anything you didn't intend, including drift: don't merge. Check for a `Drift in <stack>` issue.
 - Merge by squash: `gh pr merge --squash --match-head-commit <sha> --delete-branch`, using the head
-  SHA you checked, so a late push can't slip in.
+  SHA you checked, so a late push can't slip in. To merge as soon as `ci-ok` passes without
+  waiting, add `--auto` right after opening the PR instead.
 
 ## 6. After the merge
 
