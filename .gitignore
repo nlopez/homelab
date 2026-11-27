@@ -1,4 +1,4 @@
 .direnv/
 .terraform/
-.terraform.lock.hcl
+aws/modules/**/.terraform.lock.hcl
 __pycache__/
