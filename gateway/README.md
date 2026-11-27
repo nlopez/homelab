@@ -12,6 +12,7 @@ provider.
 - Kea DHCPv4 subnets, reservations, and singleton settings (lga2, dormant: Kea is stopped and
   dnsmasq serves DHCP)
 - VLANs and virtual IPs
+- WAN DHCPv6 client settings (prefix request and the WAN's prefix ID)
 - Custom gateways and static routes
 - Unbound query forwards and general settings
 - System tunables with a non-default value
