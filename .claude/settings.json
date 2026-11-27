@@ -3,6 +3,7 @@
     "allow": [
       "Bash(scripts/plan:*)",
       "Bash(scripts/pr-wait:*)",
+      "Bash(scripts/pr-land:*)",
       "Bash(.github/scripts/tests/run.sh)",
       "Bash(python3 scripts/check-hostnames.py)",
       "Bash(git status:*)",
