@@ -12,6 +12,9 @@ set -euo pipefail
 export TF_PLUGIN_CACHE_DIR="${TF_PLUGIN_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/terraform-plugins}"
 mkdir -p "$TF_PLUGIN_CACHE_DIR"
 
+# Export placeholder provider credentials when not set (validation needs no API access)
+: "${AUTHENTIK_TOKEN:=validate-placeholder}"; export AUTHENTIK_TOKEN
+
 # Get unique stack directories from the changed files
 dirs=$(bash "$(dirname "$0")/terraform-stack-dirs.sh" "$@")
 

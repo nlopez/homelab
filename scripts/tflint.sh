@@ -7,10 +7,6 @@ set -euo pipefail
 # Find the repo root
 repo_root=$(git rev-parse --show-toplevel)
 
-# Cache directory for tflint plugins - absolute path outside the repo
-export TFLINT_PLUGIN_DIR="${TFLINT_PLUGIN_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/tflint-plugins}"
-mkdir -p "$TFLINT_PLUGIN_DIR"
-
 # Get unique stack directories from the changed files
 dirs=$(bash "$repo_root/scripts/terraform-stack-dirs.sh" "$@")
 
