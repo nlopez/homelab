@@ -6,7 +6,6 @@ delete it from this list in the same change: the `check-hostnames` pre-commit ho
 (`scripts/check-hostnames.py`) fails while a listed name is in use, or while two apps route the
 same hostname.
 
-- lullu
 - majex
 - mimog
 - snock

@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: firefox-sync
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  selector:
+    matchLabels:
+      app: firefox-sync
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: firefox-sync
+        app.kubernetes.io/name: firefox-sync
+        app.kubernetes.io/instance: firefox-sync
+        tags.datadoghq.com/env: homelab
+        tags.datadoghq.com/service: firefox-sync
+        tags.datadoghq.com/version: v1
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: syncserver
+        image: ghcr.io/mozilla-services/syncstorage-rs/syncserver-postgres:0.25.2
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        env:
+        - name: SYNC_HOST
+          value: "0.0.0.0"
+        - name: SYNC_PORT
+          value: "8000"
+        - name: RUST_LOG
+          value: info
+        - name: SYNC_MASTER_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: firefox-sync
+              key: master_secret
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: firefox-sync
+              key: password
+        # Syncstorage and Tokenserver share one database, as upstream's Postgres one-shot compose does.
+        - name: SYNC_SYNCSTORAGE__DATABASE_URL
+          value: "postgres://syncserver:$(DB_PASSWORD)@syncserver-database-tn-rw.firefox-sync.svc.cluster.local/syncserver"
+        - name: SYNC_TOKENSERVER__DATABASE_URL
+          value: "postgres://syncserver:$(DB_PASSWORD)@syncserver-database-tn-rw.firefox-sync.svc.cluster.local/syncserver"
+        - name: SYNC_TOKENSERVER__ENABLED
+          value: "true"
+        - name: SYNC_TOKENSERVER__NODE_TYPE
+          value: postgres
+        - name: SYNC_TOKENSERVER__RUN_MIGRATIONS
+          value: "true"
+        - name: SYNC_TOKENSERVER__FXA_EMAIL_DOMAIN
+          value: api.accounts.firefox.com
+        - name: SYNC_TOKENSERVER__FXA_OAUTH_SERVER_URL
+          value: https://oauth.accounts.firefox.com
+        - name: SYNC_TOKENSERVER__INIT_NODE_URL
+          value: https://lullu.desertbluffs.com
+        ports:
+        - name: http
+          containerPort: 8000
+        readinessProbe:
+          httpGet:
+            path: /__heartbeat__
+            port: http
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /__lbheartbeat__
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 3

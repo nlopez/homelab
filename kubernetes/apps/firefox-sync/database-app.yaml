@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/postgresql.cnpg.io/database_v1.json
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: syncserver-database-tn-syncserver
+spec:
+  cluster:
+    name: syncserver-database-tn
+  name: syncserver
+  owner: syncserver
+  extensions:
+  - name: pg_stat_statements
+    ensure: present
