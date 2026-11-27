@@ -13,7 +13,7 @@ provider.
   dnsmasq serves DHCP)
 - VLANs and virtual IPs
 - Custom gateways and static routes
-- Unbound query forwards, host overrides, and general settings
+- Unbound query forwards and general settings
 - System tunables with a non-default value
 - Cron jobs, traffic shaper pipes, and syslog destinations
 - Site-to-site WireGuard: instances, peers, and the global enable
