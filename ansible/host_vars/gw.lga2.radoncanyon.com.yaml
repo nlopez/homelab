@@ -1,0 +1,4 @@
+---
+# The nlopez name belongs to the SSO account os-sso creates; the local
+# account is nlopez-local (gateway/users.tf).
+ansible_user: nlopez-local

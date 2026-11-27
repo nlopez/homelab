@@ -124,7 +124,7 @@ locals {
       group_memberships = ["1999"]
       privileges        = []
     }
-    nlopez = {
+    nlopez-local = {
       uuid              = "7e167b8c-1c4b-420b-b390-1352fa5ee27e"
       uid               = 2000
       shell             = "/usr/local/bin/bash"
@@ -168,6 +168,11 @@ import {
   for_each = { for name, user in local.lga1_users : name => user if can(user.uuid) }
   to       = opnsense_auth_user.lga1[each.key]
   id       = each.value.uuid
+}
+
+moved {
+  from = opnsense_auth_user.lga2["nlopez"]
+  to   = opnsense_auth_user.lga2["nlopez-local"]
 }
 
 resource "opnsense_auth_user" "lga2" {
