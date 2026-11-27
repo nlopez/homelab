@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/deployment-apps-v1.json
+# media-api (formerly simple-webm-ugoira) converts ugoira and packages
+# downloads for pixivfe's Download menu. Browsers reach it at /media-api on
+# pixivfe's hostname (httproute.yaml).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-api
+  annotations:
+    secret.reloader.stakater.com/reload: "pixivfe"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: media-api
+  template:
+    metadata:
+      labels:
+        app: media-api
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: media-api
+        # No release tags upstream; this is a master commit.
+        image: registry.gitlab.com/pixivfe/media-api:a46c133da4c7d0ea219f58b5218405396fe62ad2
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
+        env:
+        - name: SERVER_ADDR
+          value: ":8080"
+        # The same pixiv session as pixivfe, for R-18 works.
+        - name: PHPSESSID
+          valueFrom:
+            secretKeyRef:
+              name: pixivfe
+              key: credential
+        - name: HTTPS_PROXY
+          value: http://warp.warp.svc.cluster.local:8888
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            memory: 1Gi
+        ports:
+        - name: http
+          containerPort: 8080
+        readinessProbe:
+          tcpSocket:
+            port: http
+        volumeMounts:
+        # ffmpeg frames and illustration ZIPs.
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir:
+          sizeLimit: 2Gi

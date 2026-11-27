@@ -19,6 +19,22 @@ spec:
   - dupin.desertbluffs.com
   rules:
   - backendRefs:
+    - name: media-api
+      port: 80
+      group: ''
+      kind: Service
+      weight: 1
+    matches:
+    - path:
+        type: PathPrefix
+        value: /media-api
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
+  - backendRefs:
     - name: pixivfe
       port: 80
       group: ''
@@ -45,6 +61,22 @@ spec:
   hostnames:
   - dupin.desertbluffs.com
   rules:
+  - backendRefs:
+    - name: media-api
+      port: 80
+      group: ''
+      kind: Service
+      weight: 1
+    matches:
+    - path:
+        type: PathPrefix
+        value: /media-api
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
   - backendRefs:
     - name: pixivfe
       port: 80

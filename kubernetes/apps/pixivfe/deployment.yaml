@@ -43,6 +43,10 @@ spec:
         # Fetch pixiv (API and images) through the cluster's Cloudflare WARP
         # exit. Pages with many images finish sooner than over the home
         # connection's route to Japan.
+        # Without an external media service, pixivfe leaves out the Download
+        # menu. media-api-deployment.yaml runs one.
+        - name: PIXIVFE_UGOIRAPROXY
+          value: https://dupin.desertbluffs.com/media-api
         - name: HTTPS_PROXY
           value: http://warp.warp.svc.cluster.local:8888
         resources:
