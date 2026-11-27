@@ -519,6 +519,10 @@ prl_fixtures "${p}" success fail
 expect "pr-land fails when the merge fails" "2" "$(prlrun "${p}")"
 contains "pr-land says nothing was merged" "nothing was merged" "$(cat "${p}/out.log")"
 prl_fixtures "${p}" success ok
+echo '{"workflow_runs": []}' > "${p}/repos_o_r_actions_runs.json"
+expect "pr-land passes a merge that starts no runs on main" "0" "$(prlrun "${p}")"
+contains "pr-land says no workflow ran" "No workflow ran on main" "$(cat "${p}/out.log")"
+prl_fixtures "${p}" success ok
 expect "pr-land passes on pr-wait's main-moved exit" "3" "$(prlrun "${p}" 3)"
 expect "pr-land doesn't merge when pr-wait fails" "" "$(cat "${p}/calls.log" 2>/dev/null)"
 

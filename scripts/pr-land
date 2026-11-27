@@ -28,18 +28,25 @@ if ! merge="$(gh api -X PUT "repos/${repo}/pulls/${pr}/merge" -f merge_method=sq
 fi
 echo "Merged #${pr} as ${merge:0:8}; waiting for its runs on main." >&2
 
-# Done when the runs exist and all are complete on two polls in a row, so a
-# workflow that registers late still counts.
-deadline=$((SECONDS + 30 * 60)) quiet=0 runs=""
+# Done when the runs are all complete on two polls in a row, so a workflow
+# that registers late still counts. A change no push workflow's paths match
+# (docs, scripts) starts no runs: three empty polls in a row mean none.
+deadline=$((SECONDS + 30 * 60)) quiet=0 empty=0 runs=""
 while [ "${SECONDS}" -lt "${deadline}" ]; do
   sleep "${poll}"
   runs="$(gh api "repos/${repo}/actions/runs?head_sha=${merge}&event=push&per_page=100" \
     --jq '.workflow_runs[] | "\(.id)\t\(.status)\t\(.conclusion)\t\(.name)"')"
-  if [ -n "${runs}" ] && ! cut -f2 <<<"${runs}" | grep -qvx completed; then
-    quiet=$((quiet + 1))
+  if [ -z "${runs}" ]; then
+    empty=$((empty + 1)) quiet=0
+    if [ "${empty}" -ge 3 ]; then
+      echo "No workflow ran on main for ${merge:0:8}; nothing to apply."
+      exit 0
+    fi
+  elif ! cut -f2 <<<"${runs}" | grep -qvx completed; then
+    empty=0 quiet=$((quiet + 1))
     [ "${quiet}" -ge 2 ] && break
   else
-    quiet=0
+    empty=0 quiet=0
   fi
 done
 if [ "${quiet}" -lt 2 ]; then
