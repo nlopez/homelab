@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/configmap-v1.json
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: netbox-authentik-groups
+data:
+  authentik_groups.py: |-
+    # Social-auth pipeline step: members of the authentik admin group are NetBox superusers.
+    # Runs on every OIDC sign-in, so leaving the group removes superuser at the next one.
+    SUPERUSER_GROUP = "admin"
+
+
+    def sync_superuser(backend, user=None, response=None, *args, **kwargs):
+        if user is None:
+            return
+        is_admin = SUPERUSER_GROUP in (response or {}).get("groups", [])
+        if user.is_superuser != is_admin:
+            user.is_superuser = is_admin
+            user.save(update_fields=["is_superuser"])
