@@ -429,9 +429,23 @@ expect "gate fails destroy-approved added through an app" "1" "$(gaterun "${g}")
 gate_fixtures "${g}" success yes owner
 expect "gate passes a destroy a code owner approved" "0" "$(gaterun "${g}")"
 expect "gate completes ci-ok as success for an approved destroy" "success" "$(conclusion "${g}")"
+fp="$(sed -n 's/^approved-destroys: //p' "${g}/out.log")"
+contains "gate records the approved destroys in its comment" "<!-- approved-destroys: ${fp} -->" "$(cat "${g}/calls.log")"
+# The head commit is pushed after the label: a rebase, say.
 echo '{"check_suites": [{"created_at": "2030-01-01T00:30:00Z"}]}' > "${g}/repos_o_r_commits_${head}_check-suites.json"
-expect "gate fails destroy-approved added before the head commit was pushed" "1" "$(gaterun "${g}")"
-contains "gate says the approval predates the push" "remove the label and add it again" "$(cat "${g}/out.log")"
+expect "gate fails an older approval with no record of what it approved" "1" "$(gaterun "${g}")"
+contains "gate asks for the label again" "remove the destroy-approved label and add it again" "$(cat "${g}/out.log")"
+summary_comment() { # <login> <fingerprint>
+  printf '[{"id": 5, "user": {"login": "%s", "type": "Bot"}, "body": "<!-- ci-summary -->\\nold\\n<!-- approved-destroys: %s -->"}]' "$1" "$2"
+}
+summary_comment 'nlopez-homelab-ci-gate[bot]' "${fp}" > "${g}/repos_o_r_issues_7_comments.json"
+expect "gate carries an approval over a push with the same destroys" "0" "$(gaterun "${g}")"
+contains "gate says the approval carried over" "approval carries over" "$(cat "${g}/out.log")"
+contains "gate keeps the record in its updated comment" "<!-- approved-destroys: ${fp} -->" "$(sed -n '/^PATCH repos\/o\/r\/issues\/comments\/5/,/^$/p' "${g}/calls.log")"
+summary_comment 'nlopez-homelab-ci-gate[bot]' "$(printf '0%.0s' {1..64})" > "${g}/repos_o_r_issues_7_comments.json"
+expect "gate fails an older approval when the destroys changed" "1" "$(gaterun "${g}")"
+summary_comment 'someone' "${fp}" > "${g}/repos_o_r_issues_7_comments.json"
+expect "gate ignores a record in a comment the app didn't post" "1" "$(gaterun "${g}")"
 
 ### ansible-merge-tags.py
 

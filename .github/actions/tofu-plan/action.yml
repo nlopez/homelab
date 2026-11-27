@@ -51,7 +51,6 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
         TITLE: ${{ inputs.title }}
-        PR: ${{ github.event.pull_request.number }}
         REPO: ${{ github.repository }}
       run: |-
         set -euo pipefail
@@ -60,8 +59,6 @@ runs:
           echo "::warning title=plan-destroys::${TITLE}: $(paste -sd ',' destroys.txt)"
           gh label create destroy-approved --repo "${REPO}" --color B60205 \
             --description "A code owner approved the destroys and replaces in this PR's plans" 2>/dev/null || true
-          # Each push whose plan destroys something needs a fresh approval.
-          gh api -X DELETE "repos/${REPO}/issues/${PR}/labels/destroy-approved" >/dev/null 2>&1 || true
         fi
 
     # The full plan goes to the job summary. One line about it goes on the
