@@ -498,6 +498,33 @@ expect "pr-land doesn't merge an unreviewed head" "" "$(cat "${p}/calls.log" 2>/
 expect "pr-land merges with a reviewed SHA prefix" "0" "$(prlrun "${p}" 0 beef1111)"
 expect "pr-land rejects a malformed SHA" "2" "$(prlrun "${p}" 0 nothex12)"
 
+### terraform-stack-dirs.sh, tofu-validate.sh, tflint.sh
+
+# Test the directory-finding helper
+mkdir -p "${work}/stacks/stack1" "${work}/stacks/stack1/subdir" "${work}/stacks/stack2" "${work}/non-tf"
+echo 'resource "null_resource" "a" {}' > "${work}/stacks/stack1/main.tf"
+echo 'resource "null_resource" "b" {}' > "${work}/stacks/stack2/main.tf"
+echo 'some data' > "${work}/non-tf/file.txt"
+
+# Mock tofu and tflint on PATH for testing
+mkdir -p "${work}/testbin"
+printf '#!/usr/bin/env bash\nexit 0\n' > "${work}/testbin/tofu"
+printf '#!/usr/bin/env bash\nexit 0\n' > "${work}/testbin/tflint"
+chmod +x "${work}/testbin/tofu" "${work}/testbin/tflint"
+
+out="$(cd "${work}/stacks" && bash "${repo}/scripts/terraform-stack-dirs.sh" stack1/main.tf stack1/subdir/file.txt stack2/main.tf non-tf/file.txt)"
+expect "terraform-stack-dirs deduplicates and returns unique stacks" \
+  "$(cd "${work}/stacks" && pwd)/stack1
+$(cd "${work}/stacks" && pwd)/stack2" "${out}"
+
+# Test that tofu-validate finds the right stacks
+out="$(cd "${work}/stacks" && PATH="${work}/testbin:${PATH}" bash "${repo}/scripts/tofu-validate.sh" stack1/main.tf stack2/main.tf 2>&1)"
+contains "tofu-validate processes changed files" "Validating" "${out}"
+
+# Test that tflint finds the right stacks (with mocked tofu and tflint)
+out="$(cd "${work}/stacks" && PATH="${work}/testbin:${PATH}" TF_PLUGIN_CACHE_DIR="${work}/cache" bash "${repo}/scripts/tflint.sh" stack1/main.tf stack2/main.tf 2>&1)"
+contains "tflint processes changed files" "Linting" "${out}"
+
 ### scripts/plan
 
 plan="${repo}/scripts/plan"

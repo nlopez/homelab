@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Validates OpenTofu code per stack directory, using a shared plugin cache.
 # Pre-commit passes filenames as arguments; we extract unique stack directories
 # and validate each one.
@@ -12,27 +12,15 @@ set -euo pipefail
 export TF_PLUGIN_CACHE_DIR="${TF_PLUGIN_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/terraform-plugins}"
 mkdir -p "$TF_PLUGIN_CACHE_DIR"
 
-# Collect unique directories containing the changed files
-declare -A dirs
-for file in "$@"; do
-  dir=$(cd "$(dirname "$file")" && pwd)
+# Get unique stack directories from the changed files
+dirs=$(bash "$(dirname "$0")/terraform-stack-dirs.sh" "$@")
 
-  # Find the stack root: the directory with .tf files closest to the changed file
-  while [[ "$dir" != "/" ]]; do
-    if [[ -f "$dir"/.tf ]] || ls "$dir"/*.tf &>/dev/null 2>&1; then
-      dirs["$dir"]=1
-      break
-    fi
-    dir=$(dirname "$dir")
-  done
-done
-
-if [[ ${#dirs[@]} -eq 0 ]]; then
+if [[ -z "$dirs" ]]; then
   exit 0
 fi
 
 exit_code=0
-for dir in "${!dirs[@]}"; do
+while IFS= read -r dir; do
   echo "Validating $dir..." >&2
 
   # Detect if this is a module (no backend block) or a stack (has backend)
@@ -43,8 +31,9 @@ for dir in "${!dirs[@]}"; do
       continue
     fi
   else
-    # Module: don't enforce readonly lockfile (may not exist yet)
-    if ! tofu -chdir="$dir" init -backend=false -input=false >/dev/null 2>&1; then
+    # Module: don't enforce readonly lockfile (may not exist yet).
+    # Print init errors so we can debug any real problems.
+    if ! tofu -chdir="$dir" init -backend=false -input=false >/dev/null; then
       exit_code=1
       continue
     fi
@@ -54,6 +43,6 @@ for dir in "${!dirs[@]}"; do
   if ! tofu -chdir="$dir" validate; then
     exit_code=1
   fi
-done
+done <<< "$dirs"
 
 exit "$exit_code"
