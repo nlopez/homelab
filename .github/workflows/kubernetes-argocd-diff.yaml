@@ -39,10 +39,13 @@ jobs:
       run: |-
         sed -i 's|^\( *targetRevision:\) main$|\1 ${{ github.sha }}|' target-branch/kubernetes/bootstrap/apps-helm.yaml
         grep -c '${{ github.sha }}' target-branch/kubernetes/bootstrap/apps-helm.yaml
-    - name: 'Install kubectl and argocd-diff-preview'
+    - name: 'Install kubectl, argocd-diff-preview, and yq'
       # shortcut: pinned by hand, bump with the cluster / a new release.
       run: |-
         mkdir -p "$RUNNER_TEMP/bin"
+        curl -fsSL -o "$RUNNER_TEMP/bin/yq" https://github.com/mikefarah/yq/releases/download/v4.54.1/yq_linux_amd64
+        echo "8e34fc298390875de416e6a4afcb8cabeceb25d9aa8506c1a2f9353cf702ea5f  $RUNNER_TEMP/bin/yq" | sha256sum -c -
+        chmod +x "$RUNNER_TEMP/bin/yq"
         curl -fsSL -o "$RUNNER_TEMP/bin/kubectl" https://dl.k8s.io/release/v1.36.3/bin/linux/amd64/kubectl
         echo "ebbd080e7c2e275093b55915722043257eb24004363e20acb3c4d71919f88336  $RUNNER_TEMP/bin/kubectl" | sha256sum -c -
         curl -fsSL -o "$RUNNER_TEMP/diff.tgz" https://github.com/dag-andersen/argocd-diff-preview/releases/download/v0.2.17/argocd-diff-preview-Linux-x86_64.tar.gz
@@ -58,7 +61,17 @@ jobs:
           --target-branch '${{ github.sha }}' \
           --argocd-namespace argocd-diff-preview \
           --create-cluster=false \
+          --output-app-manifests \
           --diff-ignore '^  install_(id|time): '
+    # ci-ok reads the plan-destroys annotation and fails until a code owner
+    # adds the destroy-approved label (.github/workflows/ci-gate-protected.yaml).
+    - name: 'Check for deletions'
+      run: |-
+        target-branch/.github/scripts/manifest-destroys.sh output > destroys.txt
+        if [ -s destroys.txt ]; then
+          cat destroys.txt
+          echo "::warning title=plan-destroys::Kubernetes: $(paste -sd ',' destroys.txt)"
+        fi
     - name: 'Add diff to job summary'
       if: always()
       run: |-

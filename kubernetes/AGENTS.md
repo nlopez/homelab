@@ -52,6 +52,9 @@ Read the root [AGENTS.md](../AGENTS.md) first. This covers what is specific to t
   Compare it with what you meant to change, as you would a plan. "No changes found" on a PR that
   changes manifests means Argo CD won't see the change (a typo in a path, or an `apps-helm`
   directory with no ApplicationSet entry).
+- A PR that removes an Application, or a PVC, PV, Namespace, CRD, or database (`Cluster`,
+  `MariaDB`) from one, counts as a destroy: `Manifest Diff` lists them, and `ci-ok` fails until a
+  code owner adds `destroy-approved` (root `AGENTS.md`). Renaming an app counts too.
 - Argo CD syncs on merge. `prune` is on and `selfHeal` is off: deleting a manifest deletes the
   resource, and a hand edit in the cluster stays until the next change to that app.
 - After a merge, the `Kubernetes sync check` workflow on `main` waits for the Applications the
