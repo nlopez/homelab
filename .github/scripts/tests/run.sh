@@ -498,6 +498,29 @@ expect "pr-land doesn't merge an unreviewed head" "" "$(cat "${p}/calls.log" 2>/
 expect "pr-land merges with a reviewed SHA prefix" "0" "$(prlrun "${p}" 0 beef1111)"
 expect "pr-land rejects a malformed SHA" "2" "$(prlrun "${p}" 0 nothex12)"
 
+### terraform-stack-dirs.sh, tofu-validate.sh, tflint.sh
+
+# Test the directory-finding helper with real repo stacks
+out="$(cd "${repo}" && bash "${repo}/scripts/terraform-stack-dirs.sh" dns/main.tf datadog/main.tf dns/variables.tf)"
+contains "terraform-stack-dirs deduplicates stacks" "dns" "${out}"
+contains "terraform-stack-dirs finds all changed stacks" "datadog" "${out}"
+# Count unique entries
+count="$(echo "${out}" | sort -u | wc -l | tr -d ' ')"
+expect "terraform-stack-dirs returns exactly 2 stacks" "2" "${count}"
+
+# Test that tofu-validate finds the right stacks (use mocked tofu)
+mkdir -p "${work}/testbin"
+printf '#!/usr/bin/env bash\nexit 0\n' > "${work}/testbin/tofu"
+chmod +x "${work}/testbin/tofu"
+out="$(cd "${repo}" && PATH="${work}/testbin:${PATH}" TF_PLUGIN_CACHE_DIR="${work}/cache" bash "${repo}/scripts/tofu-validate.sh" dns/main.tf datadog/main.tf 2>&1)"
+contains "tofu-validate processes changed files" "Validating" "${out}"
+
+# Test that tflint finds the right stacks (use mocked tflint)
+printf '#!/usr/bin/env bash\nexit 0\n' > "${work}/testbin/tflint"
+chmod +x "${work}/testbin/tflint"
+out="$(cd "${repo}" && PATH="${work}/testbin:${PATH}" TF_PLUGIN_CACHE_DIR="${work}/cache" bash "${repo}/scripts/tflint.sh" dns/main.tf datadog/main.tf 2>&1)"
+contains "tflint processes changed files" "Linting" "${out}"
+
 ### scripts/plan
 
 plan="${repo}/scripts/plan"

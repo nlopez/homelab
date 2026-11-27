@@ -58,6 +58,7 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |-
           nix develop -c pre-commit run --show-diff-on-failure --color always \
             --from-ref "${BASE}" --to-ref "${HEAD}"

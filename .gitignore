@@ -1,3 +1,4 @@
 .direnv/
 .terraform/
+.terraform.lock.hcl
 __pycache__/
