@@ -11,7 +11,6 @@ while the table and the routes disagree.
 | Argo CD | `argocd` | `flopie` | Yes | HTTP and gRPC routes on the private gateway; HTTP only on the internet gateway. |
 | authentik | `authentik` | `arsox` | Yes | |
 | Atuin | `atuin` | `pyrin` | Yes | |
-| Firefox Sync | `firefox-sync` | `lullu` | Yes | |
 | Forgejo | `forgejo` | `dazzi`; SSH `dazzi.desertbluffs.com:22` | Yes | Git SSH runs only on the private gateway's TCP listener. |
 | Immich | `immich` | `nox` | Yes | |
 | Jellyfin | `jellyfin` | `wixen` | Yes | |
