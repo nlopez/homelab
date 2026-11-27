@@ -10,6 +10,7 @@ Several agents and people work in this repo at the same time. Every change lands
 - Hooks run on every commit and must pass. Never skip them (`--no-verify`) or skip signing. Hooks include `tofu validate` and `tflint` per stack to catch wrong arguments, types, and references without cloud credentials.
 - Claude Code cloud sessions can't build the dev shell. `.claude/hooks/session-start.sh` installs the same tools from Nix and PyPI at session start instead, and installs the hooks. `ansible-lint` there needs `galaxy.ansible.com` allowed in the session's environment.
 - The `pre-commit` check runs the same hooks in CI on the files a PR changes. Without the dev shell, install `pre-commit`, `tofu`, `ansible-lint`, `go`, and `tflint` some other way and run the hooks anyway; CI is the backstop, not the first check.
+- OpenTofu tests (`*.tftest.hcl` with `mock_provider`) run in pre-commit without credentials or state. Write tests to prove logic (key formats, TTL defaults, conditionals), not specific data.
 
 ## One task, one PR
 

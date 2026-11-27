@@ -74,6 +74,12 @@ repos:
     language: system
     files: \.(tf|tfvars)$
     pass_filenames: true
+  - id: tofu-test
+    name: tofu test
+    entry: bash scripts/tofu-test.sh
+    language: system
+    files: \.(tf|tftest\.hcl)$
+    pass_filenames: true
   - id: check-hostnames
     name: 'Check that app hostnames and codenames do not collide'
     entry: python scripts/check-hostnames.py
