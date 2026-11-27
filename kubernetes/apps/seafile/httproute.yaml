@@ -10,6 +10,7 @@ metadata:
     gethomepage.dev/icon: seafile.png
     gethomepage.dev/description: Files
     gethomepage.dev/pod-selector: app=seafile
+    gethomepage.dev/href: https://dogen.desertbluffs.com/oauth/login/
 spec:
   parentRefs:
   - name: private
