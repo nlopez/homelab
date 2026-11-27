@@ -136,11 +136,12 @@
       "groupName": "container image updates"
     },
     {
-      "description": "Group Helm chart updates from the Application files",
+      "description": "One PR per Kubernetes app: its chart, images, and values together, so a PR touches one Application. Overrides the container image group above.",
       "matchFileNames": [
-        "kubernetes/apps/*/application.yaml"
+        "kubernetes/apps/**"
       ],
-      "groupName": "helm chart updates"
+      "groupName": "{{lookup (split packageFileDir '/') 2}}",
+      "groupSlug": "app-{{lookup (split packageFileDir '/') 2}}"
     },
     {
       "description": "Leave Helm values files to the helm-values manager; the image regex above is for raw manifests",
