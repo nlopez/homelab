@@ -1,6 +1,3 @@
-image:
-  repository: docker.io/velero/velero
-  tag: v1.18.4
 podLabels:
   tags.datadoghq.com/env: homelab
   tags.datadoghq.com/service: velero
@@ -35,6 +32,9 @@ nodeAgent:
     tags.datadoghq.com/service: velero-node-agent
     tags.datadoghq.com/version: v1
 initContainers:
+# The chart doesn't set this plugin's version, and its minor must match
+# Velero's (plugin 1.14 for Velero 1.18). When a chart update moves Velero to
+# a new minor, bump the plugin in the same PR.
 - name: velero-plugin-for-aws
   image: velero/velero-plugin-for-aws:v1.14.4
   volumeMounts:
