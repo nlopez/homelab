@@ -580,6 +580,114 @@ sed -i '/`swee`/d' "${r}/EXPOSURE.md"
 contains "check-hostnames catches a routed hostname missing from EXPOSURE.md" \
   "swee.desertbluffs.com is routed but not in the table" "$(hostcheck "${r}")"
 
+### scripts/opnsense-config
+
+oc() { python3 -I "${repo}/scripts/opnsense-config" "$@"; }
+# Built from parts so no file in the repo holds a PEM private key header.
+pem="-----BEGIN ""PRIVATE KEY-----"
+cat >"${work}/config.xml" <<XML
+<?xml version="1.0"?>
+<opnsense>
+  <system>
+    <hostname>gw</hostname>
+    <user uuid="aaaaaaaa-0000-0000-0000-000000000001">
+      <name>admin</name>
+      <password>FIXTURE-SECRET-password</password>
+      <authorizedkeys>FIXTURE-SECRET-authorizedkeys</authorizedkeys>
+      <otp_seed>FIXTURE-SECRET-otp</otp_seed>
+      <apikeys>FIXTURE-SECRET-apikeys</apikeys>
+    </user>
+    <remotebackup>
+      <GDriveP12key>FIXTURE-SECRET-p12</GDriveP12key>
+      <GDrivePassword>FIXTURE-SECRET-gdrive</GDrivePassword>
+    </remotebackup>
+    <authserver><otpLength>6</otpLength><passwordFirst>1</passwordFirst></authserver>
+  </system>
+  <cert><descr>web</descr><crt>FIXTURE-SECRET-crt</crt><prv>${pem}FIXTURE-SECRET-prv</prv></cert>
+  <OPNsense>
+    <wireguard>
+      <server><servers><server uuid="bbbbbbbb-0000-0000-0000-000000000002">
+        <privkey>FIXTURE-SECRET-privkey</privkey>
+        <pubkey>FIXTUREPUBKEY</pubkey>
+      </server></servers></server>
+      <client><clients><client uuid="cccccccc-0000-0000-0000-000000000003">
+        <psk>FIXTURE-SECRET-psk</psk>
+        <keepalive>25</keepalive>
+      </client></clients></client>
+    </wireguard>
+    <AcmeClient><validations><validation uuid="dddddddd-0000-0000-0000-000000000004">
+      <dns_cf_token>FIXTURE-SECRET-acme</dns_cf_token>
+      <dns_cf_key>0123456789abcdef0123456789abcdefFIXTURESECRETBLOB</dns_cf_key>
+    </validation></validations></AcmeClient>
+    <netsnmp><general><rocommunity>FIXTURE-SECRET-snmp</rocommunity></general></netsnmp>
+    <Firewall><Filter><rules>
+      <rule uuid="eeeeeeee-0000-0000-0000-000000000005">
+        <enabled>1</enabled><sequence>10</sequence><action>pass</action><quick>1</quick>
+        <interface>lan</interface><direction>in</direction><ipprotocol>inet</ipprotocol>
+        <protocol>TCP</protocol><source_net>lan</source_net><source_not>0</source_not>
+        <destination_net>web</destination_net><destination_not>1</destination_not>
+        <destination_port>443</destination_port><statetype>keep</statetype><log>0</log>
+        <description>LAN out</description><audit>FIXTURE-SECRET-audit</audit>
+      </rule>
+    </rules></Filter></Firewall>
+  </OPNsense>
+  <nat>
+    <outbound><mode>hybrid</mode></outbound>
+    <rule uuid="ffffffff-0000-0000-0000-000000000006">
+      <sequence>100</sequence><disabled>0</disabled><nordr>1</nordr><interface>lan</interface>
+      <protocol>tcp/udp</protocol>
+      <source><network/><port/><not>0</not></source>
+      <destination><network>remote</network><port>domain</port><not>0</not></destination>
+      <target/><local-port/><log>0</log><pass>pass</pass><descr>No redirect</descr>
+    </rule>
+  </nat>
+  <descr>\$2y\$10\$FIXTURESECRETHASH</descr>
+  <staticroutes><route>a</route><route>b</route></staticroutes>
+</opnsense>
+XML
+
+expect "opnsense-config flatten labels uuid records and repeated siblings" \
+"system/user[aaaaaaaa]/name=admin
+system/user[aaaaaaaa]/password=[REDACTED]
+staticroutes/route#1=a
+staticroutes/route#2=b" \
+  "$(oc flatten "${work}/config.xml" system staticroutes | grep -E '/(name|password)=|route')"
+expect "opnsense-config flatten --strip-uuids --sort drops uuids and sorts" \
+"OPNsense/wireguard/client/clients/client/keepalive=25
+OPNsense/wireguard/client/clients/client/psk=[REDACTED]" \
+  "$(oc flatten "${work}/config.xml" OPNsense/wireguard/client --strip-uuids --sort)"
+expect "opnsense-config flatten and redact print no fixture secret" "" \
+  "$({ oc flatten "${work}/config.xml"; oc rules "${work}/config.xml"; oc redact "${work}/config.xml"; } \
+    | grep -E 'FIXTURE-?SECRET|PRIVATE KEY')"
+expect "opnsense-config redacts every secret in the fixture" "15" \
+  "$(oc flatten "${work}/config.xml" | grep -c '=\[REDACTED\]$')"
+contains "opnsense-config keeps flags that only look secret" "authserver/passwordFirst=1" \
+  "$(oc flatten "${work}/config.xml" system)"
+contains "opnsense-config keeps public keys unless asked" "pubkey=FIXTUREPUBKEY" "$(oc flatten "${work}/config.xml")"
+contains "opnsense-config --redact-pubkeys redacts public keys" "pubkey=[REDACTED]" \
+  "$(oc flatten --redact-pubkeys "${work}/config.xml")"
+contains "opnsense-config --no-redact prints secrets" "psk=FIXTURE-SECRET-psk" \
+  "$(oc flatten --no-redact "${work}/config.xml")"
+expect "opnsense-config redact keeps the document's structure" "lan" \
+  "$(oc redact "${work}/config.xml" | python3 -I -c 'import sys, xml.etree.ElementTree as E; print(E.parse(sys.stdin).getroot().findtext("OPNsense/Firewall/Filter/rules/rule/interface"))')"
+expect "opnsense-config rules prints filter and NAT rules" \
+"## filter rules (legacy)
+## filter rules
+10 on pass lan dir=in quick=1 inet TCP lan -> !web:443 state=keep | LAN out
+## port forwards
+100 on lan tcp/udp any -> remote:domain => : nordr pass=pass | No redirect
+## outbound nat mode=hybrid" "$(oc rules "${work}/config.xml")"
+expect "opnsense-config classifies every listed tag" "ok" \
+  "$(python3 -I -c '
+import importlib.machinery, importlib.util, sys
+loader = importlib.machinery.SourceFileLoader("oc", sys.argv[1])
+spec = importlib.util.spec_from_loader("oc", loader)
+oc = importlib.util.module_from_spec(spec)
+loader.exec_module(oc)
+bad = [t for t in oc.SECRET_TAGS if not oc.is_secret(t, "x")]
+bad += [t for t in oc.NOT_SECRET_TAGS if oc.is_secret(t, "x" * 40)]
+print(bad or "ok")' "${repo}/scripts/opnsense-config")"
+
 echo
 if [ "${failures}" -gt 0 ]; then echo "${failures} failed"; exit 1; fi
 echo "all passed"
