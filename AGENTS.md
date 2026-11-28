@@ -49,7 +49,7 @@ Every PR gets `ci-ok` (passes only when all others pass), `pre-commit` (commit h
 
 Exceptions:
 - `arr/`: secret-holding resources excluded from PR plan.
-- `ansible/`: `ansible-lint` on PR; apply confined to allowlisted roles (`.github/scripts/ansible-merge-tags.py`), by tag; anything else waits for manual `Ansible` dispatch. Nightly check-mode drift run.
+- `ansible/`: `ansible-lint` and a check-mode run on PR, which keeps one comment with the diff (secret values replaced with `***`) and a link to the step's full output; apply confined to allowlisted roles (`.github/scripts/ansible-merge-tags.py`), by tag; anything else waits for manual `Ansible` dispatch. Nightly check-mode drift run.
 - `truenas/`: replication keychain excluded from PR plan.
 - `gateway/`: WireGuard resources excluded from PR plan (see `gateway/AGENTS.md`).
 - `github/`: plans on PR but never applies from CI; a human applies locally after merge. Webhook excluded from plan.

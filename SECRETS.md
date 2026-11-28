@@ -10,7 +10,7 @@ Each vault's name is its name in 1Password.
 
 | Vault ID | Name | Read by | Holds | Referenced from |
 | --- | --- | --- | --- | --- |
-| `6foq5pqns6uslgstwbfoyyyftu` | `ci-pr` | `OP_CI_PR_SERVICE_ACCOUNT_TOKEN` (repository secret), in every PR | Read-only credentials for pull-request plans and the tailnet ACL test | `<stack>/secrets.plan.env`, `.github/workflows/tailnet.yaml` |
+| `6foq5pqns6uslgstwbfoyyyftu` | `ci-pr` | `OP_CI_PR_SERVICE_ACCOUNT_TOKEN` (repository secret), in every PR | Read-only credentials for pull-request plans and the tailnet ACL test; copies of the `ansible/secrets.env` items for the pull-request check-mode run | `<stack>/secrets.plan.env`, `ansible/secrets.plan.env`, `.github/workflows/tailnet.yaml` |
 | `kjgjpiwjlognsprl7qxsonrqoi` | `ci` | `OP_SERVICE_ACCOUNT_TOKEN` (`production` environment secret), on `main` only | CI copies of operator-vault items, for applies; the Discord webhook; the read-only Argo CD `ci` token | `<stack>/secrets.env` of the CI-applied stacks, `ansible/secrets.env`, `.github/actions/discord-notify`, `.github/workflows/kubernetes-sync-check.yaml` |
 | `eirjdyavzyx7tegpglsc2udq3a` | `operator` | The operator, through the 1Password app | Originals of the items copied to `ci`; NAS, `arr`, and Ansible host credentials | `truenas/secrets.env`, `arr/secrets.env`, `ansible/group_vars/infra`, `ansible/scripts/device_inventory.py` |
 | `evjh25ux2mnoufaut6qhvm2pdi` | `Automation` | 1Password Connect in the cluster; the operator | Every Kubernetes secret (`OnePasswordItem`), plus a few operator-only items | `kubernetes/**` (`itemPath: vaults/…`), `github/secrets.env`, `arr/secrets.env` |
@@ -26,7 +26,9 @@ vault, the vault `tailnet/tofu/secrets.env` reads it from. The `Automation` name
 - **Pull-request plans** run with `OP_CI_PR_SERVICE_ACCOUNT_TOKEN`, which can read only `ci-pr`.
   Each item there is a read-only credential: a separate API user, OAuth client, or token scoped so
   that a plan can read and nothing can write. `.github/workflows/_tofu-stack.yaml` resolves the
-  stack's `secrets.plan.env` with it.
+  stack's `secrets.plan.env` with it. The exception is `ansible/secrets.plan.env`: the playbooks
+  render those values into config files, so `.github/workflows/ansible-check.yaml` reads copies of
+  the `ci` items, and replaces each value with `***` before it posts the diff.
 - **Applies on `main`** run in the `production` environment with `OP_SERVICE_ACCOUNT_TOKEN`, which
   reads `ci`. `_tofu-stack.yaml` resolves the stack's `secrets.env` with it, and the
   `Ansible` workflow resolves `ansible/secrets.env`.
@@ -84,6 +86,6 @@ from 30 days before an expiry. Add an entry when you create one, and update `exp
 rotate it.
 
 Rotate the original, then every copy: the `ci` copy for CI, and the `ci-pr` credential if
-the plan has its own. The comments in each `secrets.env` say which items are copies. Rotating a
+the plan has its own (for Ansible, the copies in `ansible/secrets.plan.env`). The comments in each `secrets.env` say which items are copies. Rotating a
 service account token means updating the GitHub secret (`OP_CI_PR_SERVICE_ACCOUNT_TOKEN` on the
 repository, `OP_SERVICE_ACCOUNT_TOKEN` on `production`), which no stack manages.

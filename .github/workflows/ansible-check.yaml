@@ -1,0 +1,109 @@
+name: Ansible check
+
+# Runs the playbooks in check mode against the hosts on every pull request
+# that changes them, and keeps one PR comment with the diff, updated on every
+# push. Applying stays with the Ansible workflow on main (ansible.yaml).
+on:
+  pull_request:
+    paths: ['ansible/**', '.github/workflows/ansible-check.yaml', '.github/scripts/ansible-check-comment.sh']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ansible-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# shell: bash runs steps with -eo pipefail; the default (bash -e) lets a
+# failing command before a pipe pass, as `script 2>&1 | tee log` once let the
+# ci-ok gate pass with failed checks.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check:
+    name: Check mode
+    # Fork pull requests get no OIDC token or secrets.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+      # The job's steps, to link the comment to the check step.
+      actions: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # tailscale_federated_identity.github_actions_pull_request in
+      # tailnet/admin, with the same tag:ci SSH access as the applies.
+      - name: Join the tailnet
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ vars.TAILSCALE_PR_CLIENT_ID }}
+          audience: api.tailscale.com/${{ vars.TAILSCALE_PR_CLIENT_ID }}
+          tags: tag:ci
+
+      # The same names as in ansible.yaml; keep the two lists together.
+      - name: Map the inventory names to tailnet addresses
+        run: |
+          while read -r fqdn peer; do
+            ip=$(tailscale ip -4 "$peer")
+            echo "$ip $fqdn" | sudo tee -a /etc/hosts
+          done <<'EOF'
+          knode1.lga1.radoncanyon.com knode1
+          knode2.lga1.radoncanyon.com knode2
+          odroid.lga1.radoncanyon.com odroid-lga1
+          odroid.lga2.radoncanyon.com odroid-lga2
+          EOF
+
+      - uses: cachix/install-nix-action@382a9ed9481c7c1f94f68b72ef105b3417c73877 # v32.1.0
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install 1Password CLI
+        uses: 1password/install-cli-action@1a3160d5e9de1ae0803eaa08a88746f5ae3daa50 # v4.1.0
+
+      # Masks each value in the log and exports it for the playbooks' env
+      # lookups. The comment step replaces the same values with ***.
+      - name: Load credentials
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_CI_PR_SERVICE_ACCOUNT_TOKEN }}
+        run: .github/scripts/load-plan-credentials.sh ansible/secrets.plan.env
+
+      # Shows only the tasks that would change, with their diffs.
+      - name: Run the playbooks in check mode
+        id: check
+        env:
+          ANSIBLE_DISPLAY_OK_HOSTS: "false"
+          ANSIBLE_DISPLAY_SKIPPED_HOSTS: "false"
+          ANSIBLE_FORCE_COLOR: "false"
+        run: |
+          nix develop -c bash -c 'cd ansible && ansible-galaxy collection install -r requirements.yaml && ansible-playbook site.yaml --check --diff' 2>&1 | tee check.log
+
+      - name: Comment on PR
+        if: ${{ !cancelled() && steps.check.outcome != 'skipped' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          OUTCOME: ${{ steps.check.outcome }}
+          STEP: Run the playbooks in check mode
+        run: |
+          set -euo pipefail
+          url="$(gh api "repos/${REPO}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}/jobs" \
+            --jq '.jobs[] | select(.runner_name == env.RUNNER_NAME)
+              | .html_url + ((.steps[] | select(.name == env.STEP) | "#step:\(.number):1") // "")' | head -n 1)"
+          .github/scripts/ansible-check-comment.sh check.log ansible/secrets.plan.env "${OUTCOME}" "${url}" > comment.md
+          cat comment.md >> "${GITHUB_STEP_SUMMARY}"
+          id="$(gh api --paginate "repos/${REPO}/issues/${PR}/comments" \
+            --jq '.[] | select(.body | startswith("<!-- ansible-diff -->")) | .id' | tail -n 1)"
+          if [ -n "${id}" ]; then
+            gh api --method PATCH "repos/${REPO}/issues/comments/${id}" -F body=@comment.md >/dev/null
+          else
+            gh pr comment "${PR}" --repo "${REPO}" --body-file comment.md
+          fi

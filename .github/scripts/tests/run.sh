@@ -295,6 +295,42 @@ else
   pass "ansible-drift-summary leaves out the --diff output"
 fi
 
+### ansible-check-comment.sh
+
+printf '%s\n' '# comment' 'DD_API_KEY=op://v/i/credential' 'SNMP_KEY=op://v/i/password' >"${work}/plan.env"
+cat > "${work}/key.log" <<'LOG'
+TASK [datadog : config] ********************************************************
+--- before: /etc/datadog-agent/datadog.yaml
++++ after: /etc/datadog-agent/datadog.yaml
+-api_key: old-key
++api_key: abc123secret
++snmp: abc123secret-longer
++both: abc123secret,abc123secret
+changed: [odroid.lga2.radoncanyon.com]
+
+PLAY RECAP *********************************************************************
+odroid.lga2.radoncanyon.com : ok=89   changed=1    unreachable=0    failed=0
+LOG
+comment="$(HEAD_SHA="${head}" DD_API_KEY=abc123secret SNMP_KEY=abc123secret-longer \
+  "${scripts}/ansible-check-comment.sh" "${work}/key.log" "${work}/plan.env" success u/step)"
+contains "ansible-check-comment replaces each secret value" "+api_key: ***" "${comment}"
+contains "ansible-check-comment replaces a longer value whole" "+snmp: ***" "${comment}"
+contains "ansible-check-comment replaces every occurrence on a line" "+both: ***,***" "${comment}"
+if grep -q "abc123secret" <<<"${comment}"; then
+  fail "ansible-check-comment leaves no secret value in the comment"
+else
+  pass "ansible-check-comment leaves no secret value in the comment"
+fi
+contains "ansible-check-comment links to the step" "Hosts that would change are below. [Full output](u/step)." "${comment}"
+expect "ansible-check-comment starts with its marker and the head commit" \
+'<!-- ansible-diff -->
+### Ansible check mode (success) on `aaaa1111`' "$(head -n 2 <<<"${comment}")"
+sed 's/changed=1/changed=0/' "${work}/check.log" >"${work}/clean.log"
+contains "ansible-check-comment says when no host would change" "No host would change. [Full output](u/step)." \
+  "$(HEAD_SHA="${head}" "${scripts}/ansible-check-comment.sh" "${work}/clean.log" "${work}/plan.env" success u/step)"
+contains "ansible-check-comment says when the check failed" "The check failed; see [the full output](u/step)." \
+  "$(HEAD_SHA="${head}" "${scripts}/ansible-check-comment.sh" "${work}/clean.log" "${work}/plan.env" failure u/step)"
+
 ### oidc-plan-env.sh
 
 # A curl that answers the OIDC token request with a token naming its audience.
