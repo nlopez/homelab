@@ -120,7 +120,7 @@ spec:
         app.kubernetes.io/name: snapshot-controller
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: snapshot-controller
-        tags.datadoghq.com/version: v1
+        tags.datadoghq.com/version: v8.7.0 # renovate: image=registry.k8s.io/sig-storage/snapshot-controller
     spec:
       serviceAccountName: snapshot-controller
       containers:
