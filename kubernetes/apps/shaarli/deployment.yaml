@@ -20,7 +20,7 @@ spec:
         app.kubernetes.io/instance: shaarli
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: shaarli
-        tags.datadoghq.com/version: v1
+        tags.datadoghq.com/version: v0.16.11 # renovate: image=ghcr.io/shaarli/shaarli
     spec:
       securityContext:
         seccompProfile:
