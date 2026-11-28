@@ -49,6 +49,10 @@ loadBalancer:
   mode: hybrid
 socketLB:
   enabled: true
+  # Tailscale ingress proxies DNAT tailnet traffic to a ClusterIP inside their
+  # pod and forward it; only the tc load balancer translates forwarded packets.
+  # https://tailscale.com/docs/kubernetes-operator/reference/compatibility
+  hostNamespaceOnly: true
 bandwidthManager:
   enabled: true
   bbr: true
