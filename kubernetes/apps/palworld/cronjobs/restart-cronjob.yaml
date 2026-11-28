@@ -8,7 +8,7 @@ metadata:
     app: palworld
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: palworld
-    tags.datadoghq.com/version: v1
+    tags.datadoghq.com/version: 1.37.2 # renovate: image=alpine/k8s
     component: restart
 spec:
   schedule: "15 6 * * *"
@@ -124,7 +124,7 @@ metadata:
     app: palworld
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: palworld
-    tags.datadoghq.com/version: v1
+    tags.datadoghq.com/version: 1.37.2 # renovate: image=alpine/k8s
     component: restart
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -136,7 +136,7 @@ metadata:
     app: palworld
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: palworld
-    tags.datadoghq.com/version: v1
+    tags.datadoghq.com/version: 1.37.2 # renovate: image=alpine/k8s
     component: restart
 rules:
 - apiGroups: [""]
@@ -161,7 +161,7 @@ metadata:
     app: palworld
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: palworld
-    tags.datadoghq.com/version: v1
+    tags.datadoghq.com/version: 1.37.2 # renovate: image=alpine/k8s
     component: restart
 subjects:
 - kind: ServiceAccount
