@@ -1,0 +1,50 @@
+name: DigitalOcean
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: ['digitalocean/**', '.github/workflows/digitalocean.yaml', '.github/workflows/_tofu-stack.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
+  pull_request:
+    branches: [ "main" ]
+    paths: ['digitalocean/**', '.github/workflows/digitalocean.yaml', '.github/workflows/_tofu-stack.yaml', '.github/actions/tofu-plan/**', '.github/actions/discord-notify/**']
+  workflow_dispatch:
+    inputs:
+      drift-only:
+        description: Only plan and report drift, as the nightly run does; don't apply
+        type: boolean
+        default: false
+  schedule:
+    # Nightly drift check; see _tofu-stack.yaml.
+    - cron: '13 7 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('digitalocean-pr-{0}', github.event.pull_request.number) || 'digitalocean' }}
+  # A newer push to the PR supersedes its plan; a plan still waiting behind
+  # the old one would have no check run, and ci-ok could pass without it.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# shell: bash runs steps with -eo pipefail; the default (bash -e) lets a
+# failing command before a pipe pass, as `script 2>&1 | tee log` once let the
+# ci-ok gate pass with failed checks.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  digitalocean:
+    uses: ./.github/workflows/_tofu-stack.yaml
+    permissions:
+      contents: read
+      id-token: write
+      issues: write
+      pull-requests: write
+    secrets: inherit
+    with:
+      drift-only: ${{ inputs.drift-only == true }}
+      directory: digitalocean
+      title: DigitalOcean
+      plan-role: homelab-digitalocean-plan
+      apply-role: homelab-digitalocean-apply
