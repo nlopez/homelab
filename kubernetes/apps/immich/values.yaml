@@ -55,6 +55,20 @@ server:
   controllers:
     main:
       replicas: 2
+      # Datadog unified service tags, overriding the global ones. The version is
+      # the immich release, kept in step with the image tag by Renovate.
+      labels:
+        tags.datadoghq.com/service: immich-server
+        tags.datadoghq.com/version: v3.4.1 # renovate: image=ghcr.io/immich-app/immich-server
+      pod:
+        labels:
+          tags.datadoghq.com/service: immich-server
+          tags.datadoghq.com/version: v3.4.1 # renovate: image=ghcr.io/immich-app/immich-server
+          admission.datadoghq.com/enabled: "true"
+        # The Datadog admission controller injects dd-trace-js from this
+        # dd-lib-js-init image tag for APM and Code Security. Renovate updates it.
+        annotations:
+          admission.datadoghq.com/js-lib.version: v6.26.0
       containers:
         main:
           image:
@@ -68,6 +82,10 @@ server:
               gpu.intel.com/i915: 1
           env:
             IMMICH_FFMPEG_HWACCEL: qsv
+            IMMICH_LOG_FORMAT: json
+            DD_IAST_ENABLED: "true"
+            DD_APPSEC_SCA_ENABLED: "true"
+            DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED: "true"
   persistence:
     icloud:
       enabled: true
@@ -82,6 +100,17 @@ machine-learning:
   controllers:
     main:
       strategy: Recreate
+      labels:
+        tags.datadoghq.com/service: immich-machine-learning
+        tags.datadoghq.com/version: v3.4.1 # renovate: image=ghcr.io/immich-app/immich-server
+      pod:
+        labels:
+          tags.datadoghq.com/service: immich-machine-learning
+          tags.datadoghq.com/version: v3.4.1 # renovate: image=ghcr.io/immich-app/immich-server
+          admission.datadoghq.com/enabled: "true"
+        # ddtrace from this dd-lib-python-init image tag. Renovate updates it.
+        annotations:
+          admission.datadoghq.com/python-lib.version: v4.17.2
       containers:
         main:
           image:
@@ -97,6 +126,9 @@ machine-learning:
             TRANSFORMERS_CACHE: /cache
             HF_XET_CACHE: /cache/huggingface-xet
             MPLCONFIGDIR: /cache/matplotlib-config
+            DD_IAST_ENABLED: "true"
+            DD_APPSEC_SCA_ENABLED: "true"
+            DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED: "true"
   persistence:
     cache:
       enabled: true

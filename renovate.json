@@ -142,16 +142,29 @@
     },
     {
       "customType": "regex",
-      "description": "Update the ddtrace version the Datadog admission controller injects, set by the admission.datadoghq.com/python-lib.version pod annotation. The controller pulls the dd-lib-python-init image with that tag.",
+      "description": "Update the Datadog SDK version the admission controller injects, set by the admission.datadoghq.com/<lang>-lib.version pod annotation. The controller pulls the dd-lib-<lang>-init image with that tag.",
       "managerFilePatterns": [
         "/^kubernetes/apps/[^/]+/values\\.yaml$/"
       ],
       "matchStrings": [
-        "admission\\.datadoghq\\.com/python-lib\\.version:\\s*['\"]?(?<currentValue>v[^\\s'\"]+)['\"]?"
+        "admission\\.datadoghq\\.com/(?<lang>python|js)-lib\\.version:\\s*['\"]?(?<currentValue>v[^\\s'\"]+)['\"]?"
       ],
-      "depNameTemplate": "datadog/dd-lib-python-init",
+      "depNameTemplate": "datadog/dd-lib-{{{lang}}}-init",
+      "depTypeTemplate": "datadog-injection",
       "datasourceTemplate": "docker",
       "versioningTemplate": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Keep a Datadog version label in step with the image it describes: `tags.datadoghq.com/version: <tag> # renovate: image=<image>`. Grouped with that image's update in the app's PR.",
+      "managerFilePatterns": [
+        "/^kubernetes/apps/[^/]+/values\\.yaml$/"
+      ],
+      "matchStrings": [
+        "tags\\.datadoghq\\.com/version:\\s*['\"]?(?<currentValue>[^\\s'\"]+)['\"]?\\s*#\\s*renovate:\\s*image=(?<depName>\\S+)"
+      ],
+      "depTypeTemplate": "datadog-injection",
+      "datasourceTemplate": "docker"
     }
   ],
   "packageRules": [
@@ -182,12 +195,12 @@
       "enabled": false
     },
     {
-      "description": "Except the ddtrace version the admission controller injects: no image line or chart tracks it",
+      "description": "Except the Datadog injection pins and version labels: no image line or chart tracks them",
       "matchManagers": [
         "custom.regex"
       ],
-      "matchDepNames": [
-        "datadog/dd-lib-python-init"
+      "matchDepTypes": [
+        "datadog-injection"
       ],
       "enabled": true
     },
