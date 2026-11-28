@@ -14,6 +14,7 @@ workflow, which people and agents both follow.
 | [`aws/`](aws) | SES (`ses/`) and one SMTP user per app (`*-smtp/`) | `tofu plan` per stack | `tofu apply` |
 | [`aws/state-bucket/`](aws/state-bucket) | The OpenTofu state bucket, Identity Center access, CI OIDC roles | `tofu plan` | `tofu apply` |
 | [`datadog/`](datadog) | Monitors and synthetics | `tofu plan` | `tofu apply` |
+| [`digitalocean/`](digitalocean) | The `kernel` DOKS cluster and its VPC | `tofu plan` | `tofu apply` |
 | [`dns/`](dns) | Cloudflare zones and records | `tofu plan` | `tofu apply` |
 | [`gateway/`](gateway) | OPNsense on `gw-lga1` and `gw-lga2`: Unbound, routes, WireGuard, API users | `tofu plan` (WireGuard excluded) | `tofu apply` |
 | [`tailnet/`](tailnet) | Tailnet policy (`policy.hujson`) and DNS (`tofu/`) | ACL tests, `tofu plan` | `tofu apply` |
