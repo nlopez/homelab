@@ -26,6 +26,9 @@ spec:
   - repoURL: https://github.com/nlopez/homelab.git
     targetRevision: main
     ref: values
+  - repoURL: https://github.com/nlopez/homelab.git
+    targetRevision: main
+    path: kubernetes/apps/cloud-tailscale-operator/manifests
   ignoreDifferences:
   - jsonPointers:
     - /spec/volumeName
