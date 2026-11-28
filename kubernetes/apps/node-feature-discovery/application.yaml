@@ -21,6 +21,19 @@ spec:
       valueFiles:
       - $values/kubernetes/apps/node-feature-discovery/values.yaml
       ignoreMissingValueFiles: true
+      parameters:
+      - name: master.labels.tags\.datadoghq\.com/version
+        value: $ARGOCD_APP_SOURCE_TARGET_REVISION
+        forceString: true
+      - name: worker.labels.tags\.datadoghq\.com/version
+        value: $ARGOCD_APP_SOURCE_TARGET_REVISION
+        forceString: true
+      - name: gc.labels.tags\.datadoghq\.com/version
+        value: $ARGOCD_APP_SOURCE_TARGET_REVISION
+        forceString: true
+      - name: topologyUpdater.labels.tags\.datadoghq\.com/version
+        value: $ARGOCD_APP_SOURCE_TARGET_REVISION
+        forceString: true
   - repoURL: https://github.com/nlopez/homelab.git
     targetRevision: main
     ref: values
