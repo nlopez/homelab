@@ -7,7 +7,6 @@ global:
   podLabels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: argocd
-    tags.datadoghq.com/version: v1
 configs:
   secret:
     githubSecret: $argocd-webhook-github:password
