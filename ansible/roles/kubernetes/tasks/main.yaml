@@ -15,18 +15,6 @@
     state: absent
   notify: Reload sysctl
 
-- name: Configure Cilium sysctl overrides
-  ansible.builtin.copy:
-    content: |
-      -net.ipv4.conf.lxc*.rp_filter = 0
-      -net.ipv4.conf.cilium_*.rp_filter = 0
-      net.ipv4.conf.all.rp_filter = 0
-    dest: /etc/sysctl.d/99-zzz-override_cilium.conf
-    owner: root
-    group: root
-    mode: '0644'
-  notify: Reload sysctl
-
 - name: Remove legacy Kubernetes apt repo and key
   ansible.builtin.file:
     path: "{{ item }}"
