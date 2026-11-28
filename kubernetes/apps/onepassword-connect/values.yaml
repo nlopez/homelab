@@ -7,7 +7,6 @@ connect:
   podLabels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: onepassword-connect
-    tags.datadoghq.com/version: v1
 operator:
   create: true
   annotations:
@@ -19,4 +18,3 @@ operator:
   podLabels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: onepassword-connect
-    tags.datadoghq.com/version: v1
