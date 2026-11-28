@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/persistentvolumeclaim-v1.json
+# Forgejo's repositories and data, created before the chart so the cutover can
+# copy them from kubernetes/apps/forgejo before Forgejo first starts. Retain
+# keeps the volume if the claim is ever deleted.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: forgejo-data
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: do-block-storage-retain
+  resources:
+    requests:
+      storage: 20Gi

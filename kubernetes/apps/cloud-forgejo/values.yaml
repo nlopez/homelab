@@ -1,0 +1,148 @@
+# Not rendered yet: application.yaml adds the chart at the cutover from
+# kubernetes/apps/forgejo, with the database (restored from the Spaces backups)
+# and the routes.
+image:
+  rootless: true
+strategy:
+  type: Recreate
+# No deployment.labels: the chart copies them into the Deployment's selector,
+# which is immutable, so labels like tags.datadoghq.com/version could never
+# change. The cloud cluster runs no Datadog agent.
+service:
+  ssh:
+    type: ClusterIP
+    port: 22
+persistence:
+  enabled: true
+  # manifests/pvc.yaml, created ahead of the chart so the repositories can be
+  # copied in before Forgejo first starts.
+  create: false
+  claimName: forgejo-data
+gitea:
+  admin:
+    existingSecret: onepassword-forgejo-admin
+    email: forgejo-admin@desertbluffs.com
+    passwordMode: initialOnlyNoReset
+  # The authentik side lives in authentik/forgejo.tf. The name sets the
+  # callback path registered there.
+  oauth:
+  - name: authentik
+    provider: openidConnect
+    existingSecret: onepassword-forgejo-oauth
+    autoDiscoverUrl: https://arsox.desertbluffs.com/application/o/forgejo/.well-known/openid-configuration
+    scopes: email profile groups
+    # authentik enforces MFA, so SSO sign-ins skip Forgejo's own 2FA prompt.
+    # Only add-oauth applies this flag; update-oauth ignores it, so an
+    # existing source needs "Skip local 2FA" set in the admin panel.
+    skip-local-2fa: true
+  additionalConfigFromEnvs:
+  - name: FORGEJO__DATABASE__PASSWD
+    valueFrom:
+      secretKeyRef:
+        name: onepassword-forgejo-database
+        key: password
+  - name: FORGEJO__MAILER__USER
+    valueFrom:
+      secretKeyRef:
+        name: onepassword-forgejo-smtp
+        key: username
+  - name: FORGEJO__MAILER__PASSWD
+    valueFrom:
+      secretKeyRef:
+        name: onepassword-forgejo-smtp
+        key: password
+  config:
+    APP_NAME: Forgejo
+    server:
+      DOMAIN: dazzi.desertbluffs.com
+      ROOT_URL: https://dazzi.desertbluffs.com/
+      SSH_DOMAIN: dazzi.desertbluffs.com
+      SSH_PORT: 22
+      SSH_LISTEN_PORT: 2222
+    database:
+      DB_TYPE: postgres
+      HOST: forgejo-database-rw.forgejo.svc.cluster.local:5432
+      NAME: forgejo
+      USER: forgejo
+      SSL_MODE: require
+    cache:
+      ADAPTER: memory
+    session:
+      PROVIDER: db
+    queue:
+      TYPE: level
+    indexer:
+      ISSUE_INDEXER_TYPE: bleve
+      REPO_INDEXER_ENABLED: true
+    security:
+      # Envoy Gateway runs in the pod network (digitalocean/kubernetes.tf
+      # cluster_subnet) and sets X-Forwarded-For.
+      REVERSE_PROXY_TRUSTED_PROXIES: 10.152.0.0/16
+    oauth2_client:
+      # Copies the authentik picture claim into the avatar on each sign-in.
+      UPDATE_AVATAR: true
+      # The authentik groups claim maps the admin group to site admin.
+      ADMIN_GROUP: admin
+    service:
+      DISABLE_REGISTRATION: true
+      REQUIRE_SIGNIN_VIEW: true
+      ENABLE_NOTIFY_MAIL: true
+    mailer:
+      ENABLED: true
+      PROTOCOL: smtp+starttls
+      SMTP_ADDR: email-smtp.us-east-1.amazonaws.com
+      SMTP_PORT: 587
+      FROM: Forgejo <forgejo@desertbluffs.com>
+    actions:
+      ENABLED: true
+      DEFAULT_ACTIONS_URL: https://code.forgejo.org
+    repository:
+      DEFAULT_BRANCH: main
+extraContainers:
+# The chart doesn't template extraContainers, so this tag can't follow the
+# chart. Keep it at the chart's appVersion when the chart is updated; the Helm
+# pins check (.github/scripts/helm-pins.py) fails a chart update until it does.
+- name: register-runner
+  image: code.forgejo.org/forgejo/forgejo:15.0.12-rootless
+  command:
+  - /bin/sh
+  - -c
+  - |-
+    until forgejo forgejo-cli actions register --name k8s-dind --secret "${RUNNER_SECRET}"; do
+      sleep 10
+    done
+    exec sleep infinity
+  env:
+  - name: GITEA_APP_INI
+    value: /data/gitea/conf/app.ini
+  - name: GITEA_CUSTOM
+    value: /data/gitea
+  - name: GITEA_WORK_DIR
+    value: /data
+  - name: GITEA_TEMP
+    value: /tmp/gitea
+  - name: HOME
+    value: /data/gitea/git
+  - name: RUNNER_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: onepassword-forgejo-runner
+        key: token
+  securityContext:
+    runAsUser: 1000
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+  resources:
+    requests:
+      cpu: 5m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+  volumeMounts:
+  - name: data
+    mountPath: /data
+  - name: temp
+    mountPath: /tmp
