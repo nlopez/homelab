@@ -21,6 +21,13 @@ spec:
       valueFiles:
       - $values/kubernetes/apps/onepassword-connect/values.yaml
       ignoreMissingValueFiles: true
+      parameters:
+      - name: connect.podLabels.tags\.datadoghq\.com/version
+        value: $ARGOCD_APP_SOURCE_TARGET_REVISION
+        forceString: true
+      - name: operator.podLabels.tags\.datadoghq\.com/version
+        value: $ARGOCD_APP_SOURCE_TARGET_REVISION
+        forceString: true
   - repoURL: https://github.com/nlopez/homelab.git
     targetRevision: main
     ref: values
