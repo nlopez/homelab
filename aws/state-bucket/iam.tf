@@ -172,6 +172,35 @@ resource "aws_iam_role_policy" "datadog_state" {
   policy = data.aws_iam_policy_document.datadog_state.json
 }
 
+resource "aws_iam_role" "digitalocean_apply" {
+  name               = "homelab-digitalocean-apply"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
+}
+
+data "aws_iam_policy_document" "digitalocean_state" {
+  statement {
+    actions = [
+      "s3:GetBucketLocation",
+      "s3:ListBucket",
+    ]
+    resources = [aws_s3_bucket.state.arn]
+  }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+    ]
+    resources = ["${aws_s3_bucket.state.arn}/digitalocean/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "digitalocean_state" {
+  role   = aws_iam_role.digitalocean_apply.id
+  policy = data.aws_iam_policy_document.digitalocean_state.json
+}
+
 resource "aws_iam_role" "gateway_apply" {
   name               = "homelab-gateway-apply"
   assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
@@ -307,11 +336,12 @@ resource "aws_iam_role_policy" "aws_state" {
 # prefixes.
 locals {
   plan_state_prefixes = {
-    authentik = ["authentik"]
-    aws       = ["ses", "authentik-smtp", "forgejo-smtp", "seafile-smtp", "nas-smtp", "immich-smtp"]
-    datadog   = ["datadog"]
-    dns       = ["dns"]
-    gateway   = ["gateway"]
+    authentik    = ["authentik"]
+    aws          = ["ses", "authentik-smtp", "forgejo-smtp", "seafile-smtp", "nas-smtp", "immich-smtp"]
+    datadog      = ["datadog"]
+    digitalocean = ["digitalocean"]
+    dns          = ["dns"]
+    gateway      = ["gateway"]
     # The plan for tailnet/admin reads the tailnet with its own all:read
     # OAuth client, so the role only needs the state.
     tailnet-admin = ["tailnet-admin"]
