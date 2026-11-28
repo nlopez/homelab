@@ -19,7 +19,7 @@ spec:
         app.kubernetes.io/instance: homepage
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: homepage
-        tags.datadoghq.com/version: v1
+        tags.datadoghq.com/version: v2.8.0 # renovate: image=ghcr.io/gethomepage/homepage
     spec:
       serviceAccountName: homepage
       securityContext:
