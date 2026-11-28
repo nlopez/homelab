@@ -28,6 +28,9 @@ datadog_api_key: >-
   'op read op://eirjdyavzyx7tegpglsc2udq3a/4iqpxi5uzyzlkjq5br5fxt5glu/credential --account my.1password.com') }}
 datadog_site: datadoghq.com
 datadog_additional_groups: systemd-journal
+# Remove conf.d/<check>.d/conf.yaml for checks no longer in datadog_checks, so
+# a check dropped here stops running on the host.
+datadog_disable_untracked_checks: true
 datadog_config:
   hostname: "{{ inventory_hostname }}"
   tags:
