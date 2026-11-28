@@ -94,7 +94,7 @@ spec:
           labels:
             tags.datadoghq.com/env: homelab
             tags.datadoghq.com/service: envoy-proxy-private
-            tags.datadoghq.com/version: v1
+            tags.datadoghq.com/version: "1.10.0" # renovate: image=docker.io/envoyproxy/gateway-helm
           annotations:
             ad.datadoghq.com/envoy.checks: |-
               {

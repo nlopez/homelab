@@ -21,6 +21,10 @@ spec:
       valueFiles:
       - $values/kubernetes/apps/envoy-gateway/values.yaml
       ignoreMissingValueFiles: true
+      parameters:
+      - name: deployment.pod.labels.tags\.datadoghq\.com/version
+        value: $ARGOCD_APP_SOURCE_TARGET_REVISION
+        forceString: true
   - repoURL: https://github.com/nlopez/homelab.git
     targetRevision: main
     ref: values
