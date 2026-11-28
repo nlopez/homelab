@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.envoyproxy.io/clienttrafficpolicy_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: tls-settings-tailnet
+  namespace: envoy-gateway-system
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: tailnet
+  tls:
+    session:
+      resumption:
+        stateless: {}
+        stateful: {}
+    ecdhCurves:
+    - X25519MLKEM768
+    - X25519
+    - P-256
+    alpnProtocols:
+    - h2
+    - http/1.1
+  headers:
+    lateResponseHeaders:
+      set:
+      - name: strict-transport-security
+        value: max-age=63072000; includeSubDomains; preload

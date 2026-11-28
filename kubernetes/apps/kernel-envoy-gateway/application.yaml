@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/argoproj.io/application_v1alpha1.json
+# The envoy-gateway chart on the kernel DOKS cluster, with the values of kubernetes/apps/envoy-gateway and
+# its own manifests. Keep targetRevision in step with kubernetes/apps/envoy-gateway.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kernel-envoy-gateway
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '0'
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    name: kernel
+    namespace: envoy-gateway-system
+  sources:
+  - repoURL: oci://docker.io/envoyproxy/gateway-helm
+    targetRevision: 1.10.0
+    path: .
+    helm:
+      valueFiles:
+      - $values/kubernetes/apps/envoy-gateway/values.yaml
+      ignoreMissingValueFiles: true
+  - repoURL: https://github.com/nlopez/homelab.git
+    targetRevision: main
+    ref: values
+  - repoURL: https://github.com/nlopez/homelab.git
+    targetRevision: main
+    path: kubernetes/apps/kernel-envoy-gateway/manifests
+  ignoreDifferences:
+  - jsonPointers:
+    - /spec/volumeName
+    kind: PersistentVolumeClaim
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: false
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+    - RespectIgnoreDifferences=true
