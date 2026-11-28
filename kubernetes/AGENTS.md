@@ -43,6 +43,13 @@ Read the root [AGENTS.md](../AGENTS.md) first. This covers what is specific to t
 - Secrets come from 1Password Connect: a `OnePasswordItem` with
   `itemPath: vaults/<vault id>/items/<item>` creates a Secret of the same name. The vault is
   `Automation` (`evjh…`); see [SECRETS.md](../SECRETS.md). Never commit a Secret with data.
+  Use a `OnePasswordItem`, not the operator's `operator.1password.io/item-path` Deployment
+  annotations, even for a chart's Secret: the annotations put a finalizer on the Deployment itself,
+  and the operator leaves it there if the annotations are later removed.
+- The 1Password operator puts the finalizer `onepassword.com/finalizer.secret` on every
+  `OnePasswordItem` and clears it only while it runs. Remove the apps that use 1Password before
+  `onepassword-connect`, in an earlier PR; otherwise their deletes hang until someone strips the
+  finalizer by hand (1Password/onepassword-operator#55).
 - Apps with no SSO of their own sit behind an Envoy Gateway `SecurityPolicy` that sends browsers to
   authentik (`apps/shaarli/gateway-oidc.yaml`). Each needs an OAuth client in
   `authentik/gateway.tf` and a `gateway-oidc-<app>` item in 1Password: a change in two stacks, so
