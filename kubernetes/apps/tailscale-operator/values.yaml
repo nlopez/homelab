@@ -6,7 +6,6 @@ operatorConfig:
   podLabels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: tailscale-operator
-    tags.datadoghq.com/version: v1
   image:
     repository: ghcr.io/tailscale/k8s-operator
     pullPolicy: IfNotPresent
