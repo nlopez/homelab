@@ -13,14 +13,11 @@ extraArgs:
 podLabels:
   tags.datadoghq.com/env: homelab
   tags.datadoghq.com/service: cert-manager
-  tags.datadoghq.com/version: v1
 webhook:
   podLabels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: cert-manager-webhook
-    tags.datadoghq.com/version: v1
 cainjector:
   podLabels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: cert-manager-cainjector
-    tags.datadoghq.com/version: v1
