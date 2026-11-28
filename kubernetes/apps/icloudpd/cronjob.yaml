@@ -17,7 +17,7 @@ spec:
           labels:
             tags.datadoghq.com/env: homelab
             tags.datadoghq.com/service: icloudpd
-            tags.datadoghq.com/version: v1
+            tags.datadoghq.com/version: 1.0.1384_18-11-2026-icloudpd1.33.0 # renovate: image=ghcr.io/nlopez/docker-icloudpd
         spec:
           serviceAccountName: icloudpd
           automountServiceAccountToken: false
