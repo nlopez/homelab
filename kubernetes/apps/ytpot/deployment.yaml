@@ -16,7 +16,7 @@ spec:
         app.kubernetes.io/instance: ytpot
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: ytpot
-        tags.datadoghq.com/version: v1
+        tags.datadoghq.com/version: 2.0.2 # renovate: image=docker.io/brainicism/bgutil-ytdlp-pot-provider
     spec:
       securityContext:
         seccompProfile:
