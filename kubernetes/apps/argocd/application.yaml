@@ -35,6 +35,13 @@ spec:
   - jsonPointers:
     - /spec/volumeName
     kind: PersistentVolumeClaim
+  # The Tailscale operator points the egress Service at its proxy by
+  # rewriting externalName (manifests/cloud-api-egress.yaml).
+  - jsonPointers:
+    - /spec/externalName
+    kind: Service
+    name: cloud-k8s-api
+    namespace: argocd
   syncPolicy:
     automated:
       enabled: true
