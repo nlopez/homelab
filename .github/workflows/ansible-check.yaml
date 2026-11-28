@@ -74,7 +74,12 @@ jobs:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_CI_PR_SERVICE_ACCOUNT_TOKEN }}
         run: .github/scripts/load-plan-credentials.sh ansible/secrets.plan.env
 
-      # Shows only the tasks that would change, with their diffs.
+      # Builds the dev shell too, so its output stays out of the check log.
+      - name: Install the Galaxy collections
+        run: nix develop -c bash -c 'cd ansible && ansible-galaxy collection install -r requirements.yaml'
+
+      # Shows only the tasks that would change, with their diffs. Only the
+      # playbook's output goes to check.log; nix's own stays in the step log.
       - name: Run the playbooks in check mode
         id: check
         env:
@@ -82,7 +87,7 @@ jobs:
           ANSIBLE_DISPLAY_SKIPPED_HOSTS: "false"
           ANSIBLE_FORCE_COLOR: "false"
         run: |
-          nix develop -c bash -c 'cd ansible && ansible-galaxy collection install -r requirements.yaml && ansible-playbook site.yaml --check --diff' 2>&1 | tee check.log
+          nix develop -c bash -c 'cd ansible && ansible-playbook site.yaml --check --diff 2>&1' | tee check.log
 
       - name: Comment on PR
         if: ${{ !cancelled() && steps.check.outcome != 'skipped' }}
