@@ -139,6 +139,19 @@
       "depNameTemplate": "pixivfe/PixivFE",
       "datasourceTemplate": "gitlab-tags",
       "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Update the ddtrace version the Datadog admission controller injects, set by the admission.datadoghq.com/python-lib.version pod annotation. The controller pulls the dd-lib-python-init image with that tag.",
+      "managerFilePatterns": [
+        "/^kubernetes/apps/[^/]+/values\\.yaml$/"
+      ],
+      "matchStrings": [
+        "admission\\.datadoghq\\.com/python-lib\\.version:\\s*['\"]?(?<currentValue>v[^\\s'\"]+)['\"]?"
+      ],
+      "depNameTemplate": "datadog/dd-lib-python-init",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
     }
   ],
   "packageRules": [
@@ -167,6 +180,16 @@
         "kubernetes/apps/*/values.yaml"
       ],
       "enabled": false
+    },
+    {
+      "description": "Except the ddtrace version the admission controller injects: no image line or chart tracks it",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchDepNames": [
+        "datadog/dd-lib-python-init"
+      ],
+      "enabled": true
     },
     {
       "description": "The chart doesn't version Velero's AWS plugin, and the plugin's minor must match Velero's: patches only; a new minor goes in the PR that moves the chart to a new Velero minor. (A values.yaml may not override an image its chart ships: the Helm pins check fails it.)",
