@@ -43,6 +43,8 @@ initContainers:
 metrics:
   enabled: true
 podAnnotations:
+  ad.datadoghq.com/velero.logs: '[{"source":"velero","service":"velero","log_processing_rules":[{"type":"exclude_at_match","name":"logrus_info","pattern":"^time=\"[^\"]*\" level=info "}]}]'
+  ad.datadoghq.com/node-agent.logs: '[{"source":"velero","service":"velero-node-agent","log_processing_rules":[{"type":"exclude_at_match","name":"logrus_info","pattern":"^time=\"[^\"]*\" level=info "}]}]'
   ad.datadoghq.com/velero.checks: |
     {
       "velero": {
