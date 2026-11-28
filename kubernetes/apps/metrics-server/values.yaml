@@ -1,4 +1,3 @@
 podLabels:
   tags.datadoghq.com/env: homelab
   tags.datadoghq.com/service: metrics-server
-  tags.datadoghq.com/version: v1
