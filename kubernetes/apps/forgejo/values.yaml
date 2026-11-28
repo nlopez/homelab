@@ -5,9 +5,13 @@ strategy:
 deployment:
   annotations:
     reloader.stakater.com/auto: "true"
+  # The chart also puts deployment.labels in the Deployment's selector, which
+  # is immutable, so this version can't follow the release without
+  # recreating the Deployment.
   labels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: forgejo
+    tags.datadoghq.com/version: v1
 service:
   ssh:
     type: ClusterIP
