@@ -40,6 +40,10 @@ global:
     value: "true"
   - name: DD_APPSEC_SCA_ENABLED
     value: "true"
+  # Client spans (Postgres, HTTP) keep service:authentik; Datadog identifies
+  # the dependency from peer.* tags instead of a separate service.
+  - name: DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED
+    value: "true"
 authentik:
   postgresql:
     host: authentik-database-tn-rw.authentik.svc.cluster.local
