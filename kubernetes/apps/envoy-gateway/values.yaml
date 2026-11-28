@@ -8,4 +8,3 @@ deployment:
     labels:
       tags.datadoghq.com/env: homelab
       tags.datadoghq.com/service: envoy-gateway
-      tags.datadoghq.com/version: v1

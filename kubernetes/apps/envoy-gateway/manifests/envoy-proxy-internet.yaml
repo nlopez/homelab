@@ -93,7 +93,7 @@ spec:
           labels:
             tags.datadoghq.com/env: homelab
             tags.datadoghq.com/service: envoy-proxy-internet
-            tags.datadoghq.com/version: v1
+            tags.datadoghq.com/version: "1.10.0"
           annotations:
             ad.datadoghq.com/envoy.checks: |-
               {
