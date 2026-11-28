@@ -7,4 +7,3 @@ service:
 podLabels:
   tags.datadoghq.com/env: homelab
   tags.datadoghq.com/service: goldpinger
-  tags.datadoghq.com/version: v1
