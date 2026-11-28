@@ -40,7 +40,7 @@ spec:
                   -H "X-Plex-Token: ${PLEX_TOKEN}" -H 'Accept: application/json' \
                   http://pms:32400/status/sessions) || true
                 case "$code" in
-                  000) echo 0 ;;
+                  000) echo unreachable ;;
                   200) jq '.MediaContainer.size // 0' /tmp/sessions.json ;;
                   *) echo "Plex returned HTTP $code" >&2; return 1 ;;
                 esac
@@ -48,7 +48,14 @@ spec:
               deadline=$(( $(date +%s) + MAX_WAIT_SECONDS ))
               while :; do
                 sessions=$(count_sessions)
-                [ "$sessions" -eq 0 ] && break
+                if [ "$sessions" = unreachable ]; then
+                  echo "Plex is unreachable, so nothing is streaming; restarting"
+                  break
+                fi
+                if [ "$sessions" -eq 0 ]; then
+                  echo "No active Plex sessions; restarting"
+                  break
+                fi
                 if [ "$(date +%s)" -ge "$deadline" ]; then
                   echo "Plex still has $sessions active session(s) after ${MAX_WAIT_SECONDS}s; skipping tonight's restart"
                   exit 0
