@@ -16,7 +16,7 @@ spec:
           labels:
             tags.datadoghq.com/env: homelab
             tags.datadoghq.com/service: seadexarr
-            tags.datadoghq.com/version: v1
+            tags.datadoghq.com/version: v1.1.0 # renovate: image=ghcr.io/bbtufty/seadexarr
         spec:
           restartPolicy: Never
           initContainers:
