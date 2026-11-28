@@ -8,7 +8,7 @@ metadata:
     app: palworld-editor
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: palworld-editor
-    tags.datadoghq.com/version: v1
+    tags.datadoghq.com/version: 1.38.0 # renovate: image=busybox
 spec:
   replicas: 0
   selector:
@@ -22,7 +22,7 @@ spec:
         app.kubernetes.io/instance: palworld-editor
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: palworld-editor
-        tags.datadoghq.com/version: v1
+        tags.datadoghq.com/version: 1.38.0 # renovate: image=busybox
     spec:
       containers:
       - name: editor
