@@ -74,6 +74,15 @@ server:
         # dd-lib-js-init image tag for APM and Code Security. Renovate updates it.
         annotations:
           admission.datadoghq.com/js-lib.version: v6.26.0
+          # immich logs JSON, but Node writes uncaught errors as raw multi-line
+          # dumps ("Error: ..." then indented frames and fields). The Agent's
+          # multi-line detection only starts a log at a leading datetime, so
+          # these lines start one instead; JSON lines are never aggregated.
+          ad.datadoghq.com/main.logs: |-
+            [{"source": "immich-server", "service": "immich-server",
+              "auto_multi_line_detection": true,
+              "auto_multi_line_detection_custom_samples": [
+                {"regex": "^(\\w*(Error|Warning)\\b|\\(node:\\d+\\)|missing 'error' handler)"}]}]
       containers:
         main:
           image:
