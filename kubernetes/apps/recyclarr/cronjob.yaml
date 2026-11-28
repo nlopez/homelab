@@ -16,7 +16,7 @@ spec:
           labels:
             tags.datadoghq.com/env: homelab
             tags.datadoghq.com/service: recyclarr
-            tags.datadoghq.com/version: v1
+            tags.datadoghq.com/version: 8.8.1 # renovate: image=ghcr.io/recyclarr/recyclarr
         spec:
           restartPolicy: Never
           dnsConfig:
