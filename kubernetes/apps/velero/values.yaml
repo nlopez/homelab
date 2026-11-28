@@ -79,17 +79,6 @@ schedules:
       includeClusterResources: false
       snapshotVolumes: true
       snapshotMoveData: false
-  palworld-hourly:
-    schedule: "0 * * * *"
-    paused: false
-    template:
-      includedNamespaces:
-      - palworld
-      storageLocation: do-spaces-sfo3
-      ttl: 24h
-      includeClusterResources: false
-      snapshotVolumes: true
-      snapshotMoveData: false
   palworld-daily:
     schedule: "15 11 * * *"
     paused: false
