@@ -1,7 +1,6 @@
 podLabels:
   tags.datadoghq.com/env: homelab
   tags.datadoghq.com/service: velero
-  tags.datadoghq.com/version: v1
 configuration:
   backupStorageLocation:
   - name: do-spaces-sfo3
@@ -30,7 +29,6 @@ nodeAgent:
   podLabels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: velero-node-agent
-    tags.datadoghq.com/version: v1
 initContainers:
 # The chart doesn't set this plugin's version, and its minor must match
 # Velero's (plugin 1.14 for Velero 1.18). When a chart update moves Velero to
