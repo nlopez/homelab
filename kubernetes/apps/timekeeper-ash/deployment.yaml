@@ -19,7 +19,7 @@ spec:
         app.kubernetes.io/instance: timekeeper-server
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: timekeeper-server-ash
-        tags.datadoghq.com/version: v1
+        tags.datadoghq.com/version: 2026.11.20-4 # renovate: image=ghcr.io/kamotimestamps/timekeeper-server
     spec:
       securityContext:
         runAsNonRoot: true
