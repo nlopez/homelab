@@ -106,7 +106,6 @@ operator:
   podLabels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: cilium-operator
-    tags.datadoghq.com/version: v1
   podAnnotations:
     ad.datadoghq.com/cilium-operator.checks: |
       {
@@ -123,7 +122,6 @@ operator:
 podLabels:
   tags.datadoghq.com/env: homelab
   tags.datadoghq.com/service: cilium
-  tags.datadoghq.com/version: v1
 podAnnotations:
   ad.datadoghq.com/cilium-agent.checks: |-
     {
