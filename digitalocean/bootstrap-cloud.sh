@@ -92,8 +92,9 @@ k create secret generic onepassword-token -n 1password --from-literal=token="$co
 unset connect_token
 
 # 3. Gateway API CRDs
-k get crd -o name | grep '\.gateway\.networking\.k8s\.io$' |
-  xargs kubectl --context "$CTX" annotate --overwrite doks.digitalocean.com/install-policy=external >/dev/null
+for crd in $(k get crd -o name | grep '\.gateway\.networking\.k8s\.io$'); do
+  k annotate --overwrite "$crd" doks.digitalocean.com/install-policy=external >/dev/null
+done
 
 echo
 echo "argo cluster item (Automation): $argo_item"
