@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/argoproj.io/application_v1alpha1.json
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: arc-ci-runners
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: arc-ci-runners
+  sources:
+  - repoURL: oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
+    targetRevision: 0.15.1
+    path: .
+    helm:
+      valueFiles:
+      - $values/kubernetes/apps/arc-ci-runners/values.yaml
+      ignoreMissingValueFiles: true
+  - repoURL: https://github.com/nlopez/homelab.git
+    targetRevision: main
+    ref: values
+  - repoURL: https://github.com/nlopez/homelab.git
+    targetRevision: main
+    path: kubernetes/apps/arc-ci-runners/manifests
+  ignoreDifferences:
+  - jsonPointers:
+    - /spec/volumeName
+    kind: PersistentVolumeClaim
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: false
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+    - RespectIgnoreDifferences=true
