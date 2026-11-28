@@ -18,14 +18,12 @@ controller:
   podLabels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: truenas-csi-nas1
-    tags.datadoghq.com/version: v1
 node:
   podAnnotations:
     ad.datadoghq.com/csi-node.logs: '[{"source":"truenas-csi","service":"truenas-csi-nas1","log_processing_rules":[{"type":"exclude_at_match","name":"klog_info","pattern":"^I[0-9]{4} "}]}]'
   podLabels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: truenas-csi-nas1
-    tags.datadoghq.com/version: v1
 storageClasses:
 - name: tn-nas1-mtank-nfs
   reclaimPolicy: Retain

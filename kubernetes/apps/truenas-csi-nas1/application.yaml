@@ -21,6 +21,13 @@ spec:
       valueFiles:
       - $values/kubernetes/apps/truenas-csi-nas1/values.yaml
       ignoreMissingValueFiles: true
+      parameters:
+      - name: controller.podLabels.tags\.datadoghq\.com/version
+        value: $ARGOCD_APP_SOURCE_TARGET_REVISION
+        forceString: true
+      - name: node.podLabels.tags\.datadoghq\.com/version
+        value: $ARGOCD_APP_SOURCE_TARGET_REVISION
+        forceString: true
   - repoURL: https://github.com/nlopez/homelab.git
     targetRevision: main
     ref: values
