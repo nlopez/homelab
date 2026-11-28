@@ -26,6 +26,16 @@ resource "digitalocean_kubernetes_cluster" "cloud" {
   cluster_subnet = "10.152.0.0/16"
   service_subnet = "10.153.0.0/16"
 
+  # No public address may reach the API. The cluster's own nodes and
+  # workloads, and DigitalOcean's management, always can; everyone else,
+  # the home Argo CD included, goes through the Tailscale operator's API server
+  # proxy (kubernetes/apps/cloud-tailscale-operator). CI applies this stack
+  # through the DigitalOcean API, not the cluster's, so a PR can always reopen it.
+  control_plane_firewall {
+    enabled           = true
+    allowed_addresses = []
+  }
+
   # The HA control plane costs $40/month, which doesn't fit the $100/month
   # budget next to three nodes. It can be enabled later but never disabled.
   ha = false
