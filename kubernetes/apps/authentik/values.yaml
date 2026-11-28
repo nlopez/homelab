@@ -7,10 +7,10 @@ global:
     tags.datadoghq.com/service: authentik
   podLabels:
     admission.datadoghq.com/enabled: "true"
-  # The Datadog admission controller injects ddtrace from this init image tag
-  # (the latest 4.x release) for APM and Code Security.
+  # The Datadog admission controller injects ddtrace from this
+  # dd-lib-python-init image tag for APM and Code Security. Renovate updates it.
   podAnnotations:
-    admission.datadoghq.com/python-lib.version: v4
+    admission.datadoghq.com/python-lib.version: v4.17.2
   deploymentAnnotations:
     reloader.stakater.com/auto: "true"
   env:
