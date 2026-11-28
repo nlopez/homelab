@@ -17,7 +17,7 @@ spec:
         app.kubernetes.io/instance: jackett
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: jackett
-        tags.datadoghq.com/version: v1
+        tags.datadoghq.com/version: version-v0.24.2977 # renovate: image=ghcr.io/linuxserver/jackett
     spec:
       securityContext:
         seccompProfile:
