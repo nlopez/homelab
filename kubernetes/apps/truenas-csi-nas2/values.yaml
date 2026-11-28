@@ -1,4 +1,5 @@
 driverName: org.truenas-csi.nas2
+logLevel: 2
 truenas:
   url: wss://nas2.lga1.radoncanyon.com
   iscsiPortal: "192.168.222.114:3260"
@@ -6,11 +7,19 @@ truenas:
   existingSecret: truenas-csi-nas2-api-key
   existingSecretKey: credential
 controller:
+  podAnnotations:
+    ad.datadoghq.com/csi-controller.logs: '[{"source":"truenas-csi","service":"truenas-csi-nas2","log_processing_rules":[{"type":"exclude_at_match","name":"klog_info","pattern":"^I[0-9]{4} "}]}]'
+    ad.datadoghq.com/csi-provisioner.logs: '[{"source":"csi-provisioner","service":"truenas-csi-nas2","log_processing_rules":[{"type":"exclude_at_match","name":"klog_info","pattern":"^I[0-9]{4} "}]}]'
+    ad.datadoghq.com/csi-attacher.logs: '[{"source":"csi-attacher","service":"truenas-csi-nas2","log_processing_rules":[{"type":"exclude_at_match","name":"klog_info","pattern":"^I[0-9]{4} "}]}]'
+    ad.datadoghq.com/csi-snapshotter.logs: '[{"source":"csi-snapshotter","service":"truenas-csi-nas2","log_processing_rules":[{"type":"exclude_at_match","name":"klog_info","pattern":"^I[0-9]{4} "}]}]'
+    ad.datadoghq.com/csi-resizer.logs: '[{"source":"csi-resizer","service":"truenas-csi-nas2","log_processing_rules":[{"type":"exclude_at_match","name":"klog_info","pattern":"^I[0-9]{4} "}]}]'
   podLabels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: truenas-csi-nas2
     tags.datadoghq.com/version: v1
 node:
+  podAnnotations:
+    ad.datadoghq.com/csi-node.logs: '[{"source":"truenas-csi","service":"truenas-csi-nas2","log_processing_rules":[{"type":"exclude_at_match","name":"klog_info","pattern":"^I[0-9]{4} "}]}]'
   podLabels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: truenas-csi-nas2
