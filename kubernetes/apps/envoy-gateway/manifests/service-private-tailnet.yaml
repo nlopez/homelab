@@ -15,6 +15,9 @@ metadata:
 spec:
   type: LoadBalancer
   loadBalancerClass: tailscale
+  # heimdall forwards the Tailscale Service's IPv6 address only to an IPv6
+  # ClusterIP.
+  ipFamilyPolicy: PreferDualStack
   selector:
     app.kubernetes.io/component: proxy
     app.kubernetes.io/managed-by: envoy-gateway
