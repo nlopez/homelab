@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/gateway.envoyproxy.io/envoyproxy_v1alpha1.json
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: tailnet
+  namespace: envoy-gateway-system
+spec:
+  ipFamily: DualStack
+  telemetry:
+    accessLog:
+      settings:
+      # One line per HTTP request.
+      - type: Route
+        format:
+          type: JSON
+          json:
+            log_type: "%ACCESS_LOG_TYPE%"
+            start_time: "%START_TIME%"
+            connection_id: "%CONNECTION_ID%"
+            request_id: "%REQ(X-REQUEST-ID)%"
+            method: "%REQ(:METHOD)%"
+            authority: "%REQ(:AUTHORITY)%"
+            path: "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%"
+            protocol: "%PROTOCOL%"
+            response_code: "%RESPONSE_CODE%"
+            response_code_details: "%RESPONSE_CODE_DETAILS%"
+            response_flags: "%RESPONSE_FLAGS%"
+            connection_termination_details: "%CONNECTION_TERMINATION_DETAILS%"
+            route_name: "%ROUTE_NAME%"
+            upstream_cluster: "%UPSTREAM_CLUSTER%"
+            upstream_host: "%UPSTREAM_HOST%"
+            upstream_transport_failure_reason: "%UPSTREAM_TRANSPORT_FAILURE_REASON%"
+            upstream_service_time: "%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%"
+            requested_server_name: "%REQUESTED_SERVER_NAME%"
+            downstream_tls_version: "%DOWNSTREAM_TLS_VERSION%"
+            downstream_tls_cipher: "%DOWNSTREAM_TLS_CIPHER%"
+            downstream_peer_subject: "%DOWNSTREAM_PEER_SUBJECT%"
+            bytes_received: "%BYTES_RECEIVED%"
+            bytes_sent: "%BYTES_SENT%"
+            duration: "%DURATION%"
+            downstream_remote_address: "%DOWNSTREAM_REMOTE_ADDRESS%"
+            downstream_direct_remote_address: "%DOWNSTREAM_DIRECT_REMOTE_ADDRESS%"
+            x_forwarded_for: "%REQ(X-FORWARDED-FOR)%"
+            cf_connecting_ip: "%REQ(CF-CONNECTING-IP)%"
+            cf_ray: "%REQ(CF-RAY)%"
+            user_agent: "%REQ(USER-AGENT)%"
+        sinks:
+        - type: File
+          file:
+            path: /dev/stdout
+      # One line per downstream connection, including ones that fail the TLS
+      # handshake or close before a request completes.
+      - type: Listener
+        format:
+          type: JSON
+          json:
+            log_type: "%ACCESS_LOG_TYPE%"
+            start_time: "%START_TIME%"
+            connection_id: "%CONNECTION_ID%"
+            requested_server_name: "%REQUESTED_SERVER_NAME%"
+            downstream_tls_version: "%DOWNSTREAM_TLS_VERSION%"
+            downstream_peer_subject: "%DOWNSTREAM_PEER_SUBJECT%"
+            downstream_transport_failure_reason: "%DOWNSTREAM_TRANSPORT_FAILURE_REASON%"
+            connection_termination_details: "%CONNECTION_TERMINATION_DETAILS%"
+            response_flags: "%RESPONSE_FLAGS%"
+            bytes_received: "%BYTES_RECEIVED%"
+            bytes_sent: "%BYTES_SENT%"
+            duration: "%DURATION%"
+            downstream_remote_address: "%DOWNSTREAM_REMOTE_ADDRESS%"
+            downstream_local_address: "%DOWNSTREAM_LOCAL_ADDRESS%"
+        sinks:
+        - type: File
+          file:
+            path: /dev/stdout
+  provider:
+    type: Kubernetes
+    kubernetes:
+      # Exposed only on the tailnet, through the heimdall ProxyGroup. Cilium
+      # ignores a Service whose loadBalancerClass is tailscale, so the
+      # Tailscale operator is the only writer of its status.
+      envoyService:
+        type: LoadBalancer
+        loadBalancerClass: tailscale
+        allocateLoadBalancerNodePorts: false
+        annotations:
+          tailscale.com/hostname: envoy-gateway-tailnet
+          tailscale.com/proxy-group: heimdall
+      envoyDeployment:
+        container:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+        pod:
+          labels:
+            tags.datadoghq.com/env: homelab
+            tags.datadoghq.com/service: envoy-proxy-tailnet
+            tags.datadoghq.com/version: v1
+          annotations:
+            ad.datadoghq.com/envoy.checks: |-
+              {
+                "envoy": {
+                  "init_config": {},
+                  "instances": [
+                    {
+                      "openmetrics_endpoint": "http://%%host%%:19001/stats/prometheus"
+                    }
+                  ]
+                }
+              }
