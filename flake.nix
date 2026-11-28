@@ -54,6 +54,7 @@
             packages = [
               python
               pkgs.ansible-lint
+              pkgs.betterleaks
               pkgs.go
               pkgs.pre-commit
               pkgs.tflint

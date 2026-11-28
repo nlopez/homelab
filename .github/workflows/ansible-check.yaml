@@ -104,7 +104,10 @@ jobs:
           url="$(gh api "repos/${REPO}/actions/runs/${GITHUB_RUN_ID}/attempts/${GITHUB_RUN_ATTEMPT}/jobs" \
             --jq '.jobs[] | select(.runner_name == env.RUNNER_NAME)
               | .html_url + ((.steps[] | select(.name == env.STEP) | "#step:\(.number):1") // "")' | head -n 1)"
-          .github/scripts/ansible-check-comment.sh check.log ansible/secrets.plan.env "${OUTCOME}" "${url}" > comment.md
+          # Exits 3 when betterleaks finds a secret in the diff: the comment
+          # still posts, without the diff, and the job fails.
+          rc=0
+          nix develop -c .github/scripts/ansible-check-comment.sh check.log ansible/secrets.plan.env "${OUTCOME}" "${url}" > comment.md || rc=$?
           cat comment.md >> "${GITHUB_STEP_SUMMARY}"
           id="$(gh api --paginate "repos/${REPO}/issues/${PR}/comments" \
             --jq '.[] | select(.body | startswith("<!-- ansible-diff -->")) | .id' | tail -n 1)"
@@ -113,3 +116,4 @@ jobs:
           else
             gh pr comment "${PR}" --repo "${REPO}" --body-file comment.md
           fi
+          exit "${rc}"

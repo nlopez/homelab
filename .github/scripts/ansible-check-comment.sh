@@ -3,6 +3,9 @@
 # the play recap and the diff, with a link to the job step that holds the full
 # output. The repository is public and --diff output holds rendered templates,
 # so every value of a variable named in the env file is replaced with *** first.
+# Then betterleaks scans the diff, for secrets the env file doesn't name, such
+# as a token already in a file on a host. If it finds one, or can't run, the
+# comment leaves the diff out and the script exits 3.
 # Run by .github/workflows/ansible-check.yaml, with HEAD_SHA set to the pull
 # request's head commit.
 #
@@ -40,7 +43,11 @@ diff="$(awk '
     if (task != "") { print ""; print task; task = "" }
     print
   }
-' <<<"${redacted}")"
+' <<<"${redacted}" | tail -c 55000)"
+
+scan=0
+findings="$(betterleaks stdin --no-banner --redact --log-level error --exit-code 3 \
+  --report-format json --report-path - <<<"${diff}")" || scan=$?
 
 echo "<!-- ansible-diff -->"
 echo "### Ansible check mode (${outcome}) on \`${HEAD_SHA:0:8}\`"
@@ -59,8 +66,19 @@ echo '```'
 echo "${recap}"
 echo '```'
 echo
+if [ "${scan}" -ne 0 ]; then
+  if [ "${scan}" -eq 3 ]; then
+    rules="$(jq -r '[.[].RuleID] | unique | join(", ")' <<<"${findings}" 2>/dev/null || true)"
+    echo "**Diff withheld:** the secret scanner (betterleaks) matched \`${rules:-unknown rule}\` in it."
+  else
+    echo "**Diff withheld:** the secret scanner (betterleaks) could not run (exit ${scan})."
+  fi
+  echo "Check [the step's output](${url}). GitHub masks only the secrets it was given, so a match there is public:"
+  echo "rotate that secret, and keep it out of the diff (\`diff: false\` or \`no_log\` on the task) before merging."
+  exit 3
+fi
 echo "Diff (secret values replaced with \`***\`):"
 echo
 echo '```diff'
-tail -c 55000 <<<"${diff}"
+echo "${diff}"
 echo '```'
