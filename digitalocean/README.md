@@ -27,6 +27,15 @@ VPCs from `ci` (`secrets.env`).
 The cluster takes patch releases in its Sunday maintenance window. A minor upgrade is a change to
 `version_prefix` in `kubernetes.tf`, one minor version at a time.
 
+## Bootstrap
+
+Once per cluster, the operator runs `bootstrap-kernel.sh` with doctl, kubectl, and the 1Password
+app. It creates the `kube-system/argocd-manager` ServiceAccount the home Argo CD deploys with and
+saves it as the `Argo CD cluster kernel` item in Automation, which
+`kubernetes/apps/argocd/manifests/kernel-cluster.yaml` turns into Argo CD's cluster secret. It
+also creates a 1Password Connect server for kernel (Automation only), keeps its credentials and
+token in Private, and installs them in kernel's `1password` namespace.
+
 ## Reaching the cluster
 
 ```sh
