@@ -45,4 +45,3 @@ deploymentAnnotations:
 podLabels:
   tags.datadoghq.com/env: homelab
   tags.datadoghq.com/service: external-dns-lga2
-  tags.datadoghq.com/version: v1
