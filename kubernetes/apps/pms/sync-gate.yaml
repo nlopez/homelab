@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/job-batch-v1.json
+# Runs before every Argo CD sync of this app and holds the sync until Plex has no active
+# sessions, so a rollout never cuts off a stream. After 12 hours of sessions it fails the sync,
+# which then needs a manual sync once the server is idle.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pms-sync-gate
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 43500
+  template:
+    metadata:
+      labels:
+        tags.datadoghq.com/env: homelab
+        tags.datadoghq.com/service: pms-sync-gate
+        tags.datadoghq.com/version: 1.37.2 # renovate: image=docker.io/alpine/k8s
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+      - name: wait-for-idle
+        image: docker.io/alpine/k8s:1.37.2
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -euo pipefail
+          # Plex down or not created yet: nothing is streaming.
+          # No token: the 1Password item isn't synced yet; don't block the sync on it.
+          # Any other HTTP error is a misconfiguration and fails the sync.
+          if [ -z "${PLEX_TOKEN:-}" ]; then
+            echo "WARNING: no Plex token in secret pms-sessions; not checking for streams"
+            exit 0
+          fi
+          count_sessions() {
+            local code
+            code=$(curl -s -o /tmp/sessions.json -w '%{http_code}' --max-time 10 \
+              -H "X-Plex-Token: ${PLEX_TOKEN}" -H 'Accept: application/json' \
+              http://pms:32400/status/sessions) || true
+            case "$code" in
+              000) echo 0 ;;
+              200) jq '.MediaContainer.size // 0' /tmp/sessions.json ;;
+              *) echo "Plex returned HTTP $code" >&2; return 1 ;;
+            esac
+          }
+          deadline=$(( $(date +%s) + MAX_WAIT_SECONDS ))
+          while :; do
+            sessions=$(count_sessions)
+            if [ "$sessions" -eq 0 ]; then
+              echo "No active Plex sessions; continuing the sync"
+              exit 0
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "Plex still has $sessions active session(s) after ${MAX_WAIT_SECONDS}s; failing the sync"
+              exit 1
+            fi
+            echo "$sessions active Plex session(s); checking again in 60s"
+            sleep 60
+          done
+        env:
+        - name: MAX_WAIT_SECONDS
+          value: "43200"
+        - name: PLEX_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: pms-sessions
+              key: token
+              optional: true
+        resources:
+          requests:
+            memory: 32Mi
+            cpu: 10m
+          limits:
+            memory: 64Mi
