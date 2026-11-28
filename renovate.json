@@ -156,9 +156,9 @@
     },
     {
       "customType": "regex",
-      "description": "Keep a Datadog version label in step with the image it describes: `tags.datadoghq.com/version: <tag> # renovate: image=<image>`. Grouped with that image's update in the app's PR.",
+      "description": "Keep a Datadog version label in step with the image it describes: `tags.datadoghq.com/version: <tag> # renovate: image=<image>`, in Helm values or raw manifests. Grouped with that image's update in the app's PR.",
       "managerFilePatterns": [
-        "/^kubernetes/apps/[^/]+/values\\.yaml$/"
+        "/^kubernetes/apps/.+\\.ya?ml$/"
       ],
       "matchStrings": [
         "tags\\.datadoghq\\.com/version:\\s*['\"]?(?<currentValue>[^\\s'\"]+)['\"]?\\s*#\\s*renovate:\\s*image=(?<depName>\\S+)"
