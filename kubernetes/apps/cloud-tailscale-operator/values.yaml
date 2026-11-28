@@ -13,3 +13,10 @@ proxyConfig:
   image:
     repository: ghcr.io/tailscale/tailscale
     pullPolicy: IfNotPresent
+# The cluster's API is reached over the tailnet at
+# tailscale-operator-cloud.macaroni-pirate.ts.net, and the public endpoint is
+# closed by the control plane firewall (digitalocean/kubernetes.tf). noauth
+# passes the caller's own credentials through, so the home Argo CD keeps using
+# its argocd-manager ServiceAccount token and no tailnet grants are needed.
+apiServerProxyConfig:
+  mode: "noauth"
