@@ -42,7 +42,7 @@ spec:
               -H "Authorization: MediaBrowser Token=\"${JELLYFIN_API_KEY}\"" \
               'http://jellyfin/Sessions?activeWithinSeconds=600') || true
             case "$code" in
-              000) echo 0 ;;
+              000) echo unreachable ;;
               200) jq '[.[] | select(.NowPlayingItem != null)] | length' /tmp/sessions.json ;;
               *) echo "Jellyfin returned HTTP $code" >&2; return 1 ;;
             esac
@@ -50,6 +50,10 @@ spec:
           deadline=$(( $(date +%s) + MAX_WAIT_SECONDS ))
           while :; do
             streams=$(count_streams)
+            if [ "$streams" = unreachable ]; then
+              echo "Jellyfin is unreachable, so nothing is streaming; continuing the sync"
+              exit 0
+            fi
             if [ "$streams" -eq 0 ]; then
               echo "Nothing playing on Jellyfin; continuing the sync"
               exit 0
