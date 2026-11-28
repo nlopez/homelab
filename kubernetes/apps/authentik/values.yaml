@@ -1,8 +1,11 @@
 global:
-  podLabels:
+  # Datadog unified service tags. The chart puts additionalLabels on every
+  # object it renders, including both Deployments and their pod templates.
+  # tags.datadoghq.com/version is the chart version, set in application.yaml.
+  additionalLabels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: authentik
-    tags.datadoghq.com/version: v1
+  podLabels:
     admission.datadoghq.com/enabled: "true"
   # The Datadog admission controller injects ddtrace from this init image tag
   # (the latest 4.x release) for APM and Code Security.
