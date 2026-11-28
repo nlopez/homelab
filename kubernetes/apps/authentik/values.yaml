@@ -108,11 +108,15 @@ worker:
       memory: 512Mi
     limits:
       memory: 1Gi
-  # `ak healthcheck` takes 4-6s with ddtrace injected; the chart's 3s timeout
-  # fails the worker's startup probe.
+  # The probes call the authentik binary directly. The chart's `ak healthcheck`
+  # goes through /lifecycle/ak, which first starts Python (with ddtrace
+  # injected) only to check debug mode: 3.5s of CPU per check instead of 0.05s.
   startupProbe:
-    timeoutSeconds: 10
+    exec:
+      command: [authentik, healthcheck, worker]
   livenessProbe:
-    timeoutSeconds: 10
+    exec:
+      command: [authentik, healthcheck, worker]
   readinessProbe:
-    timeoutSeconds: 10
+    exec:
+      command: [authentik, healthcheck, worker]
