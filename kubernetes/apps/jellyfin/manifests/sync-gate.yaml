@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/job-batch-v1.json
+# Runs before every Argo CD sync of this app and holds the sync until Jellyfin has nothing
+# playing, so a rollout never cuts off a stream. After 12 hours of playback it fails the sync,
+# which then needs a manual sync once the server is idle.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: jellyfin-sync-gate
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 43500
+  template:
+    metadata:
+      labels:
+        tags.datadoghq.com/env: homelab
+        tags.datadoghq.com/service: jellyfin-sync-gate
+        tags.datadoghq.com/version: 1.37.2 # renovate: image=docker.io/alpine/k8s
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+      - name: wait-for-idle
+        image: docker.io/alpine/k8s:1.37.2
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -euo pipefail
+          # Jellyfin down or not created yet: nothing is streaming.
+          # No API key: the 1Password item isn't synced yet; don't block the sync on it.
+          # Any other HTTP error is a misconfiguration and fails the sync.
+          if [ -z "${JELLYFIN_API_KEY:-}" ]; then
+            echo "WARNING: no API key in secret jellyfin-sessions; not checking for streams"
+            exit 0
+          fi
+          count_streams() {
+            local code
+            code=$(curl -s -o /tmp/sessions.json -w '%{http_code}' --max-time 10 \
+              -H "Authorization: MediaBrowser Token=\"${JELLYFIN_API_KEY}\"" \
+              'http://jellyfin/Sessions?activeWithinSeconds=600') || true
+            case "$code" in
+              000) echo 0 ;;
+              200) jq '[.[] | select(.NowPlayingItem != null)] | length' /tmp/sessions.json ;;
+              *) echo "Jellyfin returned HTTP $code" >&2; return 1 ;;
+            esac
+          }
+          deadline=$(( $(date +%s) + MAX_WAIT_SECONDS ))
+          while :; do
+            streams=$(count_streams)
+            if [ "$streams" -eq 0 ]; then
+              echo "Nothing playing on Jellyfin; continuing the sync"
+              exit 0
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "Jellyfin still has $streams active stream(s) after ${MAX_WAIT_SECONDS}s; failing the sync"
+              exit 1
+            fi
+            echo "$streams active Jellyfin stream(s); checking again in 60s"
+            sleep 60
+          done
+        env:
+        - name: MAX_WAIT_SECONDS
+          value: "43200"
+        - name: JELLYFIN_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jellyfin-sessions
+              key: token
+              optional: true
+        resources:
+          requests:
+            memory: 32Mi
+            cpu: 10m
+          limits:
+            memory: 64Mi
