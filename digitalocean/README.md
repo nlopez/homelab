@@ -42,8 +42,29 @@ app. It:
   `doks.digitalocean.com/install-policy=external` annotation DOKS documents, so the Envoy Gateway
   chart can install the experimental channel `TCPRoute` that Forgejo SSH uses.
 
+The script reaches the cluster on its public endpoint, which the control plane firewall closes.
+On a new cluster, first apply with `control_plane_firewall` disabled (or with your public IPv4
+address in `allowed_addresses`), run the script, let Argo CD deploy `cloud-tailscale-operator`,
+then move the Argo CD item to the tailnet path: `server`
+`https://cloud-k8s-api.argocd.svc.cluster.local` (the egress Service in
+`kubernetes/apps/argocd/manifests/cloud-api-egress.yaml`) and, in `config`, `tlsClientConfig`
+`{"insecure": false, "serverName": "tailscale-operator-cloud.macaroni-pirate.ts.net"}` with no
+`caData`. Then enable the firewall again.
+
 ## Reaching the cluster
 
+The public API endpoint accepts no outside addresses. Reach the cluster through the Tailscale
+operator's API server proxy instead, which passes your own credentials through:
+
 ```sh
-doctl kubernetes cluster kubeconfig save cloud
+doctl kubernetes cluster kubeconfig save cloud --set-current-context=false
+kubectl config set-cluster do-nyc3-cloud --server=https://tailscale-operator-cloud.macaroni-pirate.ts.net
+kubectl config unset clusters.do-nyc3-cloud.certificate-authority-data
 ```
+
+The proxy's certificate is a public `ts.net` one, so the DigitalOcean CA comes out. On a machine
+that doesn't resolve MagicDNS names, use the proxy's tailnet address and keep the name for TLS:
+`--server=https://<tailscale ip -4 tailscale-operator-cloud>
+--tls-server-name=tailscale-operator-cloud.macaroni-pirate.ts.net`.
+
+`doctl` and the DigitalOcean API don't go through the cluster's endpoint, so they keep working.
