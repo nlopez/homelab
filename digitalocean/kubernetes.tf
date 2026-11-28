@@ -5,30 +5,29 @@ locals {
 # Kept apart from the home networks (192.168.0.0/16, k3s on 10.42.0.0/16 and
 # 10.43.0.0/16) and from the account's default VPCs, so the cluster can later
 # be routed to home over the tailnet without overlaps.
-resource "digitalocean_vpc" "kernel" {
-  name     = "kernel-${local.region}"
+resource "digitalocean_vpc" "cloud" {
+  name     = "cloud-${local.region}"
   region   = local.region
   ip_range = "10.150.0.0/20"
 }
 
-data "digitalocean_kubernetes_versions" "kernel" {
+data "digitalocean_kubernetes_versions" "cloud" {
   version_prefix = "1.37."
 }
 
 # Runs the services the home cluster can't host without depending on itself,
 # starting with Forgejo.
-resource "digitalocean_kubernetes_cluster" "kernel" {
-  name     = "kernel"
+resource "digitalocean_kubernetes_cluster" "cloud" {
+  name     = "cloud"
   region   = local.region
-  version  = data.digitalocean_kubernetes_versions.kernel.latest_version
-  vpc_uuid = digitalocean_vpc.kernel.id
+  version  = data.digitalocean_kubernetes_versions.cloud.latest_version
+  vpc_uuid = digitalocean_vpc.cloud.id
 
   cluster_subnet = "10.152.0.0/16"
   service_subnet = "10.153.0.0/16"
 
   # The HA control plane costs $40/month, which doesn't fit the $100/month
-  # budget next to three nodes and a load balancer. It can be enabled later
-  # but never disabled.
+  # budget next to three nodes. It can be enabled later but never disabled.
   ha = false
 
   # DigitalOcean applies patch releases in the maintenance window (03:00 New
@@ -54,9 +53,19 @@ resource "digitalocean_kubernetes_cluster" "kernel" {
 }
 
 output "cluster_id" {
-  value = digitalocean_kubernetes_cluster.kernel.id
+  value = digitalocean_kubernetes_cluster.cloud.id
 }
 
 output "cluster_endpoint" {
-  value = digitalocean_kubernetes_cluster.kernel.endpoint
+  value = digitalocean_kubernetes_cluster.cloud.endpoint
+}
+
+moved {
+  from = digitalocean_vpc.kernel
+  to   = digitalocean_vpc.cloud
+}
+
+moved {
+  from = digitalocean_kubernetes_cluster.kernel
+  to   = digitalocean_kubernetes_cluster.cloud
 }
