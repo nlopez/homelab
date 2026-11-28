@@ -29,6 +29,19 @@ redacted="$(perl -pe '
 
 recap="$(grep -E '^[A-Za-z0-9.-]+ +: ok=' <<<"${redacted}" || true)"
 
+# Drops the include lines and blank lines, and prints a play or task heading
+# only when something follows it.
+diff="$(awk '
+  /^included: / || NF == 0 { next }
+  /^PLAY \[/ { play = $0; task = ""; next }
+  /^(TASK|RUNNING HANDLER) \[/ { task = $0; next }
+  {
+    if (play != "") { print ""; print play; play = "" }
+    if (task != "") { print ""; print task; task = "" }
+    print
+  }
+' <<<"${redacted}")"
+
 echo "<!-- ansible-diff -->"
 echo "### Ansible check mode (${outcome}) on \`${HEAD_SHA:0:8}\`"
 echo
@@ -49,5 +62,5 @@ echo
 echo "Diff (secret values replaced with \`***\`):"
 echo
 echo '```diff'
-tail -c 55000 <<<"${redacted}"
+tail -c 55000 <<<"${diff}"
 echo '```'

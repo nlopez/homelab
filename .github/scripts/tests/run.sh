@@ -299,6 +299,16 @@ fi
 
 printf '%s\n' '# comment' 'DD_API_KEY=op://v/i/credential' 'SNMP_KEY=op://v/i/password' >"${work}/plan.env"
 cat > "${work}/key.log" <<'LOG'
+PLAY [Configure Kubernetes hosts] **********************************************
+
+TASK [kubernetes : haproxy] ****************************************************
+included: /roles/kubernetes/tasks/haproxy.yaml for knode1.lga1.radoncanyon.com
+
+PLAY [Configure infra hosts] ***************************************************
+
+TASK [datadog : include] *******************************************************
+included: /roles/datadog/tasks/main.yml for odroid.lga2.radoncanyon.com
+
 TASK [datadog : config] ********************************************************
 --- before: /etc/datadog-agent/datadog.yaml
 +++ after: /etc/datadog-agent/datadog.yaml
@@ -321,6 +331,12 @@ if grep -q "abc123secret" <<<"${comment}"; then
 else
   pass "ansible-check-comment leaves no secret value in the comment"
 fi
+expect "ansible-check-comment keeps only the headings of tasks with output" \
+'PLAY [Configure infra hosts] ***************************************************
+
+TASK [datadog : config] ********************************************************
+--- before: /etc/datadog-agent/datadog.yaml' \
+  "$(sed -n '/^```diff/,$p' <<<"${comment}" | sed -n '3,6p')"
 contains "ansible-check-comment links to the step" "Hosts that would change are below. [Full output](u/step)." "${comment}"
 expect "ansible-check-comment starts with its marker and the head commit" \
 '<!-- ansible-diff -->
