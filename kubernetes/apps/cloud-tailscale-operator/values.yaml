@@ -1,12 +1,17 @@
 operatorConfig:
   # The home operator is tailscale-operator; tailnet device names must differ.
   hostname: tailscale-operator-cloud
+  # tag:cloud-operator and tag:cloud are sources in no tailnet grant
+  # (tailnet/policy.hujson): the tailnet reaches this cluster, and nothing on
+  # it reaches the tailnet or the home networks.
+  defaultTags:
+  - "tag:cloud-operator"
   logging: info
   image:
     repository: ghcr.io/tailscale/k8s-operator
     pullPolicy: IfNotPresent
 proxyConfig:
-  defaultTags: "tag:k8s"
+  defaultTags: "tag:cloud"
   image:
     repository: ghcr.io/tailscale/tailscale
     pullPolicy: IfNotPresent
