@@ -1,0 +1,27 @@
+# Runs CI jobs that need no Nix, Docker, Tailscale, or cluster access, so they
+# don't use GitHub-hosted minutes. Unlike home-runners, its pods get no
+# Kubernetes credentials and reach only DNS and the internet
+# (manifests/networkpolicy.yaml). The image is built from ci-runner/.
+githubConfigUrl: https://github.com/nlopez/homelab
+githubConfigSecret: arc-github-app
+runnerScaleSetName: ci-runners
+minRunners: 1
+maxRunners: 8
+controllerServiceAccount:
+  namespace: arc-systems
+  name: arc-controller-gha-rs-controller
+template:
+  spec:
+    automountServiceAccountToken: false
+    containers:
+    - name: runner
+      image: ghcr.io/nlopez/ci-runner:2.338.2-2
+      command:
+      - /home/runner/run.sh
+    topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: ScheduleAnyway
+      labelSelector:
+        matchLabels:
+          actions.github.com/scale-set-name: ci-runners
