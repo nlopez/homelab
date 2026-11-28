@@ -94,12 +94,13 @@ server:
     subPath: background.png
     mountPath: /web/dist/assets/desert-bluffs/background.png
     readOnly: true
+  # The injected ddtrace and Code Security add about 300Mi to the server.
   resources:
     requests:
       cpu: 50m
-      memory: 512Mi
-    limits:
       memory: 1Gi
+    limits:
+      memory: 1536Mi
 worker:
   resources:
     requests:
@@ -107,3 +108,11 @@ worker:
       memory: 512Mi
     limits:
       memory: 1Gi
+  # `ak healthcheck` takes 4-6s with ddtrace injected; the chart's 3s timeout
+  # fails the worker's startup probe.
+  startupProbe:
+    timeoutSeconds: 10
+  livenessProbe:
+    timeoutSeconds: 10
+  readinessProbe:
+    timeoutSeconds: 10
