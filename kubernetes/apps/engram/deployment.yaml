@@ -17,7 +17,7 @@ spec:
         app.kubernetes.io/instance: engram
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: engram
-        tags.datadoghq.com/version: v1
+        tags.datadoghq.com/version: 3.6.1 # renovate: image=ghcr.io/gentleman-programming/engram
     spec:
       securityContext:
         runAsNonRoot: true
