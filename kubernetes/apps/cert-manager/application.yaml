@@ -21,6 +21,16 @@ spec:
       valueFiles:
       - $values/kubernetes/apps/cert-manager/values.yaml
       ignoreMissingValueFiles: true
+      parameters:
+      - name: podLabels.tags\.datadoghq\.com/version
+        value: $ARGOCD_APP_SOURCE_TARGET_REVISION
+        forceString: true
+      - name: webhook.podLabels.tags\.datadoghq\.com/version
+        value: $ARGOCD_APP_SOURCE_TARGET_REVISION
+        forceString: true
+      - name: cainjector.podLabels.tags\.datadoghq\.com/version
+        value: $ARGOCD_APP_SOURCE_TARGET_REVISION
+        forceString: true
   - repoURL: https://github.com/nlopez/homelab.git
     targetRevision: main
     ref: values
