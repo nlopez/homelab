@@ -1,9 +1,8 @@
 global:
   propagateGlobalMetadataToPods: true
+  # Each component sets its own Datadog service and version labels.
   labels:
     tags.datadoghq.com/env: homelab
-    tags.datadoghq.com/service: immich
-    tags.datadoghq.com/version: v1
 controllers:
   main:
     annotations:
@@ -34,7 +33,13 @@ valkey:
   enabled: true
   controllers:
     main:
+      labels:
+        tags.datadoghq.com/service: immich-valkey
+        tags.datadoghq.com/version: 9.2-alpine # renovate: image=docker.io/valkey/valkey
       pod:
+        labels:
+          tags.datadoghq.com/service: immich-valkey
+          tags.datadoghq.com/version: 9.2-alpine # renovate: image=docker.io/valkey/valkey
         annotations:
           ad.datadoghq.com/main.checks: |-
             {"redisdb":{"init_config":{},"instances":[{"host":"%%host%%","port":6379}]}}

@@ -20,7 +20,7 @@ spec:
           labels:
             tags.datadoghq.com/env: homelab
             tags.datadoghq.com/service: immich-sidecar-sync
-            tags.datadoghq.com/version: v1
+            tags.datadoghq.com/version: 8.23.0 # renovate: image=docker.io/curlimages/curl
         spec:
           dnsConfig:
             options:
