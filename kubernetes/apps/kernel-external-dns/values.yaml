@@ -1,0 +1,28 @@
+# Publishes routes on kernel's tailnet gateway to Cloudflare as DNS-only
+# records pointing at the gateway's tailnet address. The owner ID keeps this
+# instance and the home one (owner "default") from touching each other's
+# records.
+policy: sync
+txtOwnerId: kernel
+provider:
+  name: cloudflare
+env:
+- name: CF_API_TOKEN
+  valueFrom:
+    secretKeyRef:
+      name: cloudflare-api-token
+      key: api-token
+- name: EXTERNAL_DNS_TXT_ENCRYPT_AES_KEY
+  valueFrom:
+    secretKeyRef:
+      name: txt-encrypt-aes-key
+      key: aes_key
+- name: EXTERNAL_DNS_TXT_ENCRYPT_ENABLED
+  value: "true"
+sources:
+- gateway-httproute
+- gateway-tcproute
+extraArgs:
+- --min-ttl=60s
+- --gateway-name=tailnet
+- --domain-filter=desertbluffs.com

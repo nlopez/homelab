@@ -1,0 +1,15 @@
+operatorConfig:
+  # The home operator is tailscale-operator; tailnet device names must differ.
+  hostname: tailscale-operator-kernel
+  podAnnotations:
+    operator.1password.io/item-path: "vaults/evjh25ux2mnoufaut6qhvm2pdi/items/pcyt4zyzxr2ybrdnzcp36ryxzm"
+    operator.1password.io/item-name: "operator-oauth"
+  logging: info
+  image:
+    repository: ghcr.io/tailscale/k8s-operator
+    pullPolicy: IfNotPresent
+proxyConfig:
+  defaultTags: "tag:k8s"
+  image:
+    repository: ghcr.io/tailscale/tailscale
+    pullPolicy: IfNotPresent
