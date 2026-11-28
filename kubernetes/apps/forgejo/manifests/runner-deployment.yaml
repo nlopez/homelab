@@ -20,7 +20,7 @@ spec:
         app: forgejo-runner
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: forgejo-runner
-        tags.datadoghq.com/version: v1
+        tags.datadoghq.com/version: "13.2.2" # renovate: image=code.forgejo.org/forgejo/runner
     spec:
       automountServiceAccountToken: false
       initContainers:

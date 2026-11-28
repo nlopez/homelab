@@ -8,7 +8,6 @@ deployment:
   labels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: forgejo
-    tags.datadoghq.com/version: v1
 service:
   ssh:
     type: ClusterIP
