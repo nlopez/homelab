@@ -3,6 +3,11 @@ global:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: authentik
     tags.datadoghq.com/version: v1
+    admission.datadoghq.com/enabled: "true"
+  # The Datadog admission controller injects ddtrace from this init image tag
+  # (the latest 4.x release) for APM and Code Security.
+  podAnnotations:
+    admission.datadoghq.com/python-lib.version: v4
   deploymentAnnotations:
     reloader.stakater.com/auto: "true"
   env:
@@ -28,6 +33,10 @@ global:
       secretKeyRef:
         name: onepassword-authentik-smtp
         key: password
+  - name: DD_IAST_ENABLED
+    value: "true"
+  - name: DD_APPSEC_SCA_ENABLED
+    value: "true"
 authentik:
   postgresql:
     host: authentik-database-tn-rw.authentik.svc.cluster.local
