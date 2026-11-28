@@ -4,5 +4,6 @@
 self-hosted-runner:
   labels:
   - home-runners
+  - ci-runners
   # GitHub-hosted; actionlint 1.7.12 doesn't list it yet.
   - ubuntu-26.04
