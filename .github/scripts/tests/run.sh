@@ -295,6 +295,88 @@ else
   pass "ansible-drift-summary leaves out the --diff output"
 fi
 
+### ansible-check-comment.sh
+
+printf '%s\n' '# comment' 'DD_API_KEY=op://v/i/credential' 'SNMP_KEY=op://v/i/password' >"${work}/plan.env"
+# A stub betterleaks that finds FAKELEAK, as the real one exits 3 on a finding.
+mkdir -p "${work}/blbin"
+cat >"${work}/blbin/betterleaks" <<'SH'
+#!/bin/sh
+if grep -q FAKELEAK; then echo '[{"RuleID":"fake-rule"},{"RuleID":"fake-rule"}]'; exit 3; fi
+echo '[]'
+SH
+chmod +x "${work}/blbin/betterleaks"
+blpath="${work}/blbin:${PATH}"
+cat > "${work}/key.log" <<'LOG'
+PLAY [Configure Kubernetes hosts] **********************************************
+
+TASK [kubernetes : haproxy] ****************************************************
+included: /roles/kubernetes/tasks/haproxy.yaml for knode1.lga1.radoncanyon.com
+
+PLAY [Configure infra hosts] ***************************************************
+
+TASK [datadog : include] *******************************************************
+included: /roles/datadog/tasks/main.yml for odroid.lga2.radoncanyon.com
+
+TASK [datadog : config] ********************************************************
+--- before: /etc/datadog-agent/datadog.yaml
++++ after: /etc/datadog-agent/datadog.yaml
+-api_key: old-key
++api_key: abc123secret
++snmp: abc123secret-longer
++both: abc123secret,abc123secret
+changed: [odroid.lga2.radoncanyon.com]
+
+PLAY RECAP *********************************************************************
+odroid.lga2.radoncanyon.com : ok=89   changed=1    unreachable=0    failed=0
+LOG
+comment="$(PATH="${blpath}" HEAD_SHA="${head}" DD_API_KEY=abc123secret SNMP_KEY=abc123secret-longer \
+  "${scripts}/ansible-check-comment.sh" "${work}/key.log" "${work}/plan.env" success u/step)"
+contains "ansible-check-comment replaces each secret value" "+api_key: ***" "${comment}"
+contains "ansible-check-comment replaces a longer value whole" "+snmp: ***" "${comment}"
+contains "ansible-check-comment replaces every occurrence on a line" "+both: ***,***" "${comment}"
+if grep -q "abc123secret" <<<"${comment}"; then
+  fail "ansible-check-comment leaves no secret value in the comment"
+else
+  pass "ansible-check-comment leaves no secret value in the comment"
+fi
+expect "ansible-check-comment keeps only the headings of tasks with output" \
+'PLAY [Configure infra hosts] ***************************************************
+
+TASK [datadog : config] ********************************************************
+--- before: /etc/datadog-agent/datadog.yaml' \
+  "$(sed -n '/^```diff/,$p' <<<"${comment}" | sed -n '3,6p')"
+contains "ansible-check-comment links to the step" "Hosts that would change are below. [Full output](u/step)." "${comment}"
+expect "ansible-check-comment starts with its marker and the head commit" \
+'<!-- ansible-diff -->
+### Ansible check mode (success) on `aaaa1111`' "$(head -n 2 <<<"${comment}")"
+sed 's/changed=1/changed=0/' "${work}/check.log" >"${work}/clean.log"
+contains "ansible-check-comment says when no host would change" "No host would change. [Full output](u/step)." \
+  "$(PATH="${blpath}" HEAD_SHA="${head}" "${scripts}/ansible-check-comment.sh" "${work}/clean.log" "${work}/plan.env" success u/step)"
+contains "ansible-check-comment says when the check failed" "The check failed; see [the full output](u/step)." \
+  "$(PATH="${blpath}" HEAD_SHA="${head}" "${scripts}/ansible-check-comment.sh" "${work}/clean.log" "${work}/plan.env" failure u/step)"
+printf '%s\n' 'TASK [app : token] ***' '+token: FAKELEAK-host-token' 'changed: [odroid.lga2.radoncanyon.com]' \
+  'odroid.lga2.radoncanyon.com : ok=1    changed=1    unreachable=0    failed=0' >"${work}/leak.log"
+leak_rc=0
+leak="$(PATH="${blpath}" HEAD_SHA="${head}" "${scripts}/ansible-check-comment.sh" \
+  "${work}/leak.log" "${work}/plan.env" success u/step)" || leak_rc=$?
+expect "ansible-check-comment exits 3 when the scanner finds a secret" 3 "${leak_rc}"
+contains "ansible-check-comment names the scanner's rule" 'matched `fake-rule` in it.' "${leak}"
+contains "ansible-check-comment keeps the recap when it withholds the diff" "odroid.lga2.radoncanyon.com : ok=1" "${leak}"
+if grep -q "FAKELEAK" <<<"${leak}"; then
+  fail "ansible-check-comment withholds a diff the scanner flagged"
+else
+  pass "ansible-check-comment withholds a diff the scanner flagged"
+fi
+# No betterleaks on PATH: the scan can't run, so the diff stays out.
+mkdir -p "${work}/nobl"
+for tool in bash env grep tr perl awk tail jq sed head; do ln -sf "$(command -v "${tool}")" "${work}/nobl/${tool}"; done
+nobl_rc=0
+nobl="$(PATH="${work}/nobl" HEAD_SHA="${head}" "${scripts}/ansible-check-comment.sh" \
+  "${work}/clean.log" "${work}/plan.env" success u/step 2>/dev/null)" || nobl_rc=$?
+expect "ansible-check-comment exits 3 when the scanner can't run" 3 "${nobl_rc}"
+contains "ansible-check-comment says the scanner couldn't run" "could not run (exit 127)" "${nobl}"
+
 ### oidc-plan-env.sh
 
 # A curl that answers the OIDC token request with a token naming its audience.
