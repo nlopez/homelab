@@ -8,7 +8,7 @@ metadata:
     version: v1
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: datadog-synthetics-private-location
-    tags.datadoghq.com/version: v1
+    tags.datadoghq.com/version: "1.75.0" # renovate: image=datadog/synthetics-private-location-worker
   annotations:
     secret.reloader.stakater.com/reload: "datadog-keys"
 spec:
@@ -23,7 +23,7 @@ spec:
         version: v1
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: datadog-synthetics-private-location
-        tags.datadoghq.com/version: v1
+        tags.datadoghq.com/version: "1.75.0" # renovate: image=datadog/synthetics-private-location-worker
     spec:
       dnsConfig:
         options:
