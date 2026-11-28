@@ -9,6 +9,14 @@
   },
   "tagOwners": {
     "tag:k8s-operator": [],
+    // The Tailscale operator on the cloud DOKS cluster (digitalocean/) and
+    // its proxies. Neither tag is a source in any grant, so cloud devices
+    // can be reached from the tailnet but reach nothing on it, the home
+    // networks behind the subnet routers included.
+    "tag:cloud-operator": [],
+    "tag:cloud": [
+      "tag:cloud-operator"
+    ],
     "tag:k8s": [
       "tag:k8s-operator"
     ],
@@ -280,6 +288,46 @@
     }
   ],
   "tests": [
+    {
+      "src": "tag:admin",
+      "accept": [
+        "tag:cloud:443",
+        "tag:cloud:22",
+        "tag:cloud-operator:443"
+      ]
+    },
+    {
+      "src": "tag:cloud",
+      "deny": [
+        "192.168.222.1:443",
+        "192.168.239.254:443",
+        "192.168.222.149:443",
+        "10.43.64.10:443",
+        "10.43.64.20:443",
+        "100.83.144.88:53",
+        "100.86.37.97:53",
+        "tag:home:443",
+        "tag:lga1:22",
+        "tag:k8s:443",
+        "tag:admin:22"
+      ]
+    },
+    {
+      "src": "tag:cloud-operator",
+      "deny": [
+        "192.168.222.1:443",
+        "192.168.239.254:443",
+        "192.168.222.149:443",
+        "10.43.64.10:443",
+        "10.43.64.20:443",
+        "100.83.144.88:53",
+        "100.86.37.97:53",
+        "tag:home:443",
+        "tag:lga1:22",
+        "tag:k8s:443",
+        "tag:admin:22"
+      ]
+    },
     {
       "src": "tag:admin",
       "accept": [
