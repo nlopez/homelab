@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/master-standalone-strict/service-v1.json
+# The cloud DOKS cluster's API, reached over the tailnet through the Tailscale
+# operator's API server proxy there (kubernetes/apps/cloud-tailscale-operator).
+# The public endpoint is closed by the control plane firewall, so the Argo CD
+# cluster item for cloud points its server here, with tlsClientConfig.serverName
+# set to the proxy's ts.net name so its certificate still verifies.
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud-k8s-api
+  namespace: argocd
+  annotations:
+    tailscale.com/tailnet-fqdn: tailscale-operator-cloud.macaroni-pirate.ts.net
+spec:
+  type: ExternalName
+  externalName: placeholder
+  ports:
+  - name: https
+    port: 443
+    protocol: TCP
