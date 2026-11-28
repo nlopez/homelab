@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/argoproj.io/application_v1alpha1.json
+# Forgejo on the cloud DOKS cluster, ahead of its move from kubernetes/apps/forgejo.
+# For now this deploys only manifests/ (the data volume and the 1Password
+# items). The cutover adds the chart (oci://code.forgejo.org/forgejo-helm/forgejo,
+# the version kubernetes/apps/forgejo runs, with values.yaml), the database, and
+# the routes; the chart can't be deployed stopped (replicaCount has a minimum of 1).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloud-forgejo
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    name: cloud
+    namespace: forgejo
+  source:
+    repoURL: https://github.com/nlopez/homelab.git
+    targetRevision: main
+    path: kubernetes/apps/cloud-forgejo/manifests
+  ignoreDifferences:
+  - jsonPointers:
+    - /spec/volumeName
+    kind: PersistentVolumeClaim
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: false
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+    - RespectIgnoreDifferences=true
