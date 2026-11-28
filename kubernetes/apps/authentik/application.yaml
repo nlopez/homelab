@@ -21,6 +21,11 @@ spec:
       valueFiles:
       - $values/kubernetes/apps/authentik/values.yaml
       ignoreMissingValueFiles: true
+      # The chart version is the authentik version; Argo CD substitutes it here.
+      parameters:
+      - name: global.additionalLabels.tags\.datadoghq\.com/version
+        value: $ARGOCD_APP_SOURCE_TARGET_REVISION
+        forceString: true
   - repoURL: https://github.com/nlopez/homelab.git
     targetRevision: main
     ref: values

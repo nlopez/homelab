@@ -1,8 +1,11 @@
 global:
-  podLabels:
+  # Datadog unified service tags. The chart puts additionalLabels on every
+  # object it renders, including both Deployments and their pod templates.
+  # tags.datadoghq.com/version is the chart version, set in application.yaml.
+  additionalLabels:
     tags.datadoghq.com/env: homelab
     tags.datadoghq.com/service: authentik
-    tags.datadoghq.com/version: v1
+  podLabels:
     admission.datadoghq.com/enabled: "true"
   # The Datadog admission controller injects ddtrace from this init image tag
   # (the latest 4.x release) for APM and Code Security.
@@ -36,6 +39,10 @@ global:
   - name: DD_IAST_ENABLED
     value: "true"
   - name: DD_APPSEC_SCA_ENABLED
+    value: "true"
+  # Client spans (Postgres, HTTP) keep service:authentik; Datadog identifies
+  # the dependency from peer.* tags instead of a separate service.
+  - name: DD_TRACE_REMOVE_INTEGRATION_SERVICE_NAMES_ENABLED
     value: "true"
 authentik:
   postgresql:
