@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/datreeio/CRDs-catalog/refs/heads/main/onepassword.com/onepassworditem_v1.json
+# Registers the kernel DOKS cluster (digitalocean/) as an Argo CD destination.
+# The item holds name, server, and config (a bearer token for the
+# kube-system/argocd-manager ServiceAccount on kernel), written by
+# digitalocean/bootstrap-kernel.sh.
+apiVersion: onepassword.com/v1
+kind: OnePasswordItem
+metadata:
+  name: argocd-cluster-kernel
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+spec:
+  itemPath: "vaults/evjh25ux2mnoufaut6qhvm2pdi/items/etru2ryxttb5l755jpn53hzyta"
