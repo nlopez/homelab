@@ -24,7 +24,7 @@ spec:
         version: v1
         tags.datadoghq.com/env: homelab
         tags.datadoghq.com/service: toolbox
-        tags.datadoghq.com/version: v1
+        tags.datadoghq.com/version: 2026.11.23-16 # renovate: image=ghcr.io/nlopez/media-toolbox
     spec:
       securityContext:
         runAsUser: 1001
